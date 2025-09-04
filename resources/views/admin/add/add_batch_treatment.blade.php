@@ -101,21 +101,26 @@ function closeSnackbar() {
 </script>
 
 
-                <form action="{{url('upload_batch')}}" method="post" enctype="multipart/form-data">
+                <form action="{{url('upload_batch_treatment')}}" method="post" enctype="multipart/form-data">
                     @csrf
                         <div class="mb-3">
-                <label for="barn_code" class="form-label">รหัสเล้า</label>
-                <input type="text" class="form-control" id="barn_code" name="barn_code" value="{{ old('barn_code') }}" required>
+                <label for="medicine_name" class="form-label">ชื่อยา</label>
+                <input type="text" class="form-control" id="medicine_name" name="medicine_name" value="{{ old('medicine_name') }}" required>
             </div>
 
             <div class="mb-3">
-                <label for="pig_capacity" class="form-label">จำนวนหมูสูงสุด</label>
-                <input type="number" class="form-control" id="pig_capacity" name="pig_capacity" value="{{ old('pig_capacity') }}" required min="0">
+                <label for="dosage" class="form-label">ขนาดยา</label>
+                <input type="number" class="form-control" id="dosage" name="dosage" value="{{ old('dosage') }}" required min="0">
             </div>
 
             <div class="mb-3">
-                <label for="pen_capacity" class="form-label">จำนวนคอกสูงสุด</label>
-                <input type="number" class="form-control" id="pen_capacity" name="pen_capacity" value="{{ old('pen_capacity') }}" required min="0">
+                <label for="unit" class="form-label">หน่วย</label>
+                <input type="text" class="form-control" id="unit" name="unit" value="{{ old('unit') }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="status" class="form-label">สถานะ</label>
+                <input type="text" class="form-control" id="status" name="status" value="{{ old('status') }}" required>
             </div>
 
             <div class="mb-3">
@@ -123,7 +128,7 @@ function closeSnackbar() {
                 <textarea class="form-control" id="note" name="note">{{ old('note') }}</textarea>
             </div>
 
-            <button type="submit" value="Add Barn" class="btn btn-primary">บันทึก</button>
+            <button type="submit" value="Add Batch Treatment" class="btn btn-primary">บันทึก</button>
 
                 </form>
             </div>

@@ -104,13 +104,13 @@ function closeSnackbar() {
                 <form action="{{url('upload_cost')}}" method="post" enctype="multipart/form-data">
                     @csrf
                     <div class="mb-3">
-                <label for="barn_code" class="form-label">รหัสเล้า</label>
-                <input type="text" class="form-control" id="barn_code" name="barn_code" value="{{ old('barn_code') }}" required>
+                <label for="cost_type" class="form-label">รหัสเล้า</label>
+                <input type="text" class="form-control" id="cost_type" name="cost_type" value="{{ old('cost_type') }}" required>
             </div>
 
             <div class="mb-3">
-                <label for="pig_capacity" class="form-label">จำนวนหมูสูงสุด</label>
-                <input type="number" class="form-control" id="pig_capacity" name="pig_capacity" value="{{ old('pig_capacity') }}" required min="0">
+                <label for="amount" class="form-label">จำนวนหมูสูงสุด</label>
+                <input type="number" class="form-control" id="amount" name="amount" value="{{ old('amount') }}" required min="0">
             </div>
 
             <div class="mb-3">

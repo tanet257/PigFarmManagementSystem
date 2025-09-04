@@ -33,56 +33,56 @@ class AdminController extends Controller
         $farms = Farm::all();
         $barns = Barn::all();
         $pens = Pen::all();
-        return view('admin.add_batch', compact('farms', 'barns', 'pens'));
+        return view('admin.add.add_batch', compact('farms', 'barns', 'pens'));
     }
 
     //add_farm
     public function add_farm()
     {
-        return view('admin.add_farm');
+        return view('admin.add.add_farm');
     }
 
     //add_barn
     public function add_barn()
     {
-        return view('admin.add_barn');
+        return view('admin.add.add_barn');
     }
 
     //add_pen
     public function add_pen()
     {
         $barns = Barn::all();
-        return view('admin.add_pen', compact('barns'));
+        return view('admin.add.add_pen', compact('barns'));
     }
 
     //add_batch_treatment
     public function add_batch_treatment()
     {
-        return view('admin.add_batch_treatment');
+        return view('admin.add.add_batch_treatment');
     }
 
     //add_cost
     public function add_cost()
     {
-        return view('admin.add_cost');
+        return view('admin.add.add_cost');
     }
 
     //add_pig_sell
     public function add_pig_sell()
     {
-        return view('admin.add_pig_sell');
+        return view('admin.add.add_pig_sell');
     }
 
     //add_feeding
     public function add_feeding()
     {
-        return view('admin.add_feeding');
+        return view('admin.add.add_feeding');
     }
 
     //add_pig_death
     public function add_pig_death()
     {
-        return view('admin.add_pig_death');
+        return view('admin.add.add_pig_death');
     }
 
     //--------------------------------------- UPLOAD ------------------------------------------//
@@ -417,13 +417,61 @@ class AdminController extends Controller
         }
     }
 
-//-------------------function view----------------------//
+//--------------------------------------- VIEW ------------------------------------------//
 
 
     public function view_batch()
     {
-    $data = Batch::all();
-    return view('admin.show_batch',compact('data'));
+    $batches = Batch::all();
+    return view('admin.view.view_batch',compact('batches'));
+    }
+
+    public function view_farm()
+    {
+    $farms = Farm::all();
+    return view('admin.view.view_farm',compact('farms'));
+    }
+
+    public function view_barn()
+    {
+    $barns = Barn::all();
+    return view('admin.view.view_barn',compact('barns'));
+    }
+
+    public function view_pen()
+    {
+    $pens = Pen::all();
+    return view('admin.view.view_pen',compact('pens'));
+    }
+
+    public function view_batch_treatment()
+    {
+    $batch_treatments = BatchTreatments::all();
+    return view('admin.view.view_batch_treatment',compact('batch_treatments'));
+    }
+
+    public function view_cost()
+    {
+    $costs = Cost::all();
+    return view('admin.view.view_cost',compact('costs'));
+    }
+
+    public function view_pig_sell()
+    {
+    $pig_sells = PigSell::all();
+    return view('admin.view.view_pig_sell',compact('pig_sells'));
+    }
+
+    public function view_feeding()
+    {
+    $feedings = Feeding::all();
+    return view('admin.view.view_feeding',compact('feedings'));
+    }
+
+    public function view_pig_death()
+    {
+    $pig_deaths = PigDeath::all();
+    return view('admin.view.view_pig_death',compact('pig_deaths'));
     }
 
 }
