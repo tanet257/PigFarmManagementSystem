@@ -58,31 +58,45 @@ class AdminController extends Controller
     //add_batch_treatment
     public function add_batch_treatment()
     {
-        return view('admin.add.add_batch_treatment');
+        $barns = Barn::all();
+        $pens = Pen::all();
+        $farms = Farm::all();
+        $batches = Batch::all();
+        return view('admin.add.add_batch_treatment', compact('farms', 'batches', 'pens', 'barns'));
     }
 
     //add_cost
     public function add_cost()
     {
-        return view('admin.add.add_cost');
+        $farms = Farm::all();
+        $batches = Batch::all();
+        return view('admin.add.add_cost', compact('farms', 'batches'));
     }
 
     //add_pig_sell
     public function add_pig_sell()
     {
-        return view('admin.add.add_pig_sell');
+        $farms = Farm::all();
+        $batches = Batch::all();
+        return view('admin.add.add_pig_sell', compact('farms', 'batches'));
     }
 
     //add_feeding
     public function add_feeding()
     {
-        return view('admin.add.add_feeding');
+        $farms = Farm::all();
+        $batches = Batch::all();
+        return view('admin.add.add_feeding', compact('farms', 'batches'));
     }
 
     //add_pig_death
     public function add_pig_death()
     {
-        return view('admin.add.add_pig_death');
+        $farms = Farm::all();
+        $batches = Batch::all();
+        $barns = Barn::all();
+        $pens = Pen::all();
+        return view('admin.add.add_pig_death', compact('farms', 'batches', 'barns', 'pens'));
     }
 
     //--------------------------------------- UPLOAD ------------------------------------------//
@@ -268,11 +282,10 @@ class AdminController extends Controller
     {
         try {
             //validate
-            $request->validate([
-                'farm_id' => 'required|exists:farms,id',
-                'batch_id' => 'required|exists:batches,id',
+        $request->validate([
+            'farm_id' => 'required|exists:farms,id',
+            'batch_id' => 'required|exists:batches,id',
 
-            'amount' => 'required|numeric|min:0',
             'quantity' => 'required|integer',
             'price_per_unit' => 'required|numeric|min:0',
             'total_price' => 'required|numeric|min:0',
@@ -288,8 +301,8 @@ class AdminController extends Controller
         //unique
         $data->cost_type = $request->cost_type;
 
-        $data->amount = $request->amount;
         $data->quantity = $request->quantity;
+        $data->price_per_unit = $request->price_per_unit;
         $data->total_price = $request->quantity * $request->price_per_unit;
         $data->total_price = $request->total_price;
         $data->note = $request->note ?? null;
@@ -349,13 +362,12 @@ class AdminController extends Controller
         try {
             //validate
             $request->validate([
-                'farm_id' => 'required|exists:farms,id',
-                'batch_id' => 'required|exists:batches,id',
+            'farm_id' => 'required|exists:farms,id',
+            'batch_id' => 'required|exists:batches,id',
 
             'feed_type' => 'required|string',
             'quantity' => 'required|integer',
             'unit' => 'required|string',
-            'amount' => 'required|numeric|min:0',
             'price_per_unit' => 'required|numeric|min:0',
             'total' => 'required|numeric|min:0',
             'note' => 'nullable|string',
@@ -370,7 +382,6 @@ class AdminController extends Controller
         $data->feed_type = $request->feed_type;
         $data->quantity = $request->quantity;
         $data->unit = $request->unit;
-        $data->amount = $request->amount;
         $data->price_per_unit = $request->price_per_unit;
         $data->total = $request->total;
         $data->note = $request->note ?? null;
@@ -464,6 +475,7 @@ class AdminController extends Controller
 
     public function view_feeding()
     {
+
     $feedings = Feeding::all();
     return view('admin.view.view_feeding',compact('feedings'));
     }

@@ -88,7 +88,7 @@ window.onload = function() {
         sb.classList.add("show");
         setTimeout(function(){
             if (sb) sb.classList.remove("show");
-        }, 4000); // 4 วิ แล้วหาย
+        }, 10000); // 10 วิ แล้วหาย
     }
 };
 
@@ -103,19 +103,61 @@ function closeSnackbar() {
 
                 <form action="{{url('upload_cost')}}" method="post" enctype="multipart/form-data">
                     @csrf
-                    <div class="mb-3">
-                <label for="cost_type" class="form-label">รหัสเล้า</label>
-                <input type="text" class="form-control" id="cost_type" name="cost_type" value="{{ old('cost_type') }}" required>
+
+            <div class="mb-3">
+                  <label class="">เลือกฟาร์ม</label>
+                    <div class="mb-3 row">
+            <select name="farm_id" class="form-select" required>
+                      <option value="">-- เลือกฟาร์ม --</option>
+                      @foreach($farms as $farm)
+                        <option value="{{ $farm->id }}">{{ $farm->farm_name ?? 'ฟาร์ม '.$farm->id }}</option>
+                      @endforeach
+                    </select>
+                    </div>
             </div>
 
             <div class="mb-3">
-                <label for="amount" class="form-label">จำนวนหมูสูงสุด</label>
-                <input type="number" class="form-control" id="amount" name="amount" value="{{ old('amount') }}" required min="0">
+                  <label class="">เลือกรุ่น</label>
+                    <div class="mb-3 row">
+            <select name="batch_id" class="form-select" required>
+                      <option value="">-- เลือกรุ่น --</option>
+                      @foreach($batches as $batch)
+                        <option value="{{ $batch->id }}">{{ $batch->batch_code ?? 'รุ่น '.$batch->id }}</option>
+                      @endforeach
+                    </select>
+                    </div>
             </div>
 
             <div class="mb-3">
-                <label for="pen_capacity" class="form-label">จำนวนคอกสูงสุด</label>
-                <input type="number" class="form-control" id="pen_capacity" name="pen_capacity" value="{{ old('pen_capacity') }}" required min="0">
+                  <label class="">ประเภทค่าใช้จ่าย</label>
+            <select name="cost_type" class="form-select" required>
+                      <option value="">-- เลือกประเภทค่าใช้จ่าย --</option>
+                      <option value="piglet"> piglet </option>
+                      <option value="feed"> ค่าอาหาร </option>
+                      <option value="medicine"> ค่ายา </option>
+                      <option value="vaccine"> ค่าวัคซีน </option>
+                      <option value="bran"> ค่ารำ </option>
+                      <option value="labor"> ค่าแรงงาน </option>
+                      <option value="transport"> ค่ารถ/ขนส่ง </option>
+                      <option value="repair"> ค่าซ่อมแซม </option>
+                      <option value="dead_pig"> ขาดทุนจากหมูตาย </option>
+                      <option value="other"> อื่น ๆ </option>
+            </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="quantity" class="form-label">จำนวน</label>
+                <input type="number" class="form-control" id="quantity" name="quantity" value="{{ old('quantity') }}" required min="0">
+            </div>
+
+            <div class="mb-3">
+                <label for="price_per_unit" class="form-label">ราคา/หน่วย</label>
+                <input type="text" class="form-control" id="price_per_unit" name="price_per_unit" value="{{ old('price_per_unit') }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label for="total_price" class="form-label">ราคารวม</label>
+                <input type="number" class="form-control" id="total_price" name="total_price" value="{{ old('total_price') }}" required min="0">
             </div>
 
             <div class="mb-3">
@@ -123,7 +165,7 @@ function closeSnackbar() {
                 <textarea class="form-control" id="note" name="note">{{ old('note') }}</textarea>
             </div>
 
-            <button type="submit" value="Add Barn" class="btn btn-primary">บันทึก</button>
+            <button type="submit" value="Add Cost" class="btn btn-primary">บันทึก</button>
 
                 </form>
 

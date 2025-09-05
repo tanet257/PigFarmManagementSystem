@@ -21,7 +21,7 @@
 
           <div class="card shadow-lg border-0 rounded-3">
             <div class="card-header bg-primary text-white">
-              <h4 class="mb-0">เพิ่มหมูตาย (Add Pig Death)</h4>
+              <h4 class="mb-0">เพิ่มการให้อาหาร (Add Feeding)</h4>
             </div>
             <div class="card-body">
 
@@ -101,29 +101,56 @@ function closeSnackbar() {
 </script>
 
 
-                <form action="{{url('upload_pig_death')}}" method="post" enctype="multipart/form-data">
+            <form action="{{url('upload_pig_death')}}" method="post" enctype="multipart/form-data">
                     @csrf
-                    <div class="mb-3">
-                <label for="barn_code" class="form-label">รหัสเล้า</label>
-                <input type="text" class="form-control" id="barn_code" name="barn_code" value="{{ old('barn_code') }}" required>
-            </div>
 
-            <div class="mb-3">
-                <label for="pig_capacity" class="form-label">จำนวนหมูสูงสุด</label>
-                <input type="number" class="form-control" id="pig_capacity" name="pig_capacity" value="{{ old('pig_capacity') }}" required min="0">
-            </div>
+            <div class="mb-3 row">
+                  <label for="farm_id" class="">เลือกฟาร์ม</label>
+                    <select name="farm_id" class="form-select" required>
+                      <option value="">-- เลือกฟาร์ม --</option>
+                      @foreach($farms as $farm)
+                        <option value="{{ $farm->id }}">{{ $farm->farm_name ?? 'ฟาร์ม '.$farm->id }}</option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <div class="mb-3">
-                <label for="pen_capacity" class="form-label">จำนวนคอกสูงสุด</label>
-                <input type="number" class="form-control" id="pen_capacity" name="pen_capacity" value="{{ old('pen_capacity') }}" required min="0">
-            </div>
+                <div class="mb-3 row">
+                  <label for="batch_code" class="form-label">เลือกรหัสรุ่น</label>
+                    <select name="batch_id" class="form-select" required>
+                      <option value="">-- เลือกรหัสรุ่น --</option>
+                      @foreach($batches as $batch)
+                        <option value="{{ $batch->id }}">{{ $batch->batch_code ?? 'รุ่น '.$batch->id }}</option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <div class="mb-3">
-                <label for="note" class="form-label">หมายเหตุ</label>
-                <textarea class="form-control" id="note" name="note">{{ old('note') }}</textarea>
-            </div>
+                <div class="mb-3 row">
+                  <label for="pen_code" class="form-label">เลือกคอก</label>
+                    <select name="pen_id" class="form-select" required>
+                      <option value="">-- เลือกคอก --</option>
+                      @foreach($pens as $pen)
+                        <option value="{{ $pen->id }}">{{ $pen->pen_code ?? 'คอก '.$pen->id }}</option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <button type="submit" value="Add Barn" class="btn btn-primary">บันทึก</button>
+                <div class="mb-3">
+                    <label for="amount" class="form-label">จำนวนหมูที่ตาย</label>
+                    <input type="number" class="form-control" id="amount" name="amount" value="{{ old('amount') }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="cause" class="form-label">สาเหตุการตาย</label>
+                    <input type="text" class="form-control" id="cause" name="cause" value="{{ old('cause') }}" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="note" class="form-label">หมายเหตุ</label>
+                    <textarea class="form-control" id="note" name="note">{{ old('note') }}</textarea>
+                </div>
+
+                <button type="submit" value="Add Feeding" class="btn btn-primary">บันทึก</button>
+
 
                 </form>
             </div>

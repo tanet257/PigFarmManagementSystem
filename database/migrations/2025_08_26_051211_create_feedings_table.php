@@ -27,7 +27,7 @@ return new class extends Migration
             $table->string('feed_type'); //ประเภทการให้อาหาร
             $table->integer('quantity');
             $table->string('unit')->default('bag');
-            $table->unsignedDecimal('amount',10,2)->nullable();
+            //$table->unsignedDecimal('amount',10,2)->nullable();
             $table->unsignedDecimal('price_per_unit', 10, 2)->nullable();
             $table->unsignedDecimal('total', 10, 2)->nullable();
             $table->text('note')->nullable();

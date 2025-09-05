@@ -50,7 +50,6 @@
                         <th>Batch Id</th>
 
                         <th>Cost Type</th>
-                        <th>Amount</th>
                         <th>Quantity</th>
                         <th>Price Per Unit</th>
                         <th>Total Price</th>
@@ -64,7 +63,6 @@
                         <td>{{ $cost->farm_id}}</td>
                         <td>{{ $cost->batch_id}}</td>
                         <td>{{ $cost->cost_type}}</td>
-                        <td>{{ $cost->amount}}</td>
                         <td>{{ $cost->quantity}}</td>
                         <td>{{ $cost->price_per_unit}}</td>
                         <td>{{ $cost->total_price}}</td>

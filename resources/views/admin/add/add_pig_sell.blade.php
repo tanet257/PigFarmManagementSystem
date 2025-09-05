@@ -101,21 +101,63 @@ function closeSnackbar() {
 </script>
 
 
-                <form action="{{url('upload_pig_sell')}}" method="post" enctype="multipart/form-data">
-                    @csrf
-                    <div class="mb-3">
-                <label for="barn_code" class="form-label">รหัสเล้า</label>
-                <input type="text" class="form-control" id="barn_code" name="barn_code" value="{{ old('barn_code') }}" required>
+            <form action="{{url('upload_pig_sell')}}" method="post" enctype="multipart/form-data">
+                @csrf
+
+
+            <div class="mb-3 row">
+                  <label for="farm_id" class="">เลือกฟาร์ม</label>
+                    <select name="farm_id" class="form-select" required>
+                      <option value="">-- เลือกฟาร์ม --</option>
+                      @foreach($farms as $farm)
+                        <option value="{{ $farm->id }}">{{ $farm->farm_name ?? 'ฟาร์ม '.$farm->id }}</option>
+                      @endforeach
+                    </select>
+            </div>
+
+            <div class="mb-3 row">
+                  <label for="batch_code" class="form-label">เลือกรหัสรุ่น</label>
+                    <select name="batch_id" class="form-select" required>
+                      <option value="">-- เลือกรหัสรุ่น --</option>
+                      @foreach($batches as $batch)
+                        <option value="{{ $batch->id }}">{{ $batch->batch_code ?? 'รุ่น '.$batch->id }}</option>
+                      @endforeach
+                    </select>
             </div>
 
             <div class="mb-3">
-                <label for="pig_capacity" class="form-label">จำนวนหมูสูงสุด</label>
-                <input type="number" class="form-control" id="pig_capacity" name="pig_capacity" value="{{ old('pig_capacity') }}" required min="0">
+                    <label for="ประเภทการขาย" class="form-label">ประเภทการขาย</label>
+                    <select name="sell_type" class="form-select" required>
+                      <option value="">-- เลือกประเภทการขาย --</option>
+                      <option value="หมูปกติ">หมูปกติ</option>
+                      <option value="หมูตาย">หมูตาย</option>
+                      <option value="หมูคัดทิ้ง">หมูคัดทิ้ง</option>
+                    </select>
             </div>
 
             <div class="mb-3">
-                <label for="pen_capacity" class="form-label">จำนวนคอกสูงสุด</label>
-                <input type="number" class="form-control" id="pen_capacity" name="pen_capacity" value="{{ old('pen_capacity') }}" required min="0">
+                    <label for="quantity" class="form-label">จำนวนหมูที่ขาย</label>
+                    <input type="number" class="form-control" id="quantity" name="quantity" value="{{ old('quantity') }}" required>
+            </div>
+
+            <div class="mb-3">
+                    <label for="total_weight" class="form-label">น้ำหนักรวม (กิโลกรัม)</label>
+                    <input type="number" class="form-control" id="total_weight" name="total_weight" value="{{ old('total_weight') }}" required>
+            </div>
+
+            <div class="mb-3">
+                    <label for="price_per_kg" class="form-label">ราคา/กิโลกรัม</label>
+                    <input type="number" class="form-control" id="price_per_kg" name="price_per_kg" value="{{ old('price_per_kg') }}" required>
+            </div>
+
+            <div class="mb-3">
+                    <label for="total_price" class="form-label">ราคารวม</label>
+                    <input type="number" class="form-control" id="total_price" name="total_price" value="{{ old('total_price') }}" required>
+            </div>
+
+            <div class="mb-3">
+                    <label for="buyer_name" class="form-label">ชื่อผู้ซื้อ</label>
+                    <input type="text" class="form-control" id="buyer_name" name="buyer_name" value="{{ old('buyer_name') }}" required>
             </div>
 
             <div class="mb-3">

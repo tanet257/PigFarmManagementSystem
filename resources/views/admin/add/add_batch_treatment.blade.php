@@ -88,7 +88,7 @@ window.onload = function() {
         sb.classList.add("show");
         setTimeout(function(){
             if (sb) sb.classList.remove("show");
-        }, 4000); // 4 วิ แล้วหาย
+        }, 10000); // 10 วิ แล้วหาย
     }
 };
 
@@ -103,34 +103,75 @@ function closeSnackbar() {
 
                 <form action="{{url('upload_batch_treatment')}}" method="post" enctype="multipart/form-data">
                     @csrf
-                        <div class="mb-3">
-                <label for="medicine_name" class="form-label">ชื่อยา</label>
-                <input type="text" class="form-control" id="medicine_name" name="medicine_name" value="{{ old('medicine_name') }}" required>
-            </div>
 
-            <div class="mb-3">
-                <label for="dosage" class="form-label">ขนาดยา</label>
-                <input type="number" class="form-control" id="dosage" name="dosage" value="{{ old('dosage') }}" required min="0">
-            </div>
+                <div class="mb-3 row">
+                  <label for="farm_id" class="">เลือกฟาร์ม</label>
+                    <select name="farm_id" class="form-select" required>
+                      <option value="">-- เลือกฟาร์ม --</option>
+                      @foreach($farms as $farm)
+                        <option value="{{ $farm->id }}">{{ $farm->farm_name ?? 'ฟาร์ม '.$farm->id }}</option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <div class="mb-3">
-                <label for="unit" class="form-label">หน่วย</label>
-                <input type="text" class="form-control" id="unit" name="unit" value="{{ old('unit') }}" required>
-            </div>
+                <div class="mb-3 row">
+                  <label for="batch_code" class="form-label">เลือกรหัสรุ่น</label>
+                    <select name="batch_id" class="form-select" required>
+                      <option value="">-- เลือกรหัสรุ่น --</option>
+                      @foreach($batches as $batch)
+                        <option value="{{ $batch->id }}">{{ $batch->batch_code ?? 'รุ่น '.$batch->id }}</option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <div class="mb-3">
-                <label for="status" class="form-label">สถานะ</label>
-                <input type="text" class="form-control" id="status" name="status" value="{{ old('status') }}" required>
-            </div>
+                <div class="mb-3 row">
+                  <label for="barn_code" class="form-label">เลือกเล้า</label>
+                    <select name="barn_id" class="form-select" required>
+                      <option value="">-- เลือกเล้า --</option>
+                      @foreach($barns as $barn)
+                        <option value="{{ $barn->id }}">
+                            {{ $barn->barn_code ?? 'เล้า '.$barn->id }}
+                        </option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <div class="mb-3">
-                <label for="note" class="form-label">หมายเหตุ</label>
-                <textarea class="form-control" id="note" name="note">{{ old('note') }}</textarea>
-            </div>
+                <div class="mb-3 row">
+                  <label for="pen_code" class="form-label">เลือกคอก</label>
+                    <select name="pen_id" class="form-select" required>
+                      <option value="">-- เลือกคอก --</option>
+                      @foreach($pens as $pen)
+                        <option value="{{ $pen->id }}">{{ $pen->pen_code ?? 'คอก '.$pen->id }}</option>
+                      @endforeach
+                    </select>
+                </div>
 
-            <button type="submit" value="Add Batch Treatment" class="btn btn-primary">บันทึก</button>
+                <div class="mb-3 row">
+                  <label class="">ชื่อยา</label>
+                    <input type="text" name="medicine_name" class="form-control" required>
+                </div>
 
-                </form>
+                <div class="mb-3 row">
+                  <label class="">ขนาดยา</label>
+                    <input type="text" name="dosage" class="form-control" required>
+                </div>
+
+                <div class="mb-3 row">
+                  <label class="">หน่วย</label>
+                    <input type="text" name="unit" class="form-control" required>
+                </div>
+
+                <div class="mb-3 row">
+                  <label class="">หมายเหตุ</label>
+                    <textarea name="note" rows="4" class="form-control" ></textarea>
+                </div>
+
+                <div class="text-end">
+                  <button type="submit" class="btn btn-primary">บันทึกข้อมูล</button>
+                </div>
+
+              </form>
+
             </div>
           </div>
 

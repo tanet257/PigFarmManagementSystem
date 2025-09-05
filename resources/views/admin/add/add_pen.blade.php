@@ -103,7 +103,7 @@ function closeSnackbar() {
                     @csrf
 
                     <div class="mb-3">
-                    <label for="pen_code" class="form-label">เลือกเล้า</label>
+                    <label for="barn_code" class="form-label">เลือกเล้า</label>
                     <select name="barn_id" class="form-select" required>
                       <option value="">-- เลือกเล้า --</option>
                       @foreach($barns as $barn)

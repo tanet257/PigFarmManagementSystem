@@ -12,9 +12,8 @@ class Cost extends Model
     protected $fillable = [
         'farm_id',
         'batch_id',
-        
+
         'cost_type',
-        'amount',
         'quantity',
         'price_per_unit',
         'total_price',

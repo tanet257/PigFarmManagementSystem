@@ -52,7 +52,6 @@
                         <th>Feed Type</th>
                         <th>Quantity</th>
                         <th>Unit</th>
-                        <th>Amount</th>
                         <th>Price Per Unit</th>
                         <th>Total</th>
                         <th>Note</th>
@@ -67,7 +66,6 @@
                         <td>{{ $feeding->feed_type}}</td>
                         <td>{{ $feeding->quantity}}</td>
                         <td>{{ $feeding->unit}}</td>
-                        <td>{{ $feeding->amount}}</td>
                         <td>{{ $feeding->price_per_unit}}</td>
                         <td>{{ $feeding->total}}</td>
                         <td>{{ $feeding->date}}</td>

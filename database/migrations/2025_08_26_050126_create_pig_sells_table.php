@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 use App\Models\Batch;
 use App\Models\Farm;
+use App\Models\PigDeath;
 
 return new class extends Migration
 {
@@ -23,6 +24,7 @@ return new class extends Migration
             // foreign key
             $table->foreignIdFor(Farm::class)->constrained()->onDelete('cascade');
             $table->foreignIdFor(Batch::class)->constrained()->onDelete('cascade');
+            $table->foreignIdFor(PigDeath::class)->constrained()->onDelete('cascade');
 
             $table->string('sell_type'); //หมูโต, หมูตาย, หมูคัดทิ้ง
             $table->integer('quantity'); //จำนวนตัว

@@ -18,7 +18,6 @@ class Feeding extends Model
         'feed_type',
         'quantity',
         'unit',
-        'amount',
         'price_per_unit',
         'total',
         'note',

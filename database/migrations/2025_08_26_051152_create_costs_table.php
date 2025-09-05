@@ -36,7 +36,6 @@ return new class extends Migration
                 'dead_pig',    // ขาดทุนจากหมูตาย
                 'other'        // อื่น ๆ
     ]);
-            $table->unsignedDecimal('amount',10,2)->nullable();
             $table->integer('quantity')->nullable();
             $table->unsignedDecimal('price_per_unit',10,2)->nullable();
             $table->unsignedDecimal('total_price',10,2)->nullable();
