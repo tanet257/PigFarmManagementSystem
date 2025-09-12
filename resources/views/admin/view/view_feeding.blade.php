@@ -63,6 +63,7 @@
                     <tr>
                         <td>{{ $feeding->farm_id}}</td>
                         <td>{{ $feeding->batch_id}}</td>
+                        
                         <td>{{ $feeding->feed_type}}</td>
                         <td>{{ $feeding->quantity}}</td>
                         <td>{{ $feeding->unit}}</td>

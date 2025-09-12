@@ -1,21 +1,23 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Illuminate\Http\Request;
 
 use Carbon\Carbon;
+use Illuminate\Validation\Rule;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Models\Barn;
 use App\Models\Pen;
 use App\Models\Farm;
 use App\Models\Batch;
-use App\Models\BatchTreatments;
+use App\Models\BatchTreatment;
 use App\Models\Cost;
 use App\Models\PigSell;
 use App\Models\Feeding;
 use App\Models\PigDeath;
-
-
+use App\Models\PigEntryRecord;
 
 class AdminController extends Controller
 {
@@ -45,7 +47,9 @@ class AdminController extends Controller
     //add_barn
     public function add_barn()
     {
-        return view('admin.add.add_barn');
+        $farms = Farm::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        return view('admin.add.add_barn', compact('farms', 'batches'));
     }
 
     //add_pen
@@ -61,7 +65,7 @@ class AdminController extends Controller
         $barns = Barn::all();
         $pens = Pen::all();
         $farms = Farm::all();
-        $batches = Batch::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
         return view('admin.add.add_batch_treatment', compact('farms', 'batches', 'pens', 'barns'));
     }
 
@@ -69,23 +73,23 @@ class AdminController extends Controller
     public function add_cost()
     {
         $farms = Farm::all();
-        $batches = Batch::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
         return view('admin.add.add_cost', compact('farms', 'batches'));
     }
 
-    //add_pig_sell
-    public function add_pig_sell()
+    //add_pig_sell_record
+    public function add_pig_sell_record()
     {
         $farms = Farm::all();
-        $batches = Batch::all();
-        return view('admin.add.add_pig_sell', compact('farms', 'batches'));
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        return view('admin.add.add_pig_sell_record', compact('farms', 'batches'));
     }
 
     //add_feeding
     public function add_feeding()
     {
         $farms = Farm::all();
-        $batches = Batch::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
         return view('admin.add.add_feeding', compact('farms', 'batches'));
     }
 
@@ -93,10 +97,18 @@ class AdminController extends Controller
     public function add_pig_death()
     {
         $farms = Farm::all();
-        $batches = Batch::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
         $barns = Barn::all();
         $pens = Pen::all();
         return view('admin.add.add_pig_death', compact('farms', 'batches', 'barns', 'pens'));
+    }
+
+    //add_pig_entry_record
+    public function pig_entry_record()
+    {
+        $farms = Farm::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        return view('admin.pig_entry_record', compact('farms', 'batches'));
     }
 
     //--------------------------------------- UPLOAD ------------------------------------------//
@@ -104,61 +116,80 @@ class AdminController extends Controller
     //upload_barn
     public function upload_barn(Request $request)
     {
-        try{
-        //validate
-        $request->validate([
-            'barn_code' => 'required|unique:barns,barn_code',
-            'pig_capacity' => 'required|integer',
-            'pen_capacity' => 'required|integer',
-            'note' => 'nullable|string',
-        ]);
+        try {
+            // validate
+            $validated = $request->validate([
+                'farm_id' => 'required|exists:farms,id',
+                'barn_code' => 'required|string|max:255',
+                'pig_capacity' => 'required|integer|min:1',
+                'pen_capacity' => 'required|integer|min:1',
+                'note' => 'nullable|string',
+            ]);
 
-        $data = new Barn;
+            $farm = Farm::findOrFail($validated['farm_id']);
 
-        //unique
-        $data->barn_code = $request->barn_code;
+            // ตรวจสอบจำนวน Barn ไม่เกินที่ farm กำหนด
+            $existingBarns = $farm->barns()->count();
+            if ($existingBarns >= $farm->barn_capacity) {
+                return redirect()->back()->with('error', 'สร้างเล้าเกินจำนวนสูงสุดที่กำหนดสำหรับฟาร์มนี้');
+            }
 
-        $data->pig_capacity = $request->pig_capacity;
-        $data->pen_capacity = $request->pen_capacity;
-        $data->note = $request->note ?? null;
+            // ตรวจสอบ barn_code ซ้ำภายในฟาร์ม
+            $exists = $farm->barns()->where('barn_code', $validated['barn_code'])->exists();
+            if ($exists) {
+                return redirect()->back()->with('error', 'รหัสเล้านี้มีอยู่แล้วในฟาร์มนี้');
+            }
 
-        $data->save();
+            // สร้าง Barn ใหม่
+            $barn = $farm->barns()->create([
+                'barn_code' => $validated['barn_code'],
+                'pig_capacity' => $validated['pig_capacity'],
+                'pen_capacity' => $validated['pen_capacity'],
+                'note' => $validated['note'] ?? null,
+            ]);
 
-        return redirect()->back()->with('success', 'เพิ่มเล้าเรียบร้อย');
+            return redirect()->back()->with('success', 'เพิ่มเล้าเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มเล้า'.$e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มเล้า: ' . $e->getMessage());
         }
     }
+
 
     //upload_pen
     public function upload_pen(Request $request)
     {
         try {
             //validate
-            $request->validate([
-            'barn_id' => 'required|exists:barns,id',
+            $validated =$request->validate([
+                'barn_id' => 'required|exists:barns,id',
 
-            'pen_code' => 'required|unique:pens,pen_code',
-            'pig_capacity' => 'required|integer',
-            'note' => 'nullable|string',
-        ]);
+                'pen_code' => 'required|unique:pens,pen_code',
+                'pig_capacity' => 'required|integer',
+                'note' => 'nullable|string',
+            ]);
+            $barn = Barn::findOrFail($validated['barn_id']);
 
-        $data = new Pen;
+            // ตรวจสอบ pen_code ซ้ำภายในฟาร์ม
+            $exists = $barn->pens()->where('pen_code', $validated['pen_code'])->exists();
+            if ($exists) {
+                return redirect()->back()->with('error', 'รหัสคอกนี้มีอยู่แล้วในเล้านี้');
+            }
 
-        //fk
-        $data->barn_id = $request->barn_id;
 
-        //unique
-        $data->pen_code = $request->pen_code;
+            $data = new Pen;
+            $data->barn_id = $request->barn_id;
 
-        $data->pig_capacity = $request->pig_capacity;
-        $data->note = $request->note ?? null;
+            //unique
+            $data->pen_code = $request->pen_code;
 
-        $data->save();
+            $data->pig_capacity = $request->pig_capacity;
+            $data->note = $request->note ?? null;
 
-        return redirect()->back()->with('success', 'เพิ่มคอกเรียบร้อย');
+            $data->save();
+
+            return redirect()->back()->with('success', 'เพิ่มคอกเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มคอก'.$e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มคอก' . $e->getMessage());
         }
     }
 
@@ -166,231 +197,236 @@ class AdminController extends Controller
     public function upload_farm(Request $request)
     {
         try {
-            //validate
+            // validate
             $request->validate([
                 'farm_name' => 'required|unique:farms,farm_name',
+                'barn_capacity' => 'required|integer|min:1',
+            ]);
 
-        ]);
+            // สร้างฟาร์มใหม่
+            Farm::create([
+                'farm_name' => trim($request->farm_name),
+                'barn_capacity' => $request->barn_capacity,
+            ]);
 
-        $data = new Farm;
-
-        //unique
-        $data->farm_name = $request->farm_name;
-
-        $data->save();
-
-        return redirect()->back()->with('success', 'เพิ่มฟาร์มเรียบร้อย');
+            return redirect()->back()->with('success', 'เพิ่มฟาร์มเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มฟาร์ม'.$e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มฟาร์ม: ' . $e->getMessage());
         }
     }
+
 
     //upload_batch
     public function upload_batch(Request $request)
     {
-    try{
-    //validate
-    $request->validate([
-        'farm_id' => 'required|exists:farms,id',
-        'barn_id' => 'required|exists:barns,id',
-        'pen_id' => 'required|exists:pens,id',
+        try {
+            //validate
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => 'required|unique:batches,batch_id',
 
-        'batch_code' => 'required|unique:batches,batch_code',
+                //'start_date' => 'required|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+            ]);
 
-        'total_pig_weight' => 'required|numeric|min:0',
-        'total_pig_amount' => 'required|numeric|min:0',
-        'initial_pig_amount' => 'required|numeric|min:0',
-        'total_pig_price' => 'required|numeric|min:0',
+            $data = new Batch;
+            $data->farm_id = $validated['farm_id'];
 
-        //'start_date' => 'required|date',
-        'end_date' => 'nullable|date|after_or_equal:start_date',
+            //unique
+            $data->batch_code = $validated['batch_code'];
 
+            $data->status = $validated['status'] ?? 'กำลังเลี้ยง';
+            $data->note = $validated['note'] ?? null;
 
-    ]);
+            $data->start_date = Carbon::now(); // เวลาปัจจุบัน
+            $data->end_date = $validated['end_date'];
 
-    $data = new Batch;
+            $data->save();
 
-    //fk
-    $data->farm_id = $request->farm_id;
-    $data->barn_id = $request->barn_id;
-    $data->pen_id = $request->pen_id;
-
-    //unique
-    $data->batch_code = $request->batch_code;
-
-    $data->total_pig_weight = $request->total_pig_weight;
-    $data->total_pig_amount = $request->total_pig_amount;
-    $data->initial_pig_amount = $request->initial_pig_amount;
-    $data->total_pig_price = $request->total_pig_price;
-
-    $data->status = $request->status ?? 'กำลังเลี้ยง';
-
-    $data->note = $request->note ?? null;
-
-    $data->start_date = Carbon::now(); // เวลาปัจจุบัน
-    $data->end_date = $request->end_date;
-
-    $data->save();
-
-    return redirect()->back()->with('success', 'เพิ่มรุ่นเรียบร้อย');
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มรุ่น'.$e->getMessage());
-    }
+            return redirect()->back()->with('success', 'เพิ่มรุ่นเรียบร้อย');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มรุ่น: ' . $e->getMessage());
+        }
     }
 
     //upload_batch_treatment
     public function upload_batch_treatment(Request $request)
-    {
-        try{
-        //validate
-        $request->validate([
-            'barn_id' => 'required|exists:barns,id',
-            'pen_id' => 'required|exists:pens,id',
-            'batch_id' => 'required|exists:batches,id',
-            'farm_id' => 'required|exists:farms,id',
-
+{
+    try {
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+            'barn_id'  => 'required|exists:barns,id',
+            'pen_id'   => 'required|exists:pens,id',
             'medicine_name' => 'required|string',
-            'dosage' => 'required|numeric|min:0',
-            'unit' => 'required|string',
-            'note' => 'nullable|string',
+            'dosage'   => 'required|numeric|min:0',
+            'unit'     => 'required|string',
+            'note'     => 'nullable|string',
         ]);
 
-        $data = new BatchTreatments;
+        $batch = Batch::findOrFail($validated['batch_id']);
 
-        //fk
-        $data->barn_id = $request->barn_id;
-        $data->pen_id = $request->pen_id;
-        $data->batch_id = $request->batch_id;
-        $data->farm_id = $request->farm_id;
+        $data = new BatchTreatment;
+        $data->farm_id = $batch->farm_id;
+        $data->batch_id = $batch->id;
+        $data->barn_id = $validated['barn_id'];
+        $data->pen_id  = $validated['pen_id'];
 
-        $data->medicine_name = $request->medicine_name;
-        $data->dosage = $request->dosage;
+        $data->medicine_name = $validated['medicine_name'];
+        $data->dosage = $validated['dosage'];
+        $data->unit   = $validated['unit'];
+        $data->note   = $validated['note'] ?? null;
         $data->status = $request->status ?? 'วางแผนว่าจะให้ยา';
-        $data->unit = $request->unit;
-        $data->note = $request->note ?? null;
 
         $data->save();
 
-        return redirect()->back()->with('success', 'เพิ่มการรักษาเรียบร้อย');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการรักษา'.$e->getMessage());
-        }
+        return back()->with('success', 'เพิ่มการรักษาเรียบร้อย');
+    } catch (\Exception $e) {
+        return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
     }
+}
+
 
     //upload_cost
     public function upload_cost(Request $request)
     {
         try {
             //validate
-        $request->validate([
-            'farm_id' => 'required|exists:farms,id',
-            'batch_id' => 'required|exists:batches,id',
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+                'barn_id'    => 'nullable|exists:barns,id',
+                'pen_id'     => 'nullable|exists:pens,id',
+                'cost_type'  => 'required|string',
+                'quantity'   => 'required|integer|min:1',
+                'price_per_unit' => 'required|numeric|min:0',
+                'total_price'    => 'required|numeric|min:0',
+                'note'       => 'nullable|string',
+            ]);
 
-            'quantity' => 'required|integer',
-            'price_per_unit' => 'required|numeric|min:0',
-            'total_price' => 'required|numeric|min:0',
-            'note' => 'nullable|string',
-        ]);
+            $batch = Batch::findOrFail($validated['batch_id']);
 
-        $data = new Cost;
+            $data = new Cost;
+            $data->batch_id = $batch->id;
+            $data->farm_id  = $batch->farm_id;
+            $data->barn_id  = $validated['barn_id'] ?? null;
+            $data->pen_id   = $validated['pen_id'] ?? null;
 
-        //fk
-        $data->farm_id = $request->farm_id;
-        $data->batch_id = $request->batch_id;
+            $data->cost_type = $request->cost_type;
+            $data->quantity = $request->quantity;
+            $data->price_per_unit = $request->price_per_unit;
+            $data->total_price = $request->quantity * $request->price_per_unit;
+            $data->note = $request->note ?? null;
 
-        //unique
-        $data->cost_type = $request->cost_type;
+            $data->save();
 
-        $data->quantity = $request->quantity;
-        $data->price_per_unit = $request->price_per_unit;
-        $data->total_price = $request->quantity * $request->price_per_unit;
-        $data->total_price = $request->total_price;
-        $data->note = $request->note ?? null;
-
-        $data->save();
-
-        return redirect()->back()->with('success', 'เพิ่มค่าใช้จ่ายเรียบร้อย');
+            return redirect()->back()->with('success', 'เพิ่มค่าใช้จ่ายเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มค่าใช้จ่าย'.$e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มค่าใช้จ่าย: ' . $e->getMessage());
         }
     }
 
-    //upload_pig_sell
-    public function upload_pig_sell(Request $request)
+
+    //upload_pig_sell_record
+    public function upload_pig_sell_record(Request $request)
     {
         try {
             //validate
-            $request->validate([
-                'farm_id' => 'required|exists:farms,id',
-                'batch_id' => 'required|exists:batches,id',
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
 
-            'sell_type' => 'required|string',
-            'quantity' => 'required|integer',
-            'total_weight' => 'required|numeric|min:0',
-            'price_per_kg' => 'required|numeric|min:0',
-            'total_price' => 'required|numeric|min:0',
-            'buyer_name' => 'nullable|string',
-            'note' => 'nullable|string',
-        ]);
+                'sell_type' => 'required|string',
+                'quantity' => 'required|integer',
+                'total_weight' => 'required|numeric|min:0',
+                'price_per_kg' => 'required|numeric|min:0',
+                'total_price' => 'required|numeric|min:0',
+                'buyer_name' => 'nullable|string',
+                'note' => 'nullable|string',
+            ]);
 
-        $data = new PigSell;
+            $batch = Batch::findOrFail($validated['batch_id']);
 
-        //fk
-        $data->farm_id = $request->farm_id;
-        $data->batch_id = $request->batch_id;
-        $data->pig_death_id = $request->pig_death_id ?? null;
+            $data = new PigSell;
+            $data->batch_id = $batch->batch_id;
+            $data->farm_id = $batch->farm_id;
+            $data->pig_death_id = $request->pig_death_id ?? null;
 
-        $data->sell_type = $request->sell_type;
-        $data->quantity = $request->quantity;
-        $data->total_weight = $request->total_weight;
-        $data->price_per_kg = $request->price_per_kg;
-        $data->total_price = $request->total_weight * $request->price_per_kg;
-        $data->buyer_name = $request->buyer_name ?? null;
-        $data->note = $request->note ?? null;
+            $data->sell_type = $request->sell_type;
+            $data->quantity = $request->quantity;
+            $data->total_weight = $request->total_weight;
+            $data->price_per_kg = $request->price_per_kg;
+            $data->total_price = $request->total_weight * $request->price_per_kg;
+            $data->buyer_name = $request->buyer_name ?? null;
+            $data->note = $request->note ?? null;
 
-        $data->save();
+            $data->save();
 
-        return redirect()->back()->with('success', 'เพิ่มการขายหมูเรียบร้อย');
+            return redirect()->back()->with('success', 'เพิ่มการขายหมูเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการขายหมู'.$e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการขายหมู' . $e->getMessage());
         }
     }
 
-    //upload_feeding
-    public function upload_feeding(Request $request)
+    //upload_feed
+    public function upload_feed(Request $request)
     {
         try {
-            //validate
-            $request->validate([
-            'farm_id' => 'required|exists:farms,id',
-            'batch_id' => 'required|exists:batches,id',
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+                'barn_id'  => 'required|exists:barns,id',
+                'pen_id'   => 'required|exists:pens,id',
+                'feed_type' => 'required|string',
+                'quantity' => 'required|numeric|min:0',
+                'unit'     => 'required|string',
+                'date'     => 'required|date',
+                'note'     => 'nullable|string',
+            ]);
 
-            'feed_type' => 'required|string',
-            'quantity' => 'required|integer',
-            'unit' => 'required|string',
-            'price_per_unit' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'note' => 'nullable|string',
-        ]);
+            $batch = Batch::findOrFail($validated['batch_id']);
 
-        $data = new Feeding;
+            $data = new Feeding;
+            $data->farm_id = $batch->farm_id;
+            $data->batch_id = $batch->id;
+            $data->barn_id = $validated['barn_id'];
+            $data->pen_id = $validated['pen_id'];
 
-        //fk
-        $data->farm_id = $request->farm_id;
-        $data->batch_id = $request->batch_id;
+            $data->feed_type = $validated['feed_type'];
+            $data->quantity = $validated['quantity'];
+            $data->unit = $validated['unit'];
+            $data->date = $validated['date'];
+            $data->note = $validated['note'] ?? null;
 
-        $data->feed_type = $request->feed_type;
-        $data->quantity = $request->quantity;
-        $data->unit = $request->unit;
-        $data->price_per_unit = $request->price_per_unit;
-        $data->total = $request->total;
-        $data->note = $request->note ?? null;
+            $data->save();
 
-        $data->save();
-
-        return redirect()->back()->with('success', 'เพิ่มการให้อาหารเรียบร้อย');
+            return back()->with('success', 'บันทึกการให้อาหารเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการให้อาหาร'.$e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 
@@ -399,91 +435,426 @@ class AdminController extends Controller
     {
         try {
             //validate
-            $request->validate([
-                'farm_id' => 'required|exists:farms,id',
-                'batch_id' => 'required|exists:batches,id',
-                'pen_id' => 'required|exists:pens,id',
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+                'barn_id'   => 'required|exists:barns,id',
+                'pen_id'    => 'required|exists:pens,id',
+                'amount'    => 'required|integer|min:1',
+                'cause'     => 'nullable|string',
+                'date'      => 'nullable|date',
+                'note'      => 'nullable|string',
+            ]);
 
-            'amount' => 'required|integer',
-            'cause' => 'required|string',
-            'note' => 'nullable|string',
-        ]);
+            $batch = Batch::findOrFail($validated['batch_id']);
 
-        $data = new PigDeath;
+            $data = new PigDeath;
+            $data->batch_id = $batch->id;
+            $data->farm_id  = $batch->farm_id;
+            $data->barn_id  = $request->barn_id;
+            $data->pen_id   = $request->pen_id;
 
-        //fk
-        $data->farm_id = $request->farm_id;
-        $data->batch_id = $request->batch_id;
-        $data->pen_id = $request->pen_id;
+            $data->amount = $request->amount;
+            $data->cause  = $request->cause ?? null;
+            $data->date   = $request->date ?? Carbon::now();
+            $data->note   = $request->note ?? null;
 
-        $data->amount = $request->amount;
-        $data->cause = $request->cause ?? null;
-        $data->note = $request->note ?? null;
+            $data->save();
 
-        $data->save();
-
-        return redirect()->back()->with('success', 'เพิ่มการตายของหมูเรียบร้อย');
+            return redirect()->back()->with('success', 'เพิ่มการตายของหมูเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการตายของหมู'.$e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการตายของหมู: ' . $e->getMessage());
         }
     }
 
-//--------------------------------------- VIEW ------------------------------------------//
 
-
-    public function view_batch()
+    //upload_pig_entry_record
+    public function upload_pig_entry_record(Request $request)
     {
-    $batches = Batch::all();
-    return view('admin.view.view_batch',compact('batches'));
+        try {
+            // validate
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                                     ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+
+                'pig_entry_date' => 'required|date',
+                'total_pig_amount' => 'required|numeric|min:1',
+                'total_pig_weight' => 'required|numeric|min:0',
+                'total_pig_price' => 'required|numeric|min:0',
+                'excess_weight_cost' => 'nullable|numeric|min:0',
+                'transport_cost' => 'nullable|numeric|min:0',
+                'note' => 'nullable|string',
+                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            ]);
+
+            $batch = Batch::findOrFail($validated['batch_id']);
+
+            // สร้าง PigEntryRecord
+            $data = new PigEntryRecord();
+            $data->batch_id = $batch->id;
+            $data->farm_id = $batch->farm_id;
+            $data->pig_entry_date = $validated['pig_entry_date'];
+            $data->total_pig_amount = $validated['total_pig_amount'];
+            $data->total_pig_weight = $validated['total_pig_weight'];
+            $data->total_pig_price = $validated['total_pig_price'];
+            $data->note = $validated['note'] ?? null;
+
+            if ($request->hasFile('receipt_file')) {
+                $file = $request->file('receipt_file');
+                $filename = time() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('receipt_files'), $filename);
+                $data->receipt_file = $filename;
+            } else {
+                $data->receipt_file = '-';
+            }
+
+            $data->save();
+
+            // สร้าง Cost
+            Cost::create([
+                'farm_id' => $batch->farm_id,
+                'batch_id' => $batch->id,
+                'cost_type' => 'piglet',
+                'quantity' => $validated['total_pig_amount'],
+                'price_per_unit' => $validated['total_pig_price'] / $validated['total_pig_amount'],
+                'total_price' => $validated['total_pig_price'],
+                'note' => 'ค่าลูกหมู',
+            ]);
+
+            if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
+                Cost::create([
+                    'farm_id' => $batch->farm_id,
+                    'batch_id' => $batch->id,
+                    'cost_type' => 'excess_weight',
+                    'quantity' => 1,
+                    'price_per_unit' => $validated['excess_weight_cost'],
+                    'total_price' => $validated['excess_weight_cost'],
+                    'note' => 'ค่าน้ำหนักส่วนเกิน',
+                ]);
+            }
+
+            if (!empty($validated['transport_cost']) && $validated['transport_cost'] > 0) {
+                Cost::create([
+                    'farm_id' => $batch->farm_id,
+                    'batch_id' => $batch->id,
+                    'cost_type' => 'transport',
+                    'quantity' => 1,
+                    'price_per_unit' => $validated['transport_cost'],
+                    'total_price' => $validated['transport_cost'],
+                    'note' => 'ค่าขนส่ง',
+                ]);
+            }
+
+            // อัปเดต batch totals
+            $batch->total_pig_amount = ($batch->total_pig_amount ?? 0) + $validated['total_pig_amount'];
+            $batch->total_pig_weight = ($batch->total_pig_weight ?? 0) + $validated['total_pig_weight'];
+            $batch->total_pig_price = ($batch->total_pig_price ?? 0) + $validated['total_pig_price'];
+            $batch->save();
+
+            return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่าย + อัปเดตรุ่นเรียบร้อย');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    //upload_dairy_record
+    public function upload_dairy_record(Request $request)
+    {
+        try {
+            // validate
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+                'pig_entry_date' => 'required|date',
+                'total_pig_amount' => 'required|numeric|min:1',
+                'total_pig_weight' => 'required|numeric|min:0',
+                'total_pig_price' => 'required|numeric|min:0',
+                'excess_weight_cost' => 'nullable|numeric|min:0',
+                'transport_cost' => 'nullable|numeric|min:0',
+                'note' => 'nullable|string',
+                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            ]);
+
+            $batch = Batch::findOrFail($request->input('batch_id'));
+
+            // สร้าง PigEntryRecord
+            $data = new PigEntryRecord();
+            $data->batch_id = $batch->id;
+            $data->farm_id = $batch->farm_id;
+            $data->pig_entry_date = $validated['pig_entry_date'];
+            $data->total_pig_amount = $validated['total_pig_amount'];
+            $data->total_pig_weight = $validated['total_pig_weight'];
+            $data->total_pig_price = $validated['total_pig_price'];
+            $data->note = $validated['note'] ?? null;
+
+            if ($request->hasFile('receipt_file')) {
+                $file = $request->file('receipt_file');
+                $filename = time() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('receipt_files'), $filename);
+                $data->receipt_file = $filename;
+            } else {
+                $data->receipt_file = '-';
+            }
+
+            $data->save();
+
+            // สร้าง Feeding
+
+            // สร้าง BatchTreatment
+
+            // สร้าง Storehouse
+
+
+            // อัปเดต stock totals
+
+
+            return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่าย + อัปเดตรุ่นเรียบร้อย');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+
+
+
+
+
+
+
+    //--------------------------------------- VIEW ------------------------------------------//
+
+
+    public function view_batch(Request $request)
+    {
+        $query = Batch::query()->with(['farm', 'barn', 'pen']);
+
+        // กรองตามฟาร์ม
+        if ($request->filled('farm_id')) {
+            $query->where('farm_id', $request->farm_id);
+        }
+
+        // เรียงลำดับ
+        if ($request->filled('sort_by')) {
+            $order = $request->sort_order == 'desc' ? 'desc' : 'asc';
+            $query->orderBy($request->sort_by, $order);
+        } else {
+            $query->orderBy('id', 'desc');
+        }
+
+        $batches = $query->get();
+        $farms = Farm::all();
+
+        return view('admin.view.view_batch', compact('batches', 'farms'));
     }
 
     public function view_farm()
     {
-    $farms = Farm::all();
-    return view('admin.view.view_farm',compact('farms'));
+        $farms = Farm::all();
+        return view('admin.view.view_farm', compact('farms'));
     }
 
     public function view_barn()
     {
-    $barns = Barn::all();
-    return view('admin.view.view_barn',compact('barns'));
+        $barns = Barn::all();
+        return view('admin.view.view_barn', compact('barns'));
     }
 
     public function view_pen()
     {
-    $pens = Pen::all();
-    return view('admin.view.view_pen',compact('pens'));
+        $pens = Pen::all();
+        return view('admin.view.view_pen', compact('pens'));
     }
 
     public function view_batch_treatment()
     {
-    $batch_treatments = BatchTreatments::all();
-    return view('admin.view.view_batch_treatment',compact('batch_treatments'));
+        $batch_treatments = BatchTreatment::all();
+        return view('admin.view.view_batch_treatment', compact('batch_treatments'));
     }
 
     public function view_cost()
     {
-    $costs = Cost::all();
-    return view('admin.view.view_cost',compact('costs'));
+        $costs = Cost::all();
+        return view('admin.view.view_cost', compact('costs'));
     }
 
-    public function view_pig_sell()
+    public function view_pig_sell_record()
     {
-    $pig_sells = PigSell::all();
-    return view('admin.view.view_pig_sell',compact('pig_sells'));
+        $pig_sells = PigSell::all();
+        return view('admin.view.view_pig_sell_record', compact('pig_sells'));
     }
 
     public function view_feeding()
     {
-
-    $feedings = Feeding::all();
-    return view('admin.view.view_feeding',compact('feedings'));
+        $feedings = Feeding::all();
+        return view('admin.view.view_feeding', compact('feedings'));
     }
 
     public function view_pig_death()
     {
-    $pig_deaths = PigDeath::all();
-    return view('admin.view.view_pig_death',compact('pig_deaths'));
+        $pig_deaths = PigDeath::all();
+        return view('admin.view.view_pig_death', compact('pig_deaths'));
     }
 
+    public function view_pig_entry_record()
+    {
+        $pig_entry_records = PigEntryRecord::with(['batch', 'costs'])->get();
+        return view('admin.view.view_pig_entry_record', compact('pig_entry_records'));
+    }
+
+    //--------------------------------------- EXPORT ------------------------------------------//
+
+    //export batch to csv
+    public function exportCsv()
+    {
+        $batches = Batch::all();
+
+        $filename = "batches_" . date('Y-m-d_H-i-s') . ".csv";
+        $handle = fopen('php://output', 'w');
+        fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
+
+        foreach ($batches as $batch) {
+            fputcsv($handle, [
+                $batch->batch_code,
+                $batch->farm->name ?? '-',
+                $batch->barn->name ?? '-',
+                $batch->pen->name ?? '-',
+                $batch->status,
+                $batch->start_date,
+                $batch->end_date,
+            ]);
+        }
+
+        fclose($handle);
+
+        return response()->streamDownload(function () use ($batches) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
+            foreach ($batches as $batch) {
+                fputcsv($handle, [
+                    $batch->batch_code,
+                    $batch->farm->name ?? '-',
+                    $batch->barn->name ?? '-',
+                    $batch->pen->name ?? '-',
+                    $batch->status,
+                    $batch->start_date,
+                    $batch->end_date,
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
+    //Index batch
+    public function indexBatch(Request $request)
+    {
+        $query = Batch::query();
+
+        if ($request->filled('search')) {
+            $query->where('batch_code', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('farm_id')) {
+            $query->where('farm_id', $request->farm_id);
+        }
+
+        if ($request->filled('sort_by')) {
+            $sortOrder = $request->get('sort_order', 'asc');
+            $query->orderBy($request->sort_by, $sortOrder);
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $batches = $query->paginate($perPage);
+
+        $farms = Farm::all();
+
+        return view('admin.batches.index', compact('batches', 'farms'));
+    }
+
+
+    //Edit batch
+    public function editBatch($id)
+    {
+        //$batch = Batch::with(['farm', 'barn', 'pen'])->findOrFail($id);
+        $batch = Batch::findOrFail($id);
+        if (!$batch) {
+            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการแก้ไข');
+        } else {
+            return view('admin.batches.edit', compact('batch'));
+        }
+    }
+
+    //Update batch
+    public function updateBatch(Request $request, $id)
+    {
+        $batch = Batch::findOrFail($id);
+
+        $validated = $request->validate([
+            'batch_code' => 'required|string|max:255',
+            'status'     => 'required|string',
+            'note'       => 'nullable|string',
+            'start_date' => 'nullable|date',
+            'end_date'   => 'nullable|date|after_or_equal:start_date',
+        ]);
+
+        $batch->update($validated);
+
+        return redirect()->route('batches.index')->with('success', 'แก้ไข Batch สำเร็จ');
+    }
+
+    //Delete batch
+    public function deleteBatch($id)
+    {
+        $batch = Batch::find($id);
+        if (!$batch) {
+            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการลบ');
+        }
+
+        $batch->delete();
+        return redirect()->route('batches.index')->with('success', 'ลบรุ่นหมูเรียบร้อยแล้ว');
+    }
+
+    // Export batch to PDF
+    public function exportPdf()
+    {
+        $batches = Batch::all();
+
+        // ตั้งค่า dompdf options
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true); // รองรับ HTML5
+        $options->set('isRemoteEnabled', true);     // โหลดไฟล์ font จาก URL ได้
+        $options->set('defaultFont', 'Sarabun'); // ตั้ง default font
+
+        // สร้าง PDF
+        $pdf = Pdf::loadView('admin.exports.batches_pdf', compact('batches'))
+            ->setPaper('a4', 'landscape')
+            ->setOptions([
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'defaultFont' => 'Sarabun',
+            ]);
+
+
+        // ตั้งชื่อไฟล์
+        $filename = "batches_export_" . date('Y-m-d_H-i-s') . ".pdf";
+
+        return $pdf->download($filename);
+    }
 }

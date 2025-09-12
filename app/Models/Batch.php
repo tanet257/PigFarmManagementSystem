@@ -20,29 +20,24 @@ class Batch extends Model
         'batch_code',
         'total_pig_weight',
         'total_pig_amount',
-        'initial_pig_amount',
         'total_pig_price',
         'status',
         'note',
-        
+
         'start_date',
         'end_date'
     ];
 
     //---------------relation ship------------------------//
-    public function barn()
-    {
-        return $this->belongsTo(Barn::class);
-    }
-
-    public function pen()
-    {
-        return $this->belongsTo(Pen::class);
-    }
-
     public function farm()
     {
-        return $this->belongsTo(Farm::class);
+        return $this->belongsTo(Farm::class, 'farm_id');
     }
 
+    public function pig_entry_records()
+    {
+        return $this->hasMany(PigEntryRecord::class, 'batch_id');
+    }
 }
+
+

@@ -29,6 +29,7 @@ return new class extends Migration
                 'feed',        // ค่าอาหาร (f931, f932, f933)
                 'medicine',    // ค่ายา
                 'vaccine',     // ค่าวัคซีน
+                'excess_weight', // ค่าน้ำหนักหมูที่เกินมา
                 'bran',        // ค่ารำ
                 'labor',       // ค่าแรงงาน
                 'transport',   // ค่ารถ/ขนส่ง
@@ -36,6 +37,7 @@ return new class extends Migration
                 'dead_pig',    // ขาดทุนจากหมูตาย
                 'other'        // อื่น ๆ
     ]);
+    
             $table->integer('quantity')->nullable();
             $table->unsignedDecimal('price_per_unit',10,2)->nullable();
             $table->unsignedDecimal('total_price',10,2)->nullable();

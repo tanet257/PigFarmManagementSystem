@@ -9,6 +9,8 @@
             <p>Web Designer</p>
           </div>
         </div>
+        <link rel="stylesheet"
+                    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
         <!-- Sidebar Navidation Menus--><span class="heading">Main</span>
         <ul class="list-unstyled">
 
@@ -30,8 +32,25 @@
 
                 <li><a href="#batchMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Batch </a>
                   <ul id="batchMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{url('add_batch')}}">Add Batch</a></li>
-                    <li><a href="{{url('view_batch')}}">View Batch</a></li>
+                    @if(Route::has('batch.add'))
+                        <li><a href="{{route('batch.add')}}">Add Batch</a></li>
+                    @else
+                        <li><a href="#" onclick="alert('Route batch.add ยังไม่ได้ถูกกำหนด!')">Add Batch</a></li>
+                    @endif
+                    <!--<li><a href="{{url('view_batch')}}">View Batch</a></li>-->
+
+                    @if (Route::has('batches.index'))
+                        <li><a href="{{route('batches.index')}}">Index Batch</a></li>
+                    @else
+                        <li><a href="#" onclick="alert('Route batches.index ยังไม่ได้ถูกกำหนด!')">Index Batch</a></li>
+                    @endif
+                  </ul>
+                </li>
+
+                <li><a href="#pigEntryRecordMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Entry Record </a>
+                  <ul id="pigEntryRecordMenuDropdown" class="collapse list-unstyled ">
+                    <li><a href="{{url('pig_entry_record')}}">Add Pig Entry Record</a></li>
+                    <li><a href="{{url('view_pig_entry_record')}}">View Pig Entry Record</a></li>
                   </ul>
                 </li>
 

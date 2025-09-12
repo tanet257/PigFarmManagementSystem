@@ -28,8 +28,7 @@ return new class extends Migration
             $table->string('batch_code')->unique();
             $table->unsignedDecimal('total_pig_weight',10,2)->nullable();
             $table->unsignedDecimal('total_pig_amount',10,2)->nullable();
-            $table->unsignedDecimal('initial_pig_amount',10,2)->nullable();
-            $table->unsignedDecimal('total_pig_price',10,2)->nullable();
+            $table->unsignedDecimal('total_pig_price',10,2)->nullable(); //ราคารวมหมู
             $table->enum('status', ['กำลังเลี้ยง', 'เสร็จสิ้น'])->default('กำลังเลี้ยง');
             $table->text('note')->nullable();
 

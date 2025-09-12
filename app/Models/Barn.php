@@ -12,9 +12,19 @@ class Barn extends Model
     protected $table = 'barns'; // ชื่อตาราง
 
     protected $fillable = [
-        'barns_code',
+        'farm_id',
+
+        'barn_code',
         'pig_capacity',
         'pen_capacity',
         'note'
     ];
+    public function barns()
+    {
+        return $this->hasMany(Barn::class);
+    }
+    public function pens()
+    {
+        return $this->hasMany(Pen::class, 'barn_id', 'id');
+    }
 }

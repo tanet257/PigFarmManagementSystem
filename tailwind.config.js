@@ -1,21 +1,26 @@
 const defaultTheme = require('tailwindcss/defaultTheme');
 
-/** @type {import('tailwindcss').Config} */
 module.exports = {
-    content: [
-        './vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',
-        './vendor/laravel/jetstream/**/*.blade.php',
-        './storage/framework/views/*.php',
-        './resources/views/**/*.blade.php',
-    ],
-
-    theme: {
-        extend: {
-            fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
-            },
-        },
+  content: [
+    './resources/views/**/*.blade.php',
+    './resources/js/**/*.js',
+    './app/Http/Livewire/**/*.php',
+  ],
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+      },
+      colors: {
+        darkbg: "#1e1b29",     // ดำอมน้ำเงิน
+        darkcard: "#2a2438",   // ดำอมม่วง
+        purplemain: "#5a4e7c",
+        purplehover: "#6a5ca1",
+      },
     },
-
-    plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
+  },
+  plugins: [
+    require('@tailwindcss/forms'),
+    require('@tailwindcss/typography'),
+  ],
 };
