@@ -15,6 +15,17 @@ class Farm extends Model
         'farm_name',
         'barn_capacity',
     ];
+
+    public function batch()
+    {
+        return $this->hasMany(Batch::class);
+    }
+
+    public function storehouse()
+    {
+        return $this->hasMany(StoreHouse::class);
+    }
+
     public function barns()
     {
         return $this->hasMany(Barn::class); // assumes 'farm_id' เป็น foreign key ใน table barns

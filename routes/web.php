@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\StoreHouseController;
+use App\Models\StoreHouse;
 
 //------------------- route home/admin -------------------------//
 Route::get('/', [HomeController::class, 'my_home'])->name('home.my_home');
@@ -55,9 +57,28 @@ Route::post('/upload_pig_death', [AdminController::class, 'upload_pig_death'])->
 Route::get('/view_pig_death', [AdminController::class, 'view_pig_death'])->name('pig_death.view');
 
 //------------------- route pig entry record -----------------//
-Route::get('/pig_entry_record', [AdminController::class, 'pig_entry_record'])->name('pig_entry_record.add');
+Route::get('/pig_entry_record', [AdminController::class, 'pig_entry_record'])->name('pig_entry_record.record');
 Route::post('/upload_pig_entry_record', [AdminController::class, 'upload_pig_entry_record'])->name('pig_entry_record.upload');
 Route::get('/view_pig_entry_record', [AdminController::class, 'view_pig_entry_record'])->name('pig_entry_record.view');
+
+//------------------- route dairy record ---------------------//
+Route::get('/dairy_record', [AdminController::class, 'dairy_record'])->name('dairy_record.record');
+Route::post('/upload_dairy_record', [AdminController::class, 'upload_dairy_record'])->name('dairy_record.upload');
+Route::get('/view_dairy_record', [AdminController::class, 'view_dairy_record'])->name('dairy_record.view');
+
+//------------------- route storehouse record ---------------------//
+Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.record');
+Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record']);
+
+//------------------- route crud storehouse -----------------------//
+Route::get('/storehouses', [StoreHouseController::class, 'indexStorehouse'])->name('storehouses.index');
+Route::get('/storehouses/{id}/edit', [StoreHouseController::class, 'editStorehouse'])->name('storehouses.edit');
+Route::put('/storehouses/{id}', [StoreHouseController::class, 'updateStorehouse'])->name('storehouses.update');
+Route::delete('/storehouses/{id}', [StoreHouseController::class, 'deleteStorehouse'])->name('storehouses.delete');
+
+//------------------- route export batch ---------------------//
+Route::get('/storehouses/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouses.export.csv');
+Route::get('/storehouses/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouses.export.pdf');
 
 //------------------- route crud batch -----------------------//
 Route::get('/batches', [AdminController::class, 'indexBatch'])->name('batches.index');

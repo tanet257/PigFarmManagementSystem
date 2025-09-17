@@ -12,11 +12,16 @@ class Cost extends Model
     protected $fillable = [
         'farm_id',
         'batch_id',
+        'storehouse_id',
 
         'cost_type',
+        'item_code',
         'quantity',
+        'unit',
         'price_per_unit',
+        'transport_cost',
         'total_price',
+        'receipt_file',
         'note',
         'date',
     ];
@@ -31,5 +36,10 @@ class Cost extends Model
     public function batch()
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function storehouse()
+    {
+        return $this->belongsTo(StoreHouse::class);
     }
 }

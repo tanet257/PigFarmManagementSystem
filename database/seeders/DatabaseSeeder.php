@@ -16,7 +16,8 @@ class DatabaseSeeder extends Seeder
     {
         // เรียก Seeder อื่น ๆ ที่สร้างไว้
         $this->call([
-            PenSeeder::class,
+            StorehouseSeeder::class
+            //PenSeeder::class,
             //RoleSeeder::class,
             //PermissionSeeder::class,
             //RolePermissionSeeder::class,

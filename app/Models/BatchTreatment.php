@@ -18,7 +18,8 @@ class BatchTreatment extends Model
         'farm_id',
 
         'medicine_name',
-        'dosage',
+        'medicine_code',
+        'quantity',
         'unit',
         'status',
         'note',

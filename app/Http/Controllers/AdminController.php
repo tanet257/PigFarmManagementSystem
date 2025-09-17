@@ -18,6 +18,10 @@ use App\Models\PigSell;
 use App\Models\Feeding;
 use App\Models\PigDeath;
 use App\Models\PigEntryRecord;
+use App\Models\DairyRecord;
+use App\Models\StoreHouse;
+use App\Models\InventoryMovement;
+
 
 class AdminController extends Controller
 {
@@ -73,16 +77,9 @@ class AdminController extends Controller
     public function add_cost()
     {
         $farms = Farm::all();
+        $storehouses = StoreHouse::select('id', 'item_name', 'farm_id')->get();
         $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.add.add_cost', compact('farms', 'batches'));
-    }
-
-    //add_pig_sell_record
-    public function add_pig_sell_record()
-    {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.add.add_pig_sell_record', compact('farms', 'batches'));
+        return view('admin.add.add_cost', compact('farms', 'batches', 'storehouses'));
     }
 
     //add_feeding
@@ -108,7 +105,24 @@ class AdminController extends Controller
     {
         $farms = Farm::all();
         $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.pig_entry_record', compact('farms', 'batches'));
+        return view('admin.record.pig_entry_record', compact('farms', 'batches'));
+    }
+
+    //add_dairy_record
+    public function dairy_record()
+    {
+        $farms = Farm::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        return view('admin.record.dairy_record', compact('farms', 'batches'));
+    }
+
+
+    //add_pig_sell_record
+    public function add_pig_sell_record()
+    {
+        $farms = Farm::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        return view('admin.add.add_pig_sell_record', compact('farms', 'batches'));
     }
 
     //--------------------------------------- UPLOAD ------------------------------------------//
@@ -160,7 +174,7 @@ class AdminController extends Controller
     {
         try {
             //validate
-            $validated =$request->validate([
+            $validated = $request->validate([
                 'barn_id' => 'required|exists:barns,id',
 
                 'pen_code' => 'required|unique:pens,pen_code',
@@ -216,43 +230,12 @@ class AdminController extends Controller
     }
 
 
-    //upload_batch
-    public function upload_batch(Request $request)
-    {
-        try {
-            //validate
-            $validated = $request->validate([
-                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
-                'batch_id' => 'required|unique:batches,batch_id',
 
-                //'start_date' => 'required|date',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
-            ]);
-
-            $data = new Batch;
-            $data->farm_id = $validated['farm_id'];
-
-            //unique
-            $data->batch_code = $validated['batch_code'];
-
-            $data->status = $validated['status'] ?? 'กำลังเลี้ยง';
-            $data->note = $validated['note'] ?? null;
-
-            $data->start_date = Carbon::now(); // เวลาปัจจุบัน
-            $data->end_date = $validated['end_date'];
-
-            $data->save();
-
-            return redirect()->back()->with('success', 'เพิ่มรุ่นเรียบร้อย');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มรุ่น: ' . $e->getMessage());
-        }
-    }
 
     //upload_batch_treatment
     public function upload_batch_treatment(Request $request)
-{
-    try {
+    {
+        try {
             $validated = $request->validate([
                 // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
                 'batch_id' => [
@@ -262,35 +245,35 @@ class AdminController extends Controller
                             ->where('farm_id', $request->farm_id);
                     }),
                 ],
-            'barn_id'  => 'required|exists:barns,id',
-            'pen_id'   => 'required|exists:pens,id',
-            'medicine_name' => 'required|string',
-            'dosage'   => 'required|numeric|min:0',
-            'unit'     => 'required|string',
-            'note'     => 'nullable|string',
-        ]);
+                'barn_id'  => 'required|exists:barns,id',
+                'pen_id'   => 'required|exists:pens,id',
+                'medicine_name' => 'required|string',
+                'dosage'   => 'required|numeric|min:0',
+                'unit'     => 'required|string',
+                'note'     => 'nullable|string',
+            ]);
 
-        $batch = Batch::findOrFail($validated['batch_id']);
+            $batch = Batch::findOrFail($validated['batch_id']);
 
-        $data = new BatchTreatment;
-        $data->farm_id = $batch->farm_id;
-        $data->batch_id = $batch->id;
-        $data->barn_id = $validated['barn_id'];
-        $data->pen_id  = $validated['pen_id'];
+            $data = new BatchTreatment;
+            $data->farm_id = $batch->farm_id;
+            $data->batch_id = $batch->id;
+            $data->barn_id = $validated['barn_id'];
+            $data->pen_id  = $validated['pen_id'];
 
-        $data->medicine_name = $validated['medicine_name'];
-        $data->dosage = $validated['dosage'];
-        $data->unit   = $validated['unit'];
-        $data->note   = $validated['note'] ?? null;
-        $data->status = $request->status ?? 'วางแผนว่าจะให้ยา';
+            $data->medicine_name = $validated['medicine_name'];
+            $data->dosage = $validated['dosage'];
+            $data->unit   = $validated['unit'];
+            $data->note   = $validated['note'] ?? null;
+            $data->status = $request->status ?? 'วางแผนว่าจะให้ยา';
 
-        $data->save();
+            $data->save();
 
-        return back()->with('success', 'เพิ่มการรักษาเรียบร้อย');
-    } catch (\Exception $e) {
-        return back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+            return back()->with('success', 'เพิ่มการรักษาเรียบร้อย');
+        } catch (\Exception $e) {
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
-}
 
 
     //upload_cost
@@ -335,54 +318,6 @@ class AdminController extends Controller
             return redirect()->back()->with('success', 'เพิ่มค่าใช้จ่ายเรียบร้อย');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มค่าใช้จ่าย: ' . $e->getMessage());
-        }
-    }
-
-
-    //upload_pig_sell_record
-    public function upload_pig_sell_record(Request $request)
-    {
-        try {
-            //validate
-            $validated = $request->validate([
-                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
-                'batch_id' => [
-                    'required',
-                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
-                        return $query->where('status', 'กำลังเลี้ยง')
-                            ->where('farm_id', $request->farm_id);
-                    }),
-                ],
-
-                'sell_type' => 'required|string',
-                'quantity' => 'required|integer',
-                'total_weight' => 'required|numeric|min:0',
-                'price_per_kg' => 'required|numeric|min:0',
-                'total_price' => 'required|numeric|min:0',
-                'buyer_name' => 'nullable|string',
-                'note' => 'nullable|string',
-            ]);
-
-            $batch = Batch::findOrFail($validated['batch_id']);
-
-            $data = new PigSell;
-            $data->batch_id = $batch->batch_id;
-            $data->farm_id = $batch->farm_id;
-            $data->pig_death_id = $request->pig_death_id ?? null;
-
-            $data->sell_type = $request->sell_type;
-            $data->quantity = $request->quantity;
-            $data->total_weight = $request->total_weight;
-            $data->price_per_kg = $request->price_per_kg;
-            $data->total_price = $request->total_weight * $request->price_per_kg;
-            $data->buyer_name = $request->buyer_name ?? null;
-            $data->note = $request->note ?? null;
-
-            $data->save();
-
-            return redirect()->back()->with('success', 'เพิ่มการขายหมูเรียบร้อย');
-        } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการขายหมู' . $e->getMessage());
         }
     }
 
@@ -485,7 +420,7 @@ class AdminController extends Controller
                     'required',
                     Rule::exists('batches', 'id')->where(function ($query) use ($request) {
                         return $query->where('status', 'กำลังเลี้ยง')
-                                     ->where('farm_id', $request->farm_id);
+                            ->where('farm_id', $request->farm_id);
                     }),
                 ],
 
@@ -531,6 +466,7 @@ class AdminController extends Controller
                 'price_per_unit' => $validated['total_pig_price'] / $validated['total_pig_amount'],
                 'total_price' => $validated['total_pig_price'],
                 'note' => 'ค่าลูกหมู',
+                'receipt_file' => $data->receipt_file,
             ]);
 
             if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
@@ -555,6 +491,15 @@ class AdminController extends Controller
                     'total_price' => $validated['transport_cost'],
                     'note' => 'ค่าขนส่ง',
                 ]);
+            }
+
+            if ($request->hasFile('receipt_file')) {
+                $file = $request->file('receipt_file');
+                $filename = time() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('receipt_files'), $filename);
+                $data->receipt_file = $filename;
+            } else {
+                $data->receipt_file = '-';
             }
 
             // อัปเดต batch totals
@@ -590,13 +535,12 @@ class AdminController extends Controller
                 'excess_weight_cost' => 'nullable|numeric|min:0',
                 'transport_cost' => 'nullable|numeric|min:0',
                 'note' => 'nullable|string',
-                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             ]);
 
             $batch = Batch::findOrFail($request->input('batch_id'));
 
-            // สร้าง PigEntryRecord
-            $data = new PigEntryRecord();
+            // สร้าง DairyRecord
+            $data = new DairyRecord();
             $data->batch_id = $batch->id;
             $data->farm_id = $batch->farm_id;
             $data->pig_entry_date = $validated['pig_entry_date'];
@@ -604,15 +548,6 @@ class AdminController extends Controller
             $data->total_pig_weight = $validated['total_pig_weight'];
             $data->total_pig_price = $validated['total_pig_price'];
             $data->note = $validated['note'] ?? null;
-
-            if ($request->hasFile('receipt_file')) {
-                $file = $request->file('receipt_file');
-                $filename = time() . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('receipt_files'), $filename);
-                $data->receipt_file = $filename;
-            } else {
-                $data->receipt_file = '-';
-            }
 
             $data->save();
 
@@ -632,6 +567,68 @@ class AdminController extends Controller
         }
     }
 
+    //upload_pig_sell_record
+    public function upload_pig_sell_record(Request $request)
+    {
+        try {
+            //validate
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => [
+                    'required',
+                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
+                        return $query->where('status', 'กำลังเลี้ยง')
+                            ->where('farm_id', $request->farm_id);
+                    }),
+                ],
+                'sell_date' => 'required|date',
+                'sell_type' => 'required|string',
+                'quantity' => 'required|integer',
+                'total_weight' => 'required|numeric|min:0',
+                'price_per_kg' => 'required|numeric|min:0',
+                'total_price' => 'required|numeric|min:0',
+                'buyer_name' => 'nullable|string',
+                'note' => 'nullable|string',
+                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            ]);
+
+            $batch = Batch::findOrFail($validated['batch_id']);
+
+            $data = new PigSell;
+            $data->batch_id = $batch->batch_id;
+            $data->farm_id = $batch->farm_id;
+            $data->pig_death_id = $request->pig_death_id ?? null;
+
+            $data->sell_date = $request->sell_date;
+            $data->sell_type = $request->sell_type;
+            $data->quantity = $request->quantity;
+            $data->total_weight = $request->total_weight;
+            $data->price_per_kg = $request->price_per_kg;
+            $data->total_price = $request->total_weight * $request->price_per_kg;
+            $data->buyer_name = $request->buyer_name ?? null;
+            $data->note = $request->note ?? null;
+
+            if ($request->hasFile('receipt_file')) {
+                $file = $request->file('receipt_file');
+                $filename = time() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('receipt_files'), $filename);
+                $data->receipt_file = $filename;
+            } else {
+                $data->receipt_file = '-';
+            }
+
+            $data->save();
+
+            return redirect()->back()->with('success', 'เพิ่มการขายหมูเรียบร้อย');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มการขายหมู' . $e->getMessage());
+        }
+    }
+
+    
+
+
+
 
 
 
@@ -641,7 +638,23 @@ class AdminController extends Controller
 
     //--------------------------------------- VIEW ------------------------------------------//
 
+    public function view_farm()
+    {
+        $farms = Farm::all();
+        return view('admin.view.view_farm', compact('farms'));
+    }
 
+    public function view_barn()
+    {
+        $barns = Barn::all();
+        return view('admin.view.view_barn', compact('barns'));
+    }
+
+    public function view_pen()
+    {
+        $pens = Pen::all();
+        return view('admin.view.view_pen', compact('pens'));
+    }
     public function view_batch(Request $request)
     {
         $query = Batch::query()->with(['farm', 'barn', 'pen']);
@@ -663,24 +676,6 @@ class AdminController extends Controller
         $farms = Farm::all();
 
         return view('admin.view.view_batch', compact('batches', 'farms'));
-    }
-
-    public function view_farm()
-    {
-        $farms = Farm::all();
-        return view('admin.view.view_farm', compact('farms'));
-    }
-
-    public function view_barn()
-    {
-        $barns = Barn::all();
-        return view('admin.view.view_barn', compact('barns'));
-    }
-
-    public function view_pen()
-    {
-        $pens = Pen::all();
-        return view('admin.view.view_pen', compact('pens'));
     }
 
     public function view_batch_treatment()
@@ -721,140 +716,8 @@ class AdminController extends Controller
 
     //--------------------------------------- EXPORT ------------------------------------------//
 
-    //export batch to csv
-    public function exportCsv()
-    {
-        $batches = Batch::all();
-
-        $filename = "batches_" . date('Y-m-d_H-i-s') . ".csv";
-        $handle = fopen('php://output', 'w');
-        fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
-
-        foreach ($batches as $batch) {
-            fputcsv($handle, [
-                $batch->batch_code,
-                $batch->farm->name ?? '-',
-                $batch->barn->name ?? '-',
-                $batch->pen->name ?? '-',
-                $batch->status,
-                $batch->start_date,
-                $batch->end_date,
-            ]);
-        }
-
-        fclose($handle);
-
-        return response()->streamDownload(function () use ($batches) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
-            foreach ($batches as $batch) {
-                fputcsv($handle, [
-                    $batch->batch_code,
-                    $batch->farm->name ?? '-',
-                    $batch->barn->name ?? '-',
-                    $batch->pen->name ?? '-',
-                    $batch->status,
-                    $batch->start_date,
-                    $batch->end_date,
-                ]);
-            }
-            fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
-    }
-
-    //Index batch
-    public function indexBatch(Request $request)
-    {
-        $query = Batch::query();
-
-        if ($request->filled('search')) {
-            $query->where('batch_code', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('farm_id')) {
-            $query->where('farm_id', $request->farm_id);
-        }
-
-        if ($request->filled('sort_by')) {
-            $sortOrder = $request->get('sort_order', 'asc');
-            $query->orderBy($request->sort_by, $sortOrder);
-        }
-
-        $perPage = $request->get('per_page', 10);
-        $batches = $query->paginate($perPage);
-
-        $farms = Farm::all();
-
-        return view('admin.batches.index', compact('batches', 'farms'));
-    }
 
 
-    //Edit batch
-    public function editBatch($id)
-    {
-        //$batch = Batch::with(['farm', 'barn', 'pen'])->findOrFail($id);
-        $batch = Batch::findOrFail($id);
-        if (!$batch) {
-            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการแก้ไข');
-        } else {
-            return view('admin.batches.edit', compact('batch'));
-        }
-    }
-
-    //Update batch
-    public function updateBatch(Request $request, $id)
-    {
-        $batch = Batch::findOrFail($id);
-
-        $validated = $request->validate([
-            'batch_code' => 'required|string|max:255',
-            'status'     => 'required|string',
-            'note'       => 'nullable|string',
-            'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date|after_or_equal:start_date',
-        ]);
-
-        $batch->update($validated);
-
-        return redirect()->route('batches.index')->with('success', 'แก้ไข Batch สำเร็จ');
-    }
-
-    //Delete batch
-    public function deleteBatch($id)
-    {
-        $batch = Batch::find($id);
-        if (!$batch) {
-            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการลบ');
-        }
-
-        $batch->delete();
-        return redirect()->route('batches.index')->with('success', 'ลบรุ่นหมูเรียบร้อยแล้ว');
-    }
-
-    // Export batch to PDF
-    public function exportPdf()
-    {
-        $batches = Batch::all();
-
-        // ตั้งค่า dompdf options
-        $options = new \Dompdf\Options();
-        $options->set('isHtml5ParserEnabled', true); // รองรับ HTML5
-        $options->set('isRemoteEnabled', true);     // โหลดไฟล์ font จาก URL ได้
-        $options->set('defaultFont', 'Sarabun'); // ตั้ง default font
-
-        // สร้าง PDF
-        $pdf = Pdf::loadView('admin.exports.batches_pdf', compact('batches'))
-            ->setPaper('a4', 'landscape')
-            ->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'Sarabun',
-            ]);
 
 
-        // ตั้งชื่อไฟล์
-        $filename = "batches_export_" . date('Y-m-d_H-i-s') . ".pdf";
-
-        return $pdf->download($filename);
-    }
 }

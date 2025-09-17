@@ -49,8 +49,15 @@
 
                 <li><a href="#pigEntryRecordMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Entry Record </a>
                   <ul id="pigEntryRecordMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{url('pig_entry_record')}}">Add Pig Entry Record</a></li>
-                    <li><a href="{{url('view_pig_entry_record')}}">View Pig Entry Record</a></li>
+                    <li><a href="{{route('pig_entry_record.record')}}">Add Pig Entry Record</a></li>
+                    <li><a href="{{route('pig_entry_record.view')}}">View Pig Entry Record</a></li>
+                  </ul>
+                </li>
+
+                <li><a href="#storehouseDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>store house record </a>
+                  <ul id="storehouseDropdown" class="collapse list-unstyled ">
+                    <li><a href="{{route('store_house_record.record')}}">store house record</a></li>
+                    <li><a href="{{route('storehouses.index')}}">View store house record</a></li>
                   </ul>
                 </li>
 

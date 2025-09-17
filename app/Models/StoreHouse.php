@@ -17,9 +17,8 @@ class StoreHouse extends Model
         'item_type',
         'item_code',
         'item_name',
-        'quantity',
+        'stock',
         'unit',
-        'pig_capacity',
         'status',
 
         'note',
@@ -28,13 +27,23 @@ class StoreHouse extends Model
 
     // ------------ Relationships ------------ //
 
-    public function batches()
-    {
-        return $this->hasMany(Batch::class, 'farm_id', 'id');
-    }
-
     public function farm()
     {
         return $this->belongsTo(Farm::class);
+    }
+
+    public function batch()
+    {
+        return $this->belongsTo(Batch::class);
+    }
+
+    public function costs()
+    {
+        return $this->hasMany(Cost::class, 'item_code', 'item_code');
+    }
+
+    public function latestCost()
+    {
+        return $this->hasOne(Cost::class, 'item_code', 'item_code')->latestOfMany();
     }
 }
