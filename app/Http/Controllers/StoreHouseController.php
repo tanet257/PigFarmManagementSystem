@@ -41,7 +41,7 @@ class StoreHouseController extends Controller
         return view('admin.record.store_house_record', compact('farms', 'batches', 'storehouses', 'unitsByType'));
     }
 
-    //upload_store_house_record
+    // upload_store_house_record
     public function upload_store_house_record(Request $request)
     {
         try {
@@ -66,20 +66,13 @@ class StoreHouseController extends Controller
 
             // Validate
             $validated = $request->validate([
-                'batch_id' => [
-                    'required',
-                    Rule::exists('batches', 'id')->where(function ($query) use ($request) {
-                        return $query->where('status', 'กำลังเลี้ยง')
-                            ->where('farm_id', $request->farm_id);
-                    }),
-                ],
+                'farm_id'   => 'required|exists:farms,id',
+                'batch_id'  => 'required|exists:batches,id',
                 'date' => ['required', function ($attribute, $value, $fail) use ($request) {
                     try {
                         if (in_array($request->input('item_type'), ['wage', 'electric_bill', 'water_bill'])) {
-                            // monthly row: m/Y
                             Carbon::createFromFormat('m/Y', $value);
                         } else {
-                            // feed/medicine: d/m/Y H:i
                             $dt = Carbon::createFromFormat('d/m/Y H:i', $value);
                             if ($dt->isFuture()) $fail('วันที่ต้องไม่อยู่ในอนาคต');
                         }
@@ -100,20 +93,24 @@ class StoreHouseController extends Controller
 
             $batch = Batch::findOrFail($validated['batch_id']);
 
-            // แยกกรณี feed/medicine vs wage/electric_bill/water_bill
             if (!in_array($validated['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
                 // feed/medicine
                 $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
                 $formattedDate = $dt->format('Y-m-d H:i:s');
 
-                // หา StoreHouse ถ้ามีอยู่แล้ว
-                $storehouse = StoreHouse::firstOrNew([
-                    'farm_id'   => $batch->farm_id,
-                    'item_code' => $validated['item_code'] ?? null,
-                ]);
+                // หา StoreHouse ที่มีอยู่แล้ว
+                $storehouse = StoreHouse::where('farm_id', $validated['farm_id'])
+                    ->where('item_code', $validated['item_code'])
+                    ->first();
+
+                if (!$storehouse) {
+                    return redirect()->back()->with('error', 'ไม่พบสินค้านี้ในคลัง กรุณาสร้าง item ก่อนอัปเดต');
+                }
 
                 // อัปเดทข้อมูล
-                $storehouse->item_name = $validated['item_name'] ?? $validated['item_code'] ?? 'Unknown Item';
+                if (!empty($validated['item_name'])) {
+                    $storehouse->item_name = $validated['item_name']; // ใช้เฉพาะถ้ามีค่า
+                }
                 $storehouse->item_type = $validated['item_type'];
                 $storehouse->unit = $validated['unit'];
                 $storehouse->status = 'available';
@@ -126,6 +123,8 @@ class StoreHouseController extends Controller
                     $file->move(public_path('receipt_files'), $filename);
                     $storehouse->receipt_file = $filename;
                 }
+
+                $storehouse->note = $validated['note'];
 
                 $storehouse->save();
 
@@ -156,43 +155,59 @@ class StoreHouseController extends Controller
                     'date'          => $formattedDate,
                 ]);
             } else {
-                // wage/electric_bill/water_bill (monthly row)
+                // wage/electric_bill/water_bill
                 $dt = Carbon::createFromFormat('m/Y', $validated['date'])->startOfMonth();
                 $formattedDate = $dt->format('Y-m-d');
 
                 $total = $validated['price_per_unit'] ?? 0;
-
                 $filename = null;
+
                 if (!empty($validated['receipt_file'])) {
                     $file = $validated['receipt_file'];
                     $filename = time() . '.' . $file->getClientOriginalExtension();
                     $file->move(public_path('receipt_files'), $filename);
                 }
 
-                Cost::create([
-                    'farm_id'        => $batch->farm_id,
-                    'batch_id'       => $batch->id,
-                    'date'           => $formattedDate,
-                    'cost_type'      => $validated['item_type'],
-                    'item_code'      => $validated['item_code'] ?? null,
-                    'price_per_unit' => $validated['price_per_unit'] ?? 0,
+                // หา record เดิม ถ้ามี
+                $existingCost = Cost::where('farm_id', $batch->farm_id)
+                    ->where('batch_id', $batch->id)
+                    ->where('date', $formattedDate)
+                    ->where('cost_type', $validated['item_type'])
+                    ->first();
 
-                    'unit'           => $validated['unit'] ?? null,
-                    'total_price'    => $total,
-                    'note'           => $validated['note'] ?? null,
-                    'receipt_file'   => $filename,
-                ]);
+                if ($existingCost) {
+                    // อัปเดต note และ receipt_file
+                    $existingCost->note = $validated['note'] ?? $existingCost->note;
+                    if ($filename) {
+                        $existingCost->receipt_file = $filename;
+                    }
+                    $existingCost->save();
+                } else {
+                    // สร้างใหม่
+                    Cost::create([
+                        'farm_id'        => $batch->farm_id,
+                        'batch_id'       => $batch->id,
+                        'date'           => $formattedDate,
+                        'cost_type'      => $validated['item_type'],
+                        'item_code'      => $validated['item_code'] ?? null,
+                        'price_per_unit' => $validated['price_per_unit'] ?? 0,
+                        'unit'           => $validated['unit'] ?? null,
+                        'total_price'    => $total,
+                        'note'           => $validated['note'] ?? null,
+                        'receipt_file'   => $filename,
+                    ]);
+                }
             }
 
-            return redirect()->back()->with('success', 'เพิ่มสินค้าเข้าคลัง + บันทึกค่าใช้จ่าย + อัปเดตสต็อกเรียบร้อย');
+            return redirect()->back()->with('success', 'อัปเดตสินค้าในคลัง + บันทึกค่าใช้จ่ายเรียบร้อย');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 
+
     //--------------------------------------- Index ------------------------------------------//
 
-    // Index Storehouse
     // Index Storehouse
     public function indexStorehouse(Request $request)
     {
@@ -238,47 +253,80 @@ class StoreHouseController extends Controller
         return view('admin.storehouses.index', compact('farms', 'batches', 'storehouses'));
     }
 
-
-    //Edit storehouse
-    public function editStoreHouse($id)
+    //Create store_item
+    public function createItem(Request $request)
     {
-        //$storehouse = StoreHouse::with(['farm', 'barn', 'pen'])->findOrFail($id);
-        $storehouse = StoreHouse::findOrFail($id);
-        if (!$storehouse) {
-            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการแก้ไข');
-        } else {
-            return view('admin.storehouses.edit', compact('storehouse'));
+        try {
+            $validated = $request->validate([
+                'farm_id'   => 'required|exists:farms,id',
+                'item_type' => 'required|string',
+                'item_code' => 'required|string',
+                'item_name' => 'required|string',
+                'unit' => 'required|string',
+                'note' => 'nullable|string',
+
+            ]);
+
+            $data = new StoreHouse;
+            $data->farm_id   = $validated['farm_id'];
+            $data->item_type = $validated['item_type'];
+            $data->item_code = $validated['item_code'];
+            $data->item_name = $validated['item_name'];
+            $data->unit   = $validated['unit'];
+            $data->note   = $validated['note'] ?? null;
+            $data->status = $request->status ?? 'unavailable';
+
+            $data->save();
+
+            return back()->with('success', 'เพิ่มรายการสินค้าใหม่เรียบร้อย');
+        } catch (\Exception $e) {
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
+
+    //Edit storehouse
+    public function editStoreHouse(Request $request)
+    {
+        $farms = Farm::all();
+        $storehouses = StoreHouse::paginate(10);
+
+        // ส่งไปหน้า index พร้อม modal แก้ไข
+        return view('admin.storehouses.index', compact('farms', 'storehouses'));
+    }
+
 
     //Update storehouse
     public function updateStoreHouse(Request $request, $id)
     {
         $storehouse = StoreHouse::findOrFail($id);
 
+
         $validated = $request->validate([
-            'batch_code' => 'required|string|max:255',
-            'status'     => 'required|string',
-            'note'       => 'nullable|string',
-            'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date|after_or_equal:start_date',
+            'farm_id'   => 'required|exists:farms,id',
+
+            //'item_type' => 'required|string',
+            'item_code' => 'required|string',
+            'item_name' => 'required|string',
+            'unit'      => 'required|string',
+            'note'      => 'nullable|string',
         ]);
 
         $storehouse->update($validated);
 
-        return redirect()->route('storehouses.index')->with('success', 'แก้ไข StoreHouse สำเร็จ');
+        return redirect()->back()->with('success', 'แก้ไข StoreHouse สำเร็จ');
     }
+
 
     //Delete storehous
     public function deleteStoreHouse($id)
     {
         $storehouse = StoreHouse::find($id);
         if (!$storehouse) {
-            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการลบ');
+            return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการลบ');
         }
 
         $storehouse->delete();
-        return redirect()->route('storehouses.index')->with('success', 'ลบรุ่นหมูเรียบร้อยแล้ว');
+        return redirect()->route('storehouses.index')->with('success', 'ลบรายการเรียบร้อยแล้ว');
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//
@@ -286,6 +334,7 @@ class StoreHouseController extends Controller
     // Export storehouse to PDF
     public function exportPdf()
     {
+        $farms = Farm::all();
         $storehouses = StoreHouse::all();
 
         // ตั้งค่า dompdf options
@@ -295,7 +344,7 @@ class StoreHouseController extends Controller
         $options->set('defaultFont', 'Sarabun'); // ตั้ง default font
 
         // สร้าง PDF
-        $pdf = Pdf::loadView('admin.exports.storehouses_pdf', compact('storehouses'))
+        $pdf = Pdf::loadView('admin.storehouses.exports.storehouses_pdf', compact('farms', 'storehouses'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
                 'isHtml5ParserEnabled' => true,
@@ -317,14 +366,16 @@ class StoreHouseController extends Controller
 
         $filename = "storehouses" . date('Y-m-d_H-i-s') . ".csv";
         $handle = fopen('php://output', 'w');
-        fputcsv($handle, ['Storehouse Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
+        fputcsv($handle, ['Farm', 'Item Code', 'Item Name', 'Type', 'Unit', 'Stock', 'Status']);
 
         foreach ($storehouses as $storehouse) {
             fputcsv($handle, [
-                $storehouse->batch_code,
                 $storehouse->farm->name ?? '-',
-                $storehouse->barn->name ?? '-',
-                $storehouse->pen->name ?? '-',
+                $storehouse->item->type ?? '-',
+                $storehouse->item->code ?? '-',
+                $storehouse->item->name ?? '-',
+                $storehouse->unit ?? '-',
+                $storehouse->stock ?? '-',
                 $storehouse->status,
                 $storehouse->start_date,
                 $storehouse->end_date,
@@ -335,13 +386,15 @@ class StoreHouseController extends Controller
 
         return response()->streamDownload(function () use ($storehouses) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
+            fputcsv($handle, ['Farm', 'Item Code', 'Item Name', 'Type', 'Unit', 'Stock', 'Status']);
             foreach ($storehouses as $storehouse) {
                 fputcsv($handle, [
-                    $storehouse->batch_code,
                     $storehouse->farm->name ?? '-',
-                    $storehouse->barn->name ?? '-',
-                    $storehouse->pen->name ?? '-',
+                    $storehouse->item->type ?? '-',
+                    $storehouse->item->code ?? '-',
+                    $storehouse->item->name ?? '-',
+                    $storehouse->unit ?? '-',
+                    $storehouse->stock ?? '-',
                     $storehouse->status,
                     $storehouse->start_date,
                     $storehouse->end_date,

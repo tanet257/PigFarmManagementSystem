@@ -16,7 +16,7 @@ class Farm extends Model
         'barn_capacity',
     ];
 
-    public function batch()
+    public function batches()
     {
         return $this->hasMany(Batch::class);
     }

@@ -14,15 +14,17 @@ class Barn extends Model
     protected $fillable = [
         'farm_id',
 
+
         'barn_code',
         'pig_capacity',
         'pen_capacity',
         'note'
     ];
-    public function barns()
+    public function batches()
     {
-        return $this->hasMany(Barn::class);
+        return $this->hasMany(Batch::class);
     }
+    
     public function pens()
     {
         return $this->hasMany(Pen::class, 'barn_id', 'id');

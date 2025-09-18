@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StoreHouseController;
+use App\Http\Controllers\BatchController;
 use App\Models\StoreHouse;
 
 //------------------- route home/admin -------------------------//
@@ -71,24 +72,28 @@ Route::get('/store_house_record', [StoreHouseController::class, 'store_house_rec
 Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record']);
 
 //------------------- route crud storehouse -----------------------//
-Route::get('/storehouses', [StoreHouseController::class, 'indexStorehouse'])->name('storehouses.index');
-Route::get('/storehouses/{id}/edit', [StoreHouseController::class, 'editStorehouse'])->name('storehouses.edit');
-Route::put('/storehouses/{id}', [StoreHouseController::class, 'updateStorehouse'])->name('storehouses.update');
-Route::delete('/storehouses/{id}', [StoreHouseController::class, 'deleteStorehouse'])->name('storehouses.delete');
-
+Route::prefix('storehouses')->group(function () {
+    Route::get('/', [StoreHouseController::class, 'indexStorehouse'])->name('storehouses.index');
+    Route::post('/create', [StoreHouseController::class, 'createItem'])->name('storehouses.create');
+    Route::get('/{id}/edit', [StoreHouseController::class, 'editStorehouse'])->name('storehouses.edit');
+    Route::put('/{id}', [StoreHouseController::class, 'updateStorehouse'])->name('storehouses.update');
+    Route::delete('/{id}', [StoreHouseController::class, 'deleteStorehouse'])->name('storehouses.delete');
 //------------------- route export batch ---------------------//
 Route::get('/storehouses/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouses.export.csv');
 Route::get('/storehouses/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouses.export.pdf');
+});
 
 //------------------- route crud batch -----------------------//
-Route::get('/batches', [AdminController::class, 'indexBatch'])->name('batches.index');
-Route::get('/batches/{id}/edit', [AdminController::class, 'editBatch'])->name('batches.edit');
-Route::put('/batches/{id}', [AdminController::class, 'updateBatch'])->name('batches.update');
-Route::delete('/batches/{id}', [AdminController::class, 'deleteBatch'])->name('batches.delete');
-
+Route::prefix('batches')->group(function () {
+Route::get('/', [BatchController::class, 'indexBatch'])->name('batches.index');
+Route::get('/create', [BatchController::class, 'createBatch'])->name('batches.create');
+Route::get('/{id}/edit', [BatchController::class, 'editBatch'])->name('batches.edit');
+Route::put('/{id}', [BatchController::class, 'updateBatch'])->name('batches.update');
+Route::delete('/{id}', [BatchController::class, 'deleteBatch'])->name('batches.delete');
 //------------------- route export batch ---------------------//
-Route::get('/batches/export/csv', [AdminController::class, 'exportCsv'])->name('batches.export.csv');
-Route::get('/batches/export/pdf', [AdminController::class, 'exportPdf'])->name('batches.export.pdf');
+Route::get('/export/csv', [BatchController::class, 'exportCsv'])->name('batches.export.csv');
+Route::get('/export/pdf', [BatchController::class, 'exportPdf'])->name('batches.export.pdf');
+});
 
 //------------------- route dashboard ------------------------//
 Route::middleware([

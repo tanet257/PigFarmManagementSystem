@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="th">
-<head>
-    @include('admin.css')
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
+<head>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    @include('admin.css')
     <style>
         body {
             background-color: #1e1b29;
@@ -38,12 +39,13 @@
 
         .card-custom {
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
             background-color: #2c2540;
             padding: 15px;
         }
 
-        td, th {
+        td,
+        th {
             vertical-align: middle !important;
         }
 
@@ -79,9 +81,139 @@
             background: #1e1b29;
             color: #f0e6ff;
         }
+
+        .btn-action {
+            min-width: 90px;
+            text-align: center;
+        }
+
+        /* snackbar */
+        .snackbar {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 9999;
+            right: 20px;
+            bottom: 30px;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .snackbar.show {
+            visibility: visible;
+            animation: fadein 0.5s, fadeout 0.5s 10s;
+        }
+
+        .snackbar button {
+            background: none;
+            border: none;
+            color: #fff;
+            font-weight: bold;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        @keyframes fadein {
+            from {
+                bottom: 0;
+                opacity: 0;
+            }
+
+            to {
+                bottom: 30px;
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeout {
+            from {
+                bottom: 30px;
+                opacity: 1;
+            }
+
+            to {
+                bottom: 0;
+                opacity: 0;
+            }
+        }
     </style>
+
+    <script>
+        window.onload = function() {
+            const sb = document.getElementById("snackbar");
+            const sbMsg = document.getElementById("snackbarMessage");
+
+            @if (session('success'))
+                sbMsg.innerText = "{{ session('success') }}";
+                sb.style.backgroundColor = "#28a745"; // เขียว
+                sb.style.display = "flex";
+                sb.classList.add("show");
+                setTimeout(() => {
+                    sb.classList.remove("show");
+                    sb.style.display = "none";
+                }, 10500);
+            @elseif (session('error'))
+                sbMsg.innerText = "{{ session('error') }}";
+                sb.style.backgroundColor = "#dc3545"; // แดง
+                sb.style.display = "flex";
+                sb.classList.add("show");
+                setTimeout(() => {
+                    sb.classList.remove("show");
+                    sb.style.display = "none";
+                }, 10500);
+            @endif
+        };
+
+        function showSnackbar(message, bgColor = "#dc3545") {
+            const sb = document.getElementById("snackbar");
+            const sbMsg = document.getElementById("snackbarMessage");
+            sbMsg.innerText = message;
+            sb.style.backgroundColor = bgColor;
+            sb.style.display = "flex";
+            sb.classList.add("show");
+            setTimeout(() => {
+                sb.classList.remove("show");
+                sb.style.display = "none";
+            }, 5000);
+        }
+
+        function copySnackbar() {
+            let text = document.getElementById("snackbarMessage").innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                let btn = document.getElementById("copyBtn");
+                btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="bi bi-copy"></i>';
+                    btn.disabled = false;
+                }, 2000);
+            });
+        }
+
+        function closeSnackbar() {
+            let sb = document.getElementById("snackbar");
+            sb.classList.remove("show");
+            sb.style.display = "none";
+        }
+    </script>
 </head>
+
 <body>
+    <div id="snackbar" class="snackbar">
+        <span id="snackbarMessage"></span>
+        <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
+        <button onclick="closeSnackbar()">✕</button>
+    </div>
+
     @include('admin.header')
     @include('admin.sidebar')
 
@@ -96,51 +228,61 @@
                 <div class="left-tools">
                     <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex">
                         <input type="search" name="search" class="form-control form-control-sm me-2"
-                               placeholder="ค้นหา..." value="{{ request('search') }}">
+                            placeholder="ค้นหา..." value="{{ request('search') }}">
                         <button type="submit" class="btn btn-sm btn-outline-light">ค้นหา</button>
                     </form>
                 </div>
 
                 <div class="right-tools">
                     <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex">
-                        {{-- Filter by Farm --}}
                         <select name="farm_id" class="form-select form-select-sm me-2">
                             <option value="">เลือกฟาร์มทั้งหมด</option>
-                            @foreach($farms as $farm)
-                                <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
+                            @foreach ($farms as $farm)
+                                <option value="{{ $farm->id }}"
+                                    {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
                                     {{ $farm->farm_name }}
                                 </option>
                             @endforeach
                         </select>
 
-                        {{-- Sort by --}}
                         <select name="sort_by" class="form-select form-select-sm me-2">
                             <option value="">เรียงลำดับ...</option>
-                            <option value="date" {{ request('sort_by')=='date' ? 'selected':'' }}>วันที่ซื้อสินค้าเข้าคลัง</option>
-                            <option value="updated_at" {{ request('sort_by')=='updated_at' ? 'selected':'' }}>วันที่แก้ไขล่าสุด</option>
-                            <option value="stock" {{ request('sort_by')=='stock' ? 'selected':'' }}>จำนวนสต็อก</option>
-                            <option value="total_price" {{ request('sort_by')=='total_price' ? 'selected':'' }}>ราคารวม</option>
+                            <option value="date" {{ request('sort_by') == 'date' ? 'selected' : '' }}>
+                                วันที่ซื้อสินค้าเข้าคลัง</option>
+                            <option value="updated_at" {{ request('sort_by') == 'updated_at' ? 'selected' : '' }}>
+                                วันที่แก้ไขล่าสุด</option>
+                            <option value="stock" {{ request('sort_by') == 'stock' ? 'selected' : '' }}>จำนวนสต็อก
+                            </option>
+                            <option value="total_price" {{ request('sort_by') == 'total_price' ? 'selected' : '' }}>
+                                ราคารวม</option>
                         </select>
 
-                        {{-- Sort order --}}
                         <select name="sort_order" class="form-select form-select-sm me-2">
-                            <option value="asc" {{ request('sort_order')=='asc' ? 'selected':'' }}>น้อย → มาก</option>
-                            <option value="desc" {{ request('sort_order')=='desc' ? 'selected':'' }}>มาก → น้อย</option>
+                            <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>น้อย → มาก
+                            </option>
+                            <option value="desc" {{ request('sort_order') == 'desc' ? 'selected' : '' }}>มาก → น้อย
+                            </option>
                         </select>
 
-                        {{-- Rows per page --}}
                         <select name="per_page" class="form-select form-select-sm me-2">
-                            @foreach([10, 25, 50, 100] as $n)
-                                <option value="{{ $n }}" {{ request('per_page', 10)==$n ? 'selected':'' }}>{{ $n }} แถวต่อหน้า</option>
+                            @foreach ([10, 25, 50, 100] as $n)
+                                <option value="{{ $n }}"
+                                    {{ request('per_page', 10) == $n ? 'selected' : '' }}>
+                                    {{ $n }} แถว
+                                </option>
                             @endforeach
                         </select>
 
-                        <button type="submit" class="btn btn-sm btn-primary me-2">Apply</button>
+                        <button type="submit" class="btn btn-sm btn-action btn-primary me-2">Apply</button>
                     </form>
 
-                    {{-- Export --}}
-                    <a href="{{ route('storehouses.export.csv') }}" class="btn btn-sm btn-outline-success">Export CSV</a>
+                    <a href="{{ route('storehouses.export.csv') }}" class="btn btn-sm btn-outline-success">Export
+                        CSV</a>
                     <a href="{{ route('storehouses.export.pdf') }}" class="btn btn-primary">Export PDF</a>
+
+                    <button class="btn btn-success" data-bs-toggle="modal"
+                        data-bs-target="#createModal">เพิ่มสินค้าเข้าคลัง
+                    </button>
                 </div>
             </div>
 
@@ -152,7 +294,7 @@
                             <tr>
                                 <th>วันที่</th>
                                 <th>ชื่อฟาร์ม</th>
-                                <th>รหัสรุ่น</th>
+
                                 <th>ประเภทรายการ</th>
                                 <th>รหัสรายการ</th>
                                 <th>ชื่อรายการ</th>
@@ -161,7 +303,7 @@
                                 <th>ค่าส่ง</th>
                                 <th>ราคารวม</th>
                                 <th>หน่วย</th>
-                                <th>สถานะสต็อก</th>
+                                <th>สถานะ</th>
                                 <th>สลิป</th>
                                 <th>โน๊ต</th>
                                 <th>จัดการ</th>
@@ -169,44 +311,108 @@
                         </thead>
                         <tbody>
                             @forelse($storehouses as $storehouse)
-                            <tr>
-                                <td>{{ $storehouse->latestCost->date ?? '-' }}</td> <!--มาจาก costs-->
-                                <td>{{ $storehouse->farm->farm_name ?? '-' }}</td>
-                                <td>{{ $storehouse->batch_code }}</td>
-                                <td>{{ $storehouse->item_type }}</td>
-                                <td>{{ $storehouse->item_code }}</td>
-                                <td>{{ $storehouse->item_name }}</td>
-                                <td>{{ number_format($storehouse->stock, 2) }}</td>
-                                <td>{{ number_format($storehouse->price_per_unit, 2) }}</td>
-                                <td>{{ number_format($storehouse->latestCost->transport_cost ?? 0, 2) }}</td> <!--มาจาก costs-->
-                                <td>{{ number_format($storehouse->latestCost->total_price ?? 0, 2) }}</td> <!--มาจาก costs-->
-                                <td>{{ $storehouse->unit }}</td>
-                                <td>
-                                    @if($storehouse->status=='available')
-                                        <span class="badge bg-purple">available</span>
-                                    @elseif($storehouse->status=='unavailable')
-                                        <span class="badge bg-secondary">unavailable</span>
-                                    @else
-                                        <span class="badge bg-dark">-</span>
-                                    @endif
-                                </td>
-                                <td>{{ $storehouse->latestCost->receipt_file ?? '-' }}</td> <!--มาจาก costs-->
-                                <td>{{ $storehouse->note ?? '-' }}</td>
+                                <tr>
+                                    <td>{{ $storehouse->latestCost->date ?? '-' }}</td>
+                                    <td>{{ $storehouse->farm->farm_name ?? '-' }}</td>
 
-                                <td>
-                                    <a href="{{ route('storehouses.edit', $storehouse->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                                    <form action="{{ route('storehouses.delete', $storehouse->id) }}" method="POST" style="display:inline-block;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger"
+                                    <td>{{ $storehouse->item_type }}</td>
+                                    <td>{{ $storehouse->item_code }}</td>
+                                    <td>{{ $storehouse->item_name }}</td>
+                                    <td>{{ number_format($storehouse->stock, 2) }}</td>
+                                    <td>{{ number_format($storehouse->latestCost->price_per_unit ?? 0, 2) }}</td>
+                                    <td>{{ number_format($storehouse->latestCost->transport_cost ?? 0, 2) }}</td>
+                                    <td>{{ number_format($storehouse->latestCost->total_price ?? 0, 2) }}</td>
+                                    <td>{{ $storehouse->unit }}</td>
+                                    <td>
+                                        @if ($storehouse->status == 'available')
+                                            <span class="badge bg-purple">available</span>
+                                        @elseif($storehouse->status == 'unavailable')
+                                            <span class="badge bg-secondary">unavailable</span>
+                                        @else
+                                            <span class="badge bg-dark">-</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $storehouse->latestCost->receipt_file ?? '-' }}</td>
+                                    <td>{{ $storehouse->note ?? '-' }}</td>
+                                    <td>
+                                        {{-- Edit Button --}}
+                                        <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
+                                            data-bs-target="#editModal{{ $storehouse->id }}">
+                                            แก้ไข
+                                        </button>
+                                        {{-- Delete Button --}}
+                                        <form action="{{ route('storehouses.delete', $storehouse->id) }}"
+                                            method="POST" style="display:inline-block;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-action btn-danger"
                                                 onclick="return confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')">Delete</button>
-                                    </form>
-                                </td>
-                            </tr>
+                                        </form>
+                                    </td>
+                                </tr>
+
+                                {{-- Modal Edit --}}
+                                <div class="modal fade" id="editModal{{ $storehouse->id }}" tabindex="-1"
+                                    aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content bg-dark text-light">
+                                            <div class="modal-header">
+                                                <h5>แก้ไขสินค้า</h5>
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form action="{{ route('storehouses.update', $storehouse->id) }}"
+                                                method="POST">
+                                                @csrf
+                                                @method('PUT')
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label>ฟาร์ม</label>
+                                                        <select name="farm_id" class="form-select" required>
+                                                            @foreach ($farms as $farm)
+                                                                <option value="{{ $farm->id }}"
+                                                                    {{ $storehouse->farm_id == $farm->id ? 'selected' : '' }}>
+                                                                    {{ $farm->farm_name }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label>ชื่อรายการ</label>
+                                                        <input type="text" name="item_name" class="form-control"
+                                                            value="{{ $storehouse->item_name }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>รหัสรายการ</label>
+                                                        <input type="text" name="item_code" class="form-control"
+                                                            value="{{ $storehouse->item_code }}" required>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>หน่วย</label>
+                                                        <input type="text" name="unit" class="form-control"
+                                                            value="{{ $storehouse->unit }}">
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label>โน๊ต</label>
+                                                        <textarea name="note" class="form-control">{{ $storehouse->note }}</textarea>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                                                        <button type="button" class="btn btn-secondary"
+                                                            data-bs-dismiss="modal">ยกเลิก</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                {{-- Modal Edit Form --}}
+
                             @empty
-                            <tr>
-                                <td colspan="15" class="text-danger">❌ ไม่มีข้อมูล storehouse</td>
-                            </tr>
+                                <tr>
+                                    <td colspan="15" class="text-danger">❌ ไม่มีข้อมูล storehouse</td>
+                                </tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -215,17 +421,74 @@
                 {{-- Pagination --}}
                 <div class="d-flex justify-content-between mt-3">
                     <div>
-                        แสดง {{ $storehouses->firstItem() ?? 0 }} ถึง {{ $storehouses->lastItem() ?? 0 }} จาก {{ $storehouses->total() ?? 0 }} แถว
+                        แสดง {{ $storehouses->firstItem() ?? 0 }} ถึง {{ $storehouses->lastItem() ?? 0 }} จาก
+                        {{ $storehouses->total() ?? 0 }} แถว
                     </div>
                     <div>
                         {{ $storehouses->withQueryString()->links() }}
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 
+    {{-- Modal Create --}}
+    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header">
+                    <h5>เพิ่มสินค้าใหม่เข้าคลัง</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="{{ route('storehouses.create') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>ฟาร์ม</label>
+                            <select name="farm_id" class="form-select">
+                                @foreach ($farms as $farm)
+                                    <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>ประเภทรายการ</label>
+                            <select name="item_type" class="form-select" required>
+                                <option value="">-- ประเภทรายการ --</option>
+                                <option value="feed">อาหาร</option>
+                                <option value="medicine">ยา</option>
+                                <option value="vaccine">วัคซีน</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>ชื่อรายการ</label>
+                            <input type="text" name="item_name" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>รหัสรายการ</label>
+                            <input type="text" name="item_code" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>หน่วย</label>
+                            <input type="text" name="unit" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label>โน๊ต</label>
+                            <textarea name="note" class="form-control"></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {{-- End Modal Create --}}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @include('admin.js')
 </body>
+
 </html>

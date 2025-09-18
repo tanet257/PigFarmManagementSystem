@@ -5,31 +5,22 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use Carbon\Carbon;
-use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-use App\Models\Barn;
-use App\Models\Pen;
 use App\Models\Farm;
 use App\Models\Batch;
-use App\Models\BatchTreatment;
-use App\Models\Cost;
-use App\Models\PigSell;
-use App\Models\Feeding;
-use App\Models\PigDeath;
-use App\Models\PigEntryRecord;
-use App\Models\DairyRecord;
-use App\Models\StoreHouse;
-use App\Models\InventoryMovement;
+use App\Models\Barn;
+use App\Models\Pen;
+
 
 
 
 class BatchController extends Controller
 {
     //--------------------------------------- CREATE ------------------------------------------//
-    
+
     //add_batch
-    public function add_batch()
+    /* public function add_batch()
     {
         $farms = Farm::all();
         $barns = Barn::all();
@@ -69,13 +60,14 @@ class BatchController extends Controller
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มรุ่น: ' . $e->getMessage());
         }
     }
+    */
 
     //--------------------------------------- Index ------------------------------------------//
 
-      //Index batch
+    //Index batch
     public function indexBatch(Request $request)
     {
-        $query = Batch::query();
+        $query = Batch::with('farm.barns.pens');
 
         if ($request->filled('search')) {
             $query->where('batch_code', 'like', '%' . $request->search . '%');
@@ -99,16 +91,47 @@ class BatchController extends Controller
     }
 
 
-    //Edit batch
-    public function editBatch($id)
+
+    //Create Batch
+    public function createBatch(Request $request)
     {
-        //$batch = Batch::with(['farm', 'barn', 'pen'])->findOrFail($id);
-        $batch = Batch::findOrFail($id);
-        if (!$batch) {
-            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการแก้ไข');
-        } else {
-            return view('admin.batches.edit', compact('batch'));
+        try {
+            //validate
+            $validated = $request->validate([
+                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
+                'batch_id' => 'required|unique:batches,batch_id',
+
+                //'start_date' => 'required|date',
+                'end_date' => 'nullable|date|after_or_equal:start_date',
+            ]);
+
+            $data = new Batch;
+            $data->farm_id = $validated['farm_id'];
+
+            //unique
+            $data->batch_code = $validated['batch_code'];
+
+            $data->status = $validated['status'] ?? 'กำลังเลี้ยง';
+            $data->note = $validated['note'] ?? null;
+
+            $data->start_date = Carbon::now(); // เวลาปัจจุบัน
+            $data->end_date = $validated['end_date'];
+
+            $data->save();
+
+            return redirect()->back()->with('success', 'เพิ่มรุ่นเรียบร้อย');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มรุ่น: ' . $e->getMessage());
         }
+    }
+
+    //Edit batch
+    public function editBatch(Request $request)
+    {
+        $farms = Farm::all();
+        $batch = Batch::all();
+
+        return view('admin.batches.edit', compact('farm', 'batch'));
     }
 
     //Update batch
@@ -121,8 +144,18 @@ class BatchController extends Controller
             'status'     => 'required|string',
             'note'       => 'nullable|string',
             'start_date' => 'nullable|date',
-            'end_date'   => 'nullable|date|after_or_equal:start_date',
         ]);
+
+        // เช็คการเปลี่ยนสถานะ
+        $oldStatus = $batch->status;
+        $newStatus = $request->status;
+
+        $batch->status = $newStatus;
+
+        if ($oldStatus != 'เสร็จสิ้น' && $newStatus == 'เสร็จสิ้น') {
+            // ถ้าเปลี่ยนจากไม่เสร็จสิ้น → เสร็จสิ้น
+            $batch->end_date = now(); // อัปเดตเป็นเวลาปัจจุบัน
+        }
 
         $batch->update($validated);
 
@@ -210,5 +243,4 @@ class BatchController extends Controller
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv']);
     }
-
 }

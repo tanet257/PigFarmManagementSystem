@@ -288,10 +288,12 @@
                                                     title="เลือกชื่อประเภทอาหารหมู" required>
                                                     <option value="">-- เลือกชื่อประเภทอาหารหมู --</option>
                                                     @foreach ($storehouses as $storehouse)
-                                                        <option value="{{ $storehouse->item_code }}">
+                                                        <option value="{{ $storehouse->item_code }}"
+                                                            data-name="{{ $storehouse->item_name }}">
                                                             {{ $storehouse->item_name }}
                                                         </option>
                                                     @endforeach
+
                                                 </select>
 
                                                 <input type="hidden" name="item_name" class="item-name-hidden">
@@ -449,19 +451,18 @@
                         </div>
                         <!-- จบ medicineRowsContainer -->
 
-                        <!-- Header + Add Row Delete Row ของ ยา/วัคซีนสุกรขาเข้า -->
+                        <!-- Header + Add Row Delete Row ของ ต้นทุนรายเดือน -->
                         <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
                             <h4 class="mb-0">ต้นทุนรายเดือน(ค่าแรง/ค่าน้ำค่าไฟ)</h4>
                             <div>
-                                <button type="button" class="btn btn-danger btn-sm" id="clearAddMedicineRowBtn"
+                                <button type="button" class="btn btn-danger btn-sm" id="clearAddMonthlyRowBtn"
                                     data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
                                     <i class="bi bi-dash-lg"></i> ล้างแถว
                                 </button>
-                                <button type="button" class="btn btn-success btn-sm" id="addMedicineRowBtn"
+                                <button type="button" class="btn btn-success btn-sm" id="addMonthlyRowBtn"
                                     data-bs-toggle="tooltip" title="เพิ่มแถว">
                                     <i class="bi bi-plus-lg"></i> เพิ่มแถว
                                 </button>
-
                             </div>
                         </div>
 
@@ -482,9 +483,9 @@
 
                                             <!-- เดือน/ปี -->
                                             <div class="col-md-2 p-3">
-                                                <input type="text" name="date" placeholder="ด/ป" id="monthWrapper"
-                                                    class="form-control no-scroll" style="background: #f5f5f5"
-                                                    title="เดือน/ปี" required>
+                                                <input type="text" name="date" placeholder="ด/ป"
+                                                    id="monthWrapper" class="form-control no-scroll"
+                                                    style="background: #f5f5f5" title="เดือน/ปี" required>
                                             </div>
 
                                             <!-- ประเภทค่าใช้จ่าย -->

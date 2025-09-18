@@ -48,7 +48,7 @@
             <div class="card-body">
                 <link rel="stylesheet"
                     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-                    
+
                  <style>
                     .snackbar {
                         visibility: hidden;
@@ -197,7 +197,6 @@
                       <option value="transport"> ค่ารถ/ขนส่ง </option>
                       <option value="repair"> ค่าซ่อมแซม </option>
                       <option value="dead_pig"> ขาดทุนจากหมูตาย </option>
-                      <option value="other"> อื่น ๆ </option>
             </select>
             </div>
 

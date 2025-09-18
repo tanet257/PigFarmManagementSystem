@@ -14,16 +14,20 @@ class Pen extends Model
     protected $fillable = [
         'barn_id',
 
-        'pens_code',
+        'pen_code',
         'pig_capacity',
         'status',
-        
+
         'note',
         'date'
     ];
 
     // ------------ Relationships ------------ //
 
+    public function batches()
+    {
+        return $this->hasMany(Batch::class);
+    }
     public function barn()
     {
         return $this->belongsTo(Barn::class);
