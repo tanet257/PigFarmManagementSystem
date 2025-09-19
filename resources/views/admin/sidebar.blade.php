@@ -32,13 +32,6 @@
 
                 <li><a href="#batchMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Batch </a>
                   <ul id="batchMenuDropdown" class="collapse list-unstyled ">
-                    @if(Route::has('batch.add'))
-                        <li><a href="{{route('batch.add')}}">Add Batch</a></li>
-                    @else
-                        <li><a href="#" onclick="alert('Route batch.add ยังไม่ได้ถูกกำหนด!')">Add Batch</a></li>
-                    @endif
-                    <!--<li><a href="{{url('view_batch')}}">View Batch</a></li>-->
-
                     @if (Route::has('batches.index'))
                         <li><a href="{{route('batches.index')}}">Index Batch</a></li>
                     @else
@@ -49,8 +42,8 @@
 
                 <li><a href="#pigEntryRecordMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Entry Record </a>
                   <ul id="pigEntryRecordMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{route('pig_entry_record.record')}}">Add Pig Entry Record</a></li>
-                    <li><a href="{{route('pig_entry_record.view')}}">View Pig Entry Record</a></li>
+                    <li><a href="{{route('pig_entry_records.record')}}">Add Pig Entry Record</a></li>
+                    <li><a href="{{route('pig_entry_records.index')}}">Index Pig Entry Record</a></li>
                   </ul>
                 </li>
 

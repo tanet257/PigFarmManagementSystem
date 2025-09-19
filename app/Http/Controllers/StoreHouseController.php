@@ -300,21 +300,33 @@ class StoreHouseController extends Controller
     {
         $storehouse = StoreHouse::findOrFail($id);
 
-
         $validated = $request->validate([
-            'farm_id'   => 'required|exists:farms,id',
-
-            //'item_type' => 'required|string',
+            'farm_id' => 'required|exists:farms,id',
             'item_code' => 'required|string',
             'item_name' => 'required|string',
-            'unit'      => 'required|string',
-            'note'      => 'nullable|string',
+            'unit' => 'required|string',
+            'note' => 'nullable|string',
+            'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
         ]);
 
         $storehouse->update($validated);
 
-        return redirect()->back()->with('success', 'แก้ไข StoreHouse สำเร็จ');
+        // ถ้ามีการอัปโหลดไฟล์
+        if ($request->hasFile('receipt_file')) {
+            $file = $request->file('receipt_file');
+            $filename = time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('receipt_files'), $filename);
+
+            // อัปเดต cost ล่าสุดของ storehouse
+            $latestCost = $storehouse->costs()->latest()->first();
+            if ($latestCost) {
+                $latestCost->update(['receipt_file' => $filename]);
+            }
+        }
+
+        return redirect()->back()->with('success', 'แก้ไข StoreHouse สำเร็จ และอัปเดตใบเสร็จใน Cost เรียบร้อย');
     }
+
 
 
     //Delete storehous

@@ -2,7 +2,6 @@
 <html lang="th">
 
 <head>
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     @include('admin.css')
     <style>
@@ -87,7 +86,6 @@
             text-align: center;
         }
 
-        /* snackbar */
         .snackbar {
             visibility: hidden;
             min-width: 250px;
@@ -102,7 +100,6 @@
             right: 20px;
             bottom: 30px;
             font-size: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -154,7 +151,7 @@
 
             @if (session('success'))
                 sbMsg.innerText = "{{ session('success') }}";
-                sb.style.backgroundColor = "#28a745"; // เขียว
+                sb.style.backgroundColor = "#28a745";
                 sb.style.display = "flex";
                 sb.classList.add("show");
                 setTimeout(() => {
@@ -163,7 +160,7 @@
                 }, 10500);
             @elseif (session('error'))
                 sbMsg.innerText = "{{ session('error') }}";
-                sb.style.backgroundColor = "#dc3545"; // แดง
+                sb.style.backgroundColor = "#dc3545";
                 sb.style.display = "flex";
                 sb.classList.add("show");
                 setTimeout(() => {
@@ -220,13 +217,11 @@
     <div class="page-content">
         <div class="container my-5 table-container">
 
-            <!-- Title -->
-            <h1 class="text-center">จัดการคลัง (storehouses)</h1>
+            <h1 class="text-center">บันทึกหมูเข้า (Pig Entry Records)</h1>
 
-            <!-- Toolbar -->
             <div class="toolbar">
                 <div class="left-tools">
-                    <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex">
+                    <form method="GET" action="{{ route('pig_entry_records.index') }}" class="d-flex">
                         <input type="search" name="search" class="form-control form-control-sm me-2"
                             placeholder="ค้นหา..." value="{{ request('search') }}">
                         <button type="submit" class="btn btn-sm btn-outline-light">ค้นหา</button>
@@ -234,54 +229,8 @@
                 </div>
 
                 <div class="right-tools">
-                    <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex">
-                        <select name="farm_id" class="form-select form-select-sm me-2">
-                            <option value="">เลือกฟาร์มทั้งหมด</option>
-                            @foreach ($farms as $farm)
-                                <option value="{{ $farm->id }}"
-                                    {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
-                                    {{ $farm->farm_name }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        <select name="sort_by" class="form-select form-select-sm me-2">
-                            <option value="">เรียงลำดับ...</option>
-                            <option value="date" {{ request('sort_by') == 'date' ? 'selected' : '' }}>
-                                วันที่ซื้อสินค้าเข้าคลัง</option>
-                            <option value="updated_at" {{ request('sort_by') == 'updated_at' ? 'selected' : '' }}>
-                                วันที่แก้ไขล่าสุด</option>
-                            <option value="stock" {{ request('sort_by') == 'stock' ? 'selected' : '' }}>จำนวนสต็อก
-                            </option>
-                            <option value="total_price" {{ request('sort_by') == 'total_price' ? 'selected' : '' }}>
-                                ราคารวม</option>
-                        </select>
-
-                        <select name="sort_order" class="form-select form-select-sm me-2">
-                            <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>น้อย → มาก
-                            </option>
-                            <option value="desc" {{ request('sort_order') == 'desc' ? 'selected' : '' }}>มาก → น้อย
-                            </option>
-                        </select>
-
-                        <select name="per_page" class="form-select form-select-sm me-2">
-                            @foreach ([10, 25, 50, 100] as $n)
-                                <option value="{{ $n }}"
-                                    {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                                    {{ $n }} แถว
-                                </option>
-                            @endforeach
-                        </select>
-
-                        <button type="submit" class="btn btn-sm btn-action btn-primary me-2">Apply</button>
-                    </form>
-
-                    <a href="{{ route('storehouses.export.csv') }}" class="btn btn-sm btn-outline-success">Export
-                        CSV</a>
-                    <a href="{{ route('storehouses.export.pdf') }}" class="btn btn-primary">Export PDF</a>
-
-                    <button class="btn btn-success" data-bs-toggle="modal"
-                        data-bs-target="#createModal">เพิ่มสินค้าเข้าคลัง
+                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
+                        เพิ่มหมูเข้า
                     </button>
                 </div>
             </div>
@@ -293,63 +242,62 @@
                         <thead>
                             <tr>
                                 <th>วันที่</th>
-                                <th>ชื่อฟาร์ม</th>
-
-                                <th>ประเภทรายการ</th>
-                                <th>รหัสรายการ</th>
-                                <th>ชื่อรายการ</th>
-                                <th>จำนวนสต็อก</th>
-                                <th>ราคาต่อรายการ</th>
-                                <th>ค่าส่ง</th>
+                                <th>ฟาร์ม</th>
+                                <th>รุ่น (Batch)</th>
+                                <th>จำนวนหมู</th>
+                                <th>น้ำหนักรวม</th>
+                                <th>ราคาลูกหมู</th>
+                                <th>ค่าน้ำหนักเกิน</th>
+                                <th>ค่าขนส่ง</th>
                                 <th>ราคารวม</th>
-                                <th>หน่วย</th>
-                                <th>สถานะ</th>
-                                <th>สลิป</th>
                                 <th>โน๊ต</th>
+                                <th>ใบเสร็จ</th>
                                 <th>จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($storehouses as $storehouse)
+                            @forelse($pigEntryRecords as $record)
                                 <tr>
-                                    <td>{{ $storehouse->latestCost->date ?? '-' }}</td>
-                                    <td>{{ $storehouse->farm->farm_name ?? '-' }}</td>
+                                    <td>{{ $record->pig_entry_date }}</td>
+                                    <td>{{ $record->farm->farm_name ?? '-' }}</td>
+                                    <td>{{ $record->batch->batch_code ?? '-' }}</td>
+                                    <td>{{ $record->total_pig_amount }}</td>
+                                    <td>{{ $record->total_pig_weight }}</td>
+                                    <td>{{ number_format($record->total_pig_price, 2) }}</td>
 
-                                    <td>{{ $storehouse->item_type }}</td>
-                                    <td>{{ $storehouse->item_code }}</td>
-                                    <td>{{ $storehouse->item_name }}</td>
-                                    <td>{{ number_format($storehouse->stock, 2) }}</td>
-                                    <td>{{ number_format($storehouse->latestCost->price_per_unit ?? 0, 2) }}</td>
-                                    <td>{{ number_format($storehouse->latestCost->transport_cost ?? 0, 2) }}</td>
-                                    <td>{{ number_format($storehouse->latestCost->total_price ?? 0, 2) }}</td>
-                                    <td>{{ $storehouse->unit }}</td>
-                                    <td>
-                                        @if ($storehouse->status == 'available')
-                                            <span class="badge bg-purple">available</span>
-                                        @elseif($storehouse->status == 'unavailable')
-                                            <span class="badge bg-secondary">unavailable</span>
-                                        @else
-                                            <span class="badge bg-dark">-</span>
-                                        @endif
+                                    {{-- คำนวณจาก batch->costs --}}
+                                    <td>{{ number_format($record->batch->costs->where('cost_type', 'excess_weight')->sum('total_price') ?? 0, 2) }}
+                                    </td>
+                                    <td>{{ number_format($record->batch->costs->sum('transport_cost') ?? 0, 2) }}</td>
                                     </td>
                                     <td>
-                                        @if ($storehouse->receipt_file && file_exists(public_path('receipt_files/' . $storehouse->receipt_file)))
-                                            <img src="{{ asset('receipt_files/' . $storehouse->receipt_file) }}"
-                                                alt="Receipt" style="max-width: 100px; max-height: 100px;">
-                                        @else
-                                            -
-                                        @endif
+                                        {{ number_format(
+                                            ($record->total_pig_price ?? 0) +
+                                                ($record->excess_weight_cost ?? 0) +
+                                                ($record->batch->costs->sum('transport_cost') ?? 0),
+                                            2,
+                                        ) }}
                                     </td>
+                                    <td>{{ $record->note ?? '-' }}</td>
+                                    <td>
+    @if ($record->receipt_file && file_exists(public_path('receipt_files/' . $record->receipt_file)))
+        <img src="{{ asset('receipt_files/' . $record->receipt_file) }}"
+             alt="Receipt"
+             style="max-width: 100px; max-height: 100px;">
+    @else
+        -
+    @endif
+</td>
 
-                                    <td>{{ $storehouse->note ?? '-' }}</td>
+
                                     <td>
                                         {{-- Edit Button --}}
                                         <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
-                                            data-bs-target="#editModal{{ $storehouse->id }}">
+                                            data-bs-target="#editModal{{ $record->id }}">
                                             แก้ไข
                                         </button>
                                         {{-- Delete Button --}}
-                                        <form action="{{ route('storehouses.delete', $storehouse->id) }}"
+                                        <form action="{{ route('pig_entry_records.delete', $record->id) }}"
                                             method="POST" style="display:inline-block;">
                                             @csrf
                                             @method('DELETE')
@@ -360,26 +308,27 @@
                                 </tr>
 
                                 {{-- Modal Edit --}}
-                                <div class="modal fade" id="editModal{{ $storehouse->id }}" tabindex="-1"
+                                <div class="modal fade" id="editModal{{ $record->id }}" tabindex="-1"
                                     aria-hidden="true">
                                     <div class="modal-dialog modal-lg">
                                         <div class="modal-content bg-dark text-light">
                                             <div class="modal-header">
-                                                <h5>แก้ไขสินค้า</h5>
+                                                <h5>แก้ไขข้อมูลหมูเข้า</h5>
                                                 <button type="button" class="btn-close"
                                                     data-bs-dismiss="modal"></button>
                                             </div>
-                                            <form action="{{ route('storehouses.update', $storehouse->id) }}"
+                                            <form action="{{ route('pig_entry_records.update', $record->id) }}"
                                                 method="POST" enctype="multipart/form-data">
                                                 @csrf
                                                 @method('PUT')
                                                 <div class="modal-body">
+
                                                     <div class="mb-3">
-                                                        <label>ฟาร์ม</label>
+                                                        <label>ฟาร์ม (Farm)</label>
                                                         <select name="farm_id" class="form-select" required>
                                                             @foreach ($farms as $farm)
                                                                 <option value="{{ $farm->id }}"
-                                                                    {{ $storehouse->farm_id == $farm->id ? 'selected' : '' }}>
+                                                                    {{ $record->farm_id == $farm->id ? 'selected' : '' }}>
                                                                     {{ $farm->farm_name }}
                                                                 </option>
                                                             @endforeach
@@ -387,68 +336,103 @@
                                                     </div>
 
                                                     <div class="mb-3">
-                                                        <label>ชื่อรายการ</label>
-                                                        <input type="text" name="item_name" class="form-control"
-                                                            value="{{ $storehouse->item_name }}" required>
+                                                        <label>รุ่น (Batch)</label>
+                                                        <select name="batch_id" class="form-select" required>
+                                                            @foreach ($batches as $batch)
+                                                                <option value="{{ $batch->id }}"
+                                                                    {{ $record->batch_id == $batch->id ? 'selected' : '' }}>
+                                                                    {{ $batch->batch_code }}
+                                                                </option>
+                                                            @endforeach
+                                                        </select>
                                                     </div>
+
                                                     <div class="mb-3">
-                                                        <label>รหัสรายการ</label>
-                                                        <input type="text" name="item_code" class="form-control"
-                                                            value="{{ $storehouse->item_code }}" required>
+                                                        <label>วันที่หมูเข้า</label>
+                                                        <input type="date" name="pig_entry_date" class="form-control"
+                                                            value="{{ $record->pig_entry_date }}" required>
                                                     </div>
+
                                                     <div class="mb-3">
-                                                        <label>หน่วย</label>
-                                                        <input type="text" name="unit" class="form-control"
-                                                            value="{{ $storehouse->unit }}">
+                                                        <label>จำนวนหมูเข้า (ตัว)</label>
+                                                        <input type="number" name="total_pig_amount"
+                                                            class="form-control"
+                                                            value="{{ $record->total_pig_amount }}" required>
                                                     </div>
+
+                                                    <div class="mb-3">
+                                                        <label>น้ำหนักรวม (กก.)</label>
+                                                        <input type="number" step="0.01" name="total_pig_weight"
+                                                            class="form-control"
+                                                            value="{{ $record->total_pig_weight }}" required>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label>ราคารวม (บาท)</label>
+                                                        <input type="number" step="0.01" name="total_pig_price"
+                                                            class="form-control" value="{{ $record->total_pig_price }}"
+                                                            required>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label>ค่าน้ำหนักส่วนเกิน</label>
+                                                        <input type="number" step="0.01" name="excess_weight_cost"
+                                                            class="form-control"
+                                                            value="{{ $record->batch->costs->where('cost_type', 'excess_weight')->sum('total_price') ?? 0 }}">
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label>ค่าขนส่ง</label>
+                                                        <input type="number" step="0.01" name="transport_cost"
+                                                            class="form-control"
+                                                            value="{{ $record->batch->costs->sum('transport_cost') ?? 0 }}">
+                                                    </div>
+
                                                     <div class="mb-3">
                                                         <label>โน๊ต</label>
-                                                        <textarea name="note" class="form-control">{{ $storehouse->note }}</textarea>
+                                                        <textarea name="note" class="form-control">{{ $record->note }}</textarea>
                                                     </div>
 
                                                     <div class="mb-3">
-                                                        <label>ใบเสร็จ (อัปเดตไปยัง Costs)</label>
+                                                        <label>แนบไฟล์ใบเสร็จ (ถ้ามี)</label>
                                                         <input type="file" name="receipt_file"
-                                                            class="form-control" accept=".jpg,.jpeg,.png,.pdf">
-                                                        @if ($storehouse->costs()->latest()->first()?->receipt_file)
-                                                            <p>ไฟล์เก่า:
-                                                                <a href="{{ asset('receipt_files/' . $storehouse->costs()->latest()->first()->receipt_file) }}"
-                                                                    target="_blank">
-                                                                    ดูไฟล์
-                                                                </a>
-                                                            </p>
-
+                                                            class="form-control">
+                                                        @if ($record->receipt_file ?? false)
+                                                            <small class="text-muted">ไฟล์ปัจจุบัน:
+                                                                {{ $record->receipt_file }}</small>
                                                         @endif
                                                     </div>
-                                                    <div class="modal-footer">
-                                                        <button type="submit" class="btn btn-primary">บันทึก</button>
-                                                        <button type="button" class="btn btn-secondary"
-                                                            data-bs-dismiss="modal">ยกเลิก</button>
-                                                    </div>
+
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="submit" class="btn btn-primary">บันทึก</button>
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">ยกเลิก</button>
                                                 </div>
                                             </form>
                                         </div>
                                     </div>
                                 </div>
-                                {{-- Modal Edit Form --}}
+
+
+                                {{-- End Modal Edit --}}
 
                             @empty
                                 <tr>
-                                    <td colspan="15" class="text-danger">❌ ไม่มีข้อมูล storehouse</td>
+                                    <td colspan="12" class="text-danger">❌ ไม่มีข้อมูล</td>
                                 </tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
 
-                {{-- Pagination --}}
                 <div class="d-flex justify-content-between mt-3">
                     <div>
-                        แสดง {{ $storehouses->firstItem() ?? 0 }} ถึง {{ $storehouses->lastItem() ?? 0 }} จาก
-                        {{ $storehouses->total() ?? 0 }} แถว
+                        แสดง {{ $pigEntryRecords->firstItem() ?? 0 }} ถึง {{ $pigEntryRecords->lastItem() ?? 0 }} จาก
+                        {{ $pigEntryRecords->total() ?? 0 }} แถว
                     </div>
                     <div>
-                        {{ $storehouses->withQueryString()->links() }}
+                        {{ $pigEntryRecords->withQueryString()->links() }}
                     </div>
                 </div>
             </div>
@@ -460,45 +444,80 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content bg-dark text-light">
                 <div class="modal-header">
-                    <h5>เพิ่มสินค้าใหม่เข้าคลัง</h5>
+                    <h5>เพิ่มหมูเข้า</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('storehouses.create') }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('pig_entry_records.upload') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
                         <div class="mb-3">
                             <label>ฟาร์ม</label>
-                            <select name="farm_id" class="form-select">
+                            <select name="farm_id" class="form-select" required>
+                                <option value="">-- เลือกฟาร์ม --</option>
                                 @foreach ($farms as $farm)
                                     <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
                                 @endforeach
                             </select>
                         </div>
+
                         <div class="mb-3">
-                            <label>ประเภทรายการ</label>
-                            <select name="item_type" class="form-select" required>
-                                <option value="">-- ประเภทรายการ --</option>
-                                <option value="feed">อาหาร</option>
-                                <option value="medicine">ยา</option>
-                                <option value="vaccine">วัคซีน</option>
+                            <label>รุ่น (Batch)</label>
+                            <select name="batch_id" class="form-select" required>
+                                <option value="">-- เลือกรุ่น --</option>
+                                @foreach ($batches as $batch)
+                                    <option value="{{ $batch->id }}">{{ $batch->batch_code }}
+                                        ({{ $batch->farm->farm_name ?? '-' }})
+                                    </option>
+                                @endforeach
                             </select>
                         </div>
+
                         <div class="mb-3">
-                            <label>ชื่อรายการ</label>
-                            <input type="text" name="item_name" class="form-control" required>
+                            <label>วันที่เข้า</label>
+                            <input type="date" name="pig_entry_date" class="form-control" required>
                         </div>
+
                         <div class="mb-3">
-                            <label>รหัสรายการ</label>
-                            <input type="text" name="item_code" class="form-control" required>
+                            <label>จำนวนหมู</label>
+                            <input type="number" name="total_pig_amount" class="form-control" min="1"
+                                required>
                         </div>
+
                         <div class="mb-3">
-                            <label>หน่วย</label>
-                            <input type="text" name="unit" class="form-control">
+                            <label>น้ำหนักรวม</label>
+                            <input type="number" name="total_pig_weight" class="form-control" min="0"
+                                step="0.01" required>
                         </div>
+
+                        <div class="mb-3">
+                            <label>ราคาลูกหมูรวม</label>
+                            <input type="number" name="total_pig_price" class="form-control" min="0"
+                                step="0.01" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label>ค่าน้ำหนักส่วนเกิน</label>
+                            <input type="number" name="excess_weight_cost" class="form-control" min="0"
+                                step="0.01">
+                        </div>
+
+                        <div class="mb-3">
+                            <label>ค่าขนส่ง</label>
+                            <input type="number" name="transport_cost" class="form-control" min="0"
+                                step="0.01">
+                        </div>
+
                         <div class="mb-3">
                             <label>โน๊ต</label>
                             <textarea name="note" class="form-control"></textarea>
                         </div>
+
+                        <div class="mb-3">
+                            <label>ใบเสร็จ</label>
+                            <input type="file" name="receipt_file" class="form-control"
+                                accept=".jpg,.jpeg,.png,.pdf">
+                        </div>
+
                         <div class="modal-footer">
                             <button type="submit" class="btn btn-primary">บันทึก</button>
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
@@ -508,7 +527,7 @@
             </div>
         </div>
     </div>
-    {{-- End Modal Create --}}
+    {{-- End Create Modal --}}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @include('admin.js')

@@ -98,10 +98,8 @@ class BatchController extends Controller
         try {
             //validate
             $validated = $request->validate([
-                // ทำให้ batch_id ไม่ซ้ำกันภายใน farm_id
-                'batch_id' => 'required|unique:batches,batch_id',
-
-                //'start_date' => 'required|date',
+                'farm_id'  => 'required|exists:farms,id',
+                'batch_code' => 'required|unique:batches,batch_code',
                 'end_date' => 'nullable|date|after_or_equal:start_date',
             ]);
 
@@ -115,7 +113,7 @@ class BatchController extends Controller
             $data->note = $validated['note'] ?? null;
 
             $data->start_date = Carbon::now(); // เวลาปัจจุบัน
-            $data->end_date = $validated['end_date'];
+            $data->end_date = $validated['end_date'] ?? null;
 
             $data->save();
 

@@ -19,7 +19,6 @@ class PigEntryRecord extends Model
         'total_pig_amount',
         'total_pig_weight',
         'total_pig_price',
-        'receipt_file',
         'note',
     ];
 
@@ -30,14 +29,20 @@ class PigEntryRecord extends Model
         return $this->belongsTo(Batch::class);
     }
 
-    public function costs()
+    public function getTransportCostAttribute()
     {
-        return $this->hasMany(Cost::class, 'batch_id', 'batch_id');
+        return $this->batch->costs->where('cost_type', 'transport')->sum('total_price');
     }
+
+    public function getExcessWeightCostAttribute()
+    {
+        return $this->batch->costs->where('cost_type', 'excess_weight')->sum('total_price');
+    }
+
+
 
     public function farm()
     {
         return $this->belongsTo(Farm::class);
     }
-
 }

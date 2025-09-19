@@ -34,4 +34,9 @@ class Batch extends Model
     {
         return $this->hasMany(PigEntryRecord::class, 'batch_id');
     }
+
+    public function costs()
+    {
+        return $this->hasMany(Cost::class, 'batch_id', 'id');
+    }
 }

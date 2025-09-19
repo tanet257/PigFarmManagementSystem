@@ -317,9 +317,9 @@
                                     <td>{{ $batch->farm->barns->first()->pig_capacity ?? '-' }}</td>
                                     <td>{{ $batch->farm->barns->first()->pens->count() ?? '-' }}</td>
 
-                                    <td>{{ number_format($batch->total_pig_weight, 2) }}</td>
-                                    <td>{{ $batch->total_pig_amount }}</td>
-                                    <td>{{ number_format($batch->total_pig_price, 2) }}</td>
+                                    <td>{{ number_format($batch->total_pig_weight ?? 0, 2) }}</td>
+                                    <td>{{ number_format($batch->total_pig_amount ?? 0) }}</td>
+                                    <td>{{ number_format($batch->total_pig_price ?? 0, 2) }}</td>
                                     <td>
                                         @if ($batch->status == 'กำลังเลี้ยง')
                                             <span class="badge bg-purple">กำลังเลี้ยง</span>
@@ -368,7 +368,7 @@
 
                                                             <div class="mb-3">
                                                                 <label>น้ำหนักรวม (kg)</label>
-                                                                <input type="number" step="0.01"
+                                                                <input type="number"
                                                                     name="total_pig_weight" class="form-control"
                                                                     value="{{ $batch->total_pig_weight }}" required>
                                                             </div>
@@ -382,7 +382,7 @@
 
                                                             <div class="mb-3">
                                                                 <label>ราคารวม (บาท)</label>
-                                                                <input type="number" step="0.01"
+                                                                <input type="number"
                                                                     name="total_pig_price" class="form-control"
                                                                     value="{{ $batch->total_pig_price }}" required>
                                                             </div>
