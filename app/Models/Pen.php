@@ -33,4 +33,11 @@ class Pen extends Model
         return $this->belongsTo(Barn::class);
     }
 
+    //ใช้เพื่อให้เรียกดูได้ง่ายว่า batch นี่อยู่เล้าไหนคอกไหน
+    public function batchPenAllocations()
+{
+    return $this->hasMany(BatchPenAllocation::class, 'pen_id');
+}
+
+
 }

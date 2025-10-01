@@ -1,4 +1,10 @@
  <div class="d-flex align-items-stretch">
+    {{--SnackBar--}}
+    <div id="snackbar" class="snackbar">
+        <span id="snackbarMessage"></span>
+        <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
+        <button onclick="closeSnackbar()">✕</button>
+    </div>
       <!-- Sidebar Navigation-->
       <nav id="sidebar">
         <!-- Sidebar Header-->
@@ -37,20 +43,30 @@
                     @else
                         <li><a href="#" onclick="alert('Route batches.index ยังไม่ได้ถูกกำหนด!')">Index Batch</a></li>
                     @endif
+                    <li><a href="{{route('pig_entry_records.index')}}">Index Pig Entry Record</a></li>
+                    <li><a href="{{route('batch_pen_allocations.index')}}">Index batch_pen_allocations</a></li>
                   </ul>
                 </li>
 
-                <li><a href="#pigEntryRecordMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Entry Record </a>
-                  <ul id="pigEntryRecordMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{route('pig_entry_records.record')}}">Add Pig Entry Record</a></li>
-                    <li><a href="{{route('pig_entry_records.index')}}">Index Pig Entry Record</a></li>
-                  </ul>
+                <li><a href="#dairyDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>dairy record </a>
+                  <ul id="dairyDropdown" class="collapse list-unstyled ">
+                    <li><a href="{{route('dairy_records.record')}}">dairy record</a></li>
+                    <li><a href="{{route('dairy_records.index')}}">View dairy </a></li>
+                </ul>
                 </li>
 
                 <li><a href="#storehouseDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>store house record </a>
                   <ul id="storehouseDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{route('store_house_record.record')}}">store house record</a></li>
-                    <li><a href="{{route('storehouses.index')}}">View store house record</a></li>
+                    <li><a href="{{route('store_house_record.recordview')}}">store house record</a></li>
+                    <li><a href="{{route('storehouses.index')}}">View store house </a></li>
+                    <li><a href="{{route('inventory_movements.index')}}">View inventory movement</a></li>
+                </ul>
+                </li>
+
+                <li><a href="#pigsellMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Sell </a>
+                  <ul id="pigsellMenuDropdown" class="collapse list-unstyled ">
+                    <li><a href="{{url('add_pig_sell')}}">Pig Sell Record</a></li>
+                    <li><a href="{{url('view_pig_sell')}}">View Pig Sell</a></li>
                   </ul>
                 </li>
 
@@ -82,20 +98,6 @@
                   </ul>
                 </li>
 
-                <li><a href="#costMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Cost </a>
-                  <ul id="costMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{url('add_cost')}}">Add Cost</a></li>
-                    <li><a href="{{url('view_cost')}}">View Cost</a></li>
-                  </ul>
-                </li>
-
-                <li><a href="#pigsellMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Sell </a>
-                  <ul id="pigsellMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{url('add_pig_sell')}}">Add Pig Sell</a></li>
-                    <li><a href="{{url('view_pig_sell')}}">View Pig Sell</a></li>
-                  </ul>
-                </li>
-
                 <li><a href="#feedingMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Feeding </a>
                   <ul id="feedingMenuDropdown" class="collapse list-unstyled ">
                     <li><a href="{{url('add_feeding')}}">Add Feeding</a></li>
@@ -107,6 +109,12 @@
                   <ul id="pigdeathDropdown" class="collapse list-unstyled ">
                     <li><a href="{{url('add_pig_death')}}">Add Pig Death</a></li>
                     <li><a href="{{url('view_pig_death')}}">View Pig Death</a></li>
+                  </ul>
+                </li>
+
+                <li><a href="#dashDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>dashboard</a>
+                  <ul id="dashDropdown" class="collapse list-unstyled ">
+                    <li><a href="{{route('dashboard.dashboard')}}">View Pig Death</a></li>
                   </ul>
                 </li>
 

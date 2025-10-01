@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\Farm;
 use App\Models\Batch;
@@ -20,32 +22,66 @@ use App\Models\InventoryMovement;
 class StoreHouseController extends Controller
 {
 
-    //--------------------------------------- CREATE ------------------------------------------//
+    //--------------------------------------- VIEW ------------------------------------------//
 
-    //add_storehouse_record
+    //view storehouse record
     public function store_house_record(Request $request)
     {
+        // farms
         $farms = Farm::all();
+
+        // batches
         $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        $storehouses = Storehouse::all();
 
-        // unit type
-        $unitsByType = [
-            'feed' => ['กระสอบ'],
-            'medicine' => ['ขวด', 'กล่อง', 'ซอง'],
-            'wage' => ['บาท'],
-            'electric_bill' => ['บาท'],
-            'water_bill' => ['บาท'],
-        ];
+        // storehouses
+        $storehouses = StoreHouse::all();
 
-        return view('admin.record.store_house_record', compact('farms', 'batches', 'storehouses', 'unitsByType'));
+        /**
+         * ---------- สำหรับ item_code ----------
+         * group: item_type -> batch_id -> [item_code, item_name]
+         * ใช้ InventoryMovement + storehouse
+         */
+        $storehousesByTypeAndBatch = InventoryMovement::with('storehouse')
+            ->get()
+            ->groupBy(fn($movement) => $movement->storehouse->item_type)
+            ->map(function ($group) {
+                return $group->groupBy('batch_id')->map(function ($batchGroup) {
+                    return $batchGroup->mapWithKeys(function ($movement) {
+                        return [
+                            $movement->storehouse->item_code => [
+                                'item_code' => $movement->storehouse->item_code,
+                                'item_name' => $movement->storehouse->item_name,
+                            ]
+                        ];
+                    });
+                });
+            });
+
+        /**
+         * ---------- สำหรับ unit ----------
+         * group: item_type -> units
+         * ดึงจาก StoreHouse โดยตรง
+         */
+        $unitsByType = Storehouse::select('item_type', 'unit')
+            ->get()
+            ->groupBy('item_type')
+            ->map(fn($group) => $group->pluck('unit')->unique()->values());
+
+
+
+        //dd($storehouses->groupBy('item_type')->map(fn($g) => $g->pluck('unit')->unique()->values()));
+
+        return view(
+            'admin.storehouses.record.store_house_record',
+            compact('farms', 'batches', 'storehouses', 'storehousesByTypeAndBatch', 'unitsByType')
+        );
     }
+
 
     // upload_store_house_record
     public function upload_store_house_record(Request $request)
     {
         try {
-            // กำหนด units ตาม type
             $unitsByType = [
                 'feed' => ['kg', 'กระสอบ'],
                 'medicine' => ['ขวด', 'กล่อง', 'ซอง'],
@@ -54,148 +90,150 @@ class StoreHouseController extends Controller
                 'water_bill' => ['บาท'],
             ];
 
-            // แปลง empty string เป็น null (unit, item_code, item_name)
-            $input = $request->all();
-            foreach (['unit', 'item_code', 'item_name'] as $field) {
-                if (isset($input[$field]) && $input[$field] === '') $input[$field] = null;
-            }
-            $request->merge($input);
+            $sections = ['feed', 'medicine', 'monthly'];
 
-            // กำหนด allowed units ตาม item_type
-            $allowedUnits = $unitsByType[$request->input('item_type')] ?? [];
+            foreach ($sections as $section) {
+                $rows = $request->input($section, []);
 
-            // Validate
-            $validated = $request->validate([
-                'farm_id'   => 'required|exists:farms,id',
-                'batch_id'  => 'required|exists:batches,id',
-                'date' => ['required', function ($attribute, $value, $fail) use ($request) {
-                    try {
-                        if (in_array($request->input('item_type'), ['wage', 'electric_bill', 'water_bill'])) {
-                            Carbon::createFromFormat('m/Y', $value);
-                        } else {
-                            $dt = Carbon::createFromFormat('d/m/Y H:i', $value);
-                            if ($dt->isFuture()) $fail('วันที่ต้องไม่อยู่ในอนาคต');
+                foreach ($rows as $i => $rowInput) {
+                    // แปลง empty string เป็น null
+                    foreach (['unit', 'item_code', 'item_name'] as $field) {
+                        if (isset($rowInput[$field]) && $rowInput[$field] === '') $rowInput[$field] = null;
+                    }
+
+                    $allowedUnits = $unitsByType[$rowInput['item_type']] ?? [];
+                    Log::info("Row input", $rowInput);
+                    // Validation
+                    $validated = validator($rowInput, [
+                        'farm_id'   => 'required|exists:farms,id',
+                        'batch_id'  => 'required|exists:batches,id',
+                        'date' => ['required', function ($attribute, $value, $fail) use ($rowInput) {
+                            try {
+                                if (in_array($rowInput['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
+                                    Carbon::createFromFormat('m/Y', $value);
+                                } else {
+                                    $dt = Carbon::createFromFormat('d/m/Y H:i', $value);
+                                    if ($dt->isFuture()) $fail('วันที่ต้องไม่อยู่ในอนาคต');
+                                }
+                            } catch (\Exception $e) {
+                                $fail('รูปแบบวันที่ไม่ถูกต้อง');
+                            }
+                        }],
+                        'item_type'      => 'required|string',
+                        'item_code'      => 'nullable|string',
+                        'item_name'      => 'nullable|string',
+                        'stock'          => 'nullable|integer|min:1',
+                        'price_per_unit' => 'nullable|numeric|min:0',
+                        'unit'           => ['nullable', Rule::in($allowedUnits)],
+                        'transport_cost' => 'nullable|numeric|min:0',
+                        'note'           => 'nullable|string',
+                    ])->validate();
+
+                    $batch = Batch::findOrFail($validated['batch_id']);
+
+                    // อัปโหลดไฟล์ถ้ามี
+                    $uploadedFileUrl = null;
+                    if ($request->hasFile("$section.$i.receipt_file")) {
+                        $file = $request->file("$section.$i.receipt_file");
+                        if ($file->isValid()) {
+                            $uploadedFileUrl = Cloudinary::upload($file->getRealPath(), ['folder' => 'receipt_files'])->getSecurePath();
                         }
-                    } catch (\Exception $e) {
-                        $fail('รูปแบบวันที่ไม่ถูกต้อง');
                     }
-                }],
-                'item_type'      => 'required|string',
-                'item_code'      => 'nullable|string',
-                'item_name'      => 'nullable|string',
-                'stock'          => 'nullable|integer|min:1',
-                'price_per_unit' => 'nullable|numeric|min:0',
-                'unit'           => ['nullable', Rule::in($allowedUnits)],
-                'transport_cost' => 'nullable|numeric|min:0',
-                'receipt_file'   => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-                'note'           => 'nullable|string',
-            ]);
 
-            $batch = Batch::findOrFail($validated['batch_id']);
+                    // -------------------
+                    // STOREHOUSE
+                    // -------------------
+                    $storehouse = null;
+                    if (!in_array($validated['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
+                        $storehouse = StoreHouse::where('farm_id', $validated['farm_id'])
 
-            if (!in_array($validated['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
-                // feed/medicine
-                $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
-                $formattedDate = $dt->format('Y-m-d H:i:s');
+                            ->where('item_code', $validated['item_code'])
+                            ->first();
 
-                // หา StoreHouse ที่มีอยู่แล้ว
-                $storehouse = StoreHouse::where('farm_id', $validated['farm_id'])
-                    ->where('item_code', $validated['item_code'])
-                    ->first();
-
-                if (!$storehouse) {
-                    return redirect()->back()->with('error', 'ไม่พบสินค้านี้ในคลัง กรุณาสร้าง item ก่อนอัปเดต');
-                }
-
-                // อัปเดทข้อมูล
-                if (!empty($validated['item_name'])) {
-                    $storehouse->item_name = $validated['item_name']; // ใช้เฉพาะถ้ามีค่า
-                }
-                $storehouse->item_type = $validated['item_type'];
-                $storehouse->unit = $validated['unit'];
-                $storehouse->status = 'available';
-                $storehouse->stock = ($storehouse->stock ?? 0) + ($validated['stock'] ?? 0);
-
-                // อัปโหลด receipt ถ้ามี
-                if (!empty($validated['receipt_file'])) {
-                    $file = $validated['receipt_file'];
-                    $filename = time() . '.' . $file->getClientOriginalExtension();
-                    $file->move(public_path('receipt_files'), $filename);
-                    $storehouse->receipt_file = $filename;
-                }
-
-                $storehouse->note = $validated['note'];
-
-                $storehouse->save();
-
-                // คำนวณค่าใช้จ่าย
-                $total = ($validated['stock'] ?? 0) * ($validated['price_per_unit'] ?? 0) + ($validated['transport_cost'] ?? 0);
-
-                Cost::create([
-                    'farm_id'        => $batch->farm_id,
-                    'batch_id'       => $batch->id,
-                    'date'           => $formattedDate,
-                    'cost_type'      => $validated['item_type'],
-                    'item_code'      => $validated['item_code'] ?? null,
-                    'quantity'       => $validated['stock'],
-                    'price_per_unit' => $validated['price_per_unit'] ?? 0,
-                    'transport_cost' => $validated['transport_cost'] ?? 0,
-                    'unit'           => $validated['unit'] ?? null,
-                    'total_price'    => $total,
-                    'note'           => $validated['note'] ?? null,
-                    'receipt_file'   => $storehouse->receipt_file ?? null,
-                ]);
-
-                // log movement
-                InventoryMovement::create([
-                    'storehouse_id' => $storehouse->id,
-                    'change_type'   => 'in',
-                    'quantity'      => $validated['stock'],
-                    'note'          => 'เพิ่มสินค้าเข้าคลังจากการบันทึกค่าใช้จ่าย (Batch: ' . $batch->id . ')',
-                    'date'          => $formattedDate,
-                ]);
-            } else {
-                // wage/electric_bill/water_bill
-                $dt = Carbon::createFromFormat('m/Y', $validated['date'])->startOfMonth();
-                $formattedDate = $dt->format('Y-m-d');
-
-                $total = $validated['price_per_unit'] ?? 0;
-                $filename = null;
-
-                if (!empty($validated['receipt_file'])) {
-                    $file = $validated['receipt_file'];
-                    $filename = time() . '.' . $file->getClientOriginalExtension();
-                    $file->move(public_path('receipt_files'), $filename);
-                }
-
-                // หา record เดิม ถ้ามี
-                $existingCost = Cost::where('farm_id', $batch->farm_id)
-                    ->where('batch_id', $batch->id)
-                    ->where('date', $formattedDate)
-                    ->where('cost_type', $validated['item_type'])
-                    ->first();
-
-                if ($existingCost) {
-                    // อัปเดต note และ receipt_file
-                    $existingCost->note = $validated['note'] ?? $existingCost->note;
-                    if ($filename) {
-                        $existingCost->receipt_file = $filename;
+                        if ($storehouse) {
+                            $storehouse->stock = ($storehouse->stock ?? 0) + ($validated['stock'] ?? 0);
+                            if (!empty($validated['item_name'])) $storehouse->item_name = $validated['item_name'];
+                            $storehouse->item_type = $validated['item_type'];
+                            $storehouse->unit = $validated['unit'];
+                            $storehouse->status = 'available';
+                            $storehouse->note = $validated['note'];
+                            $storehouse->save();
+                        } else {
+                            $storehouse = StoreHouse::create([
+                                'farm_id'   => $validated['farm_id'],
+                                'batch_id'  => $validated['batch_id'],
+                                'item_code' => $validated['item_code'],
+                                'item_name' => $validated['item_name'] ?? null,
+                                'item_type' => $validated['item_type'],
+                                'unit'      => $validated['unit'] ?? null,
+                                'status'    => 'available',
+                                'stock'     => $validated['stock'] ?? 0,
+                                'note'      => $validated['note'] ?? null,
+                            ]);
+                        }
                     }
-                    $existingCost->save();
-                } else {
-                    // สร้างใหม่
-                    Cost::create([
-                        'farm_id'        => $batch->farm_id,
-                        'batch_id'       => $batch->id,
-                        'date'           => $formattedDate,
-                        'cost_type'      => $validated['item_type'],
-                        'item_code'      => $validated['item_code'] ?? null,
-                        'price_per_unit' => $validated['price_per_unit'] ?? 0,
-                        'unit'           => $validated['unit'] ?? null,
-                        'total_price'    => $total,
-                        'note'           => $validated['note'] ?? null,
-                        'receipt_file'   => $filename,
-                    ]);
+
+                    // -------------------
+                    // COST + INVENTORY
+                    // -------------------
+                    $total = ($validated['stock'] ?? 0) * ($validated['price_per_unit'] ?? 0) + ($validated['transport_cost'] ?? 0);
+
+                    if (in_array($validated['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
+                        $dt = Carbon::createFromFormat('m/Y', $validated['date'])->startOfMonth();
+                        $formattedDate = $dt->format('Y-m-d');
+
+                        $existingCost = Cost::where('farm_id', $batch->farm_id)
+                            ->where('batch_id', $batch->id)
+                            ->where('date', $formattedDate)
+                            ->where('cost_type', $validated['item_type'])
+                            ->first();
+
+                        if ($existingCost) {
+                            $existingCost->note = $validated['note'] ?? $existingCost->note;
+                            if ($uploadedFileUrl) $existingCost->receipt_file = $uploadedFileUrl;
+                            $existingCost->save();
+                        } else {
+                            Cost::create([
+                                'farm_id'        => $batch->farm_id,
+                                'batch_id'       => $batch->id,
+                                'date'           => $formattedDate,
+                                'cost_type'      => $validated['item_type'],
+                                'item_code'      => null,
+                                'price_per_unit' => $validated['price_per_unit'] ?? 0,
+                                'unit'           => $validated['unit'] ?? null,
+                                'total_price'    => $total,
+                                'note'           => $validated['note'] ?? null,
+                                'receipt_file'   => $uploadedFileUrl,
+                            ]);
+                        }
+                    } else {
+                        $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
+                        $formattedDate = $dt->format('Y-m-d H:i:s');
+
+                        Cost::create([
+                            'farm_id'        => $batch->farm_id,
+                            'batch_id'       => $batch->id,
+                            'date'           => $formattedDate,
+                            'cost_type'      => $validated['item_type'],
+                            'item_code'      => $validated['item_code'] ?? null,
+                            'quantity'       => $validated['stock'],
+                            'price_per_unit' => $validated['price_per_unit'] ?? 0,
+                            'transport_cost' => $validated['transport_cost'] ?? 0,
+                            'unit'           => $validated['unit'] ?? null,
+                            'total_price'    => $total,
+                            'note'           => $validated['note'] ?? null,
+                            'receipt_file'   => $uploadedFileUrl ?? null,
+                        ]);
+
+                        InventoryMovement::create([
+                            'storehouse_id' => $storehouse->id,
+                            'batch_id'      => $batch->id,
+                            'change_type'   => 'in',
+                            'quantity'      => $validated['stock'],
+                            'note'          => 'เพิ่มสินค้าเข้าคลังจากการบันทึกค่าใช้จ่าย (Batch: ' . $batch->id . ')',
+                            'date'          => $formattedDate,
+                        ]);
+                    }
                 }
             }
 
@@ -204,6 +242,9 @@ class StoreHouseController extends Controller
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
+
+
+
 
 
     //--------------------------------------- Index ------------------------------------------//
@@ -298,7 +339,7 @@ class StoreHouseController extends Controller
     //Update storehouse
     public function updateStoreHouse(Request $request, $id)
     {
-        $storehouse = StoreHouse::findOrFail($id);
+
 
         $validated = $request->validate([
             'farm_id' => 'required|exists:farms,id',
@@ -306,26 +347,45 @@ class StoreHouseController extends Controller
             'item_name' => 'required|string',
             'unit' => 'required|string',
             'note' => 'nullable|string',
-            'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'delete_receipt_file' => 'sometimes',
         ]);
 
-        $storehouse->update($validated);
+        $storehouse = StoreHouse::findOrFail($id);
 
-        // ถ้ามีการอัปโหลดไฟล์
-        if ($request->hasFile('receipt_file')) {
-            $file = $request->file('receipt_file');
-            $filename = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('receipt_files'), $filename);
+        // อัปเดตฟิลด์อื่น ๆ ของ storehouse
+        $storehouse->farm_id   = $validated['farm_id'];
+        $storehouse->item_code = $validated['item_code'];
+        $storehouse->item_name = $validated['item_name'];
+        $storehouse->unit      = $validated['unit'];
+        $storehouse->note      = $validated['note'] ?? null;
+        $storehouse->save();
 
-            // อัปเดต cost ล่าสุดของ storehouse
-            $latestCost = $storehouse->costs()->latest()->first();
-            if ($latestCost) {
-                $latestCost->update(['receipt_file' => $filename]);
+        // จัดการใบเสร็จใน Cost (latest)
+        $latestCost = $storehouse->latestCost()->first();
+        if ($latestCost) {
+            $uploadedFileUrl = $latestCost->receipt_file; // เริ่มด้วยค่าเดิม
+
+            if ($request->boolean('delete_receipt_file')) {
+                $uploadedFileUrl = null;
             }
+
+            if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
+                $uploadedFileUrl = Cloudinary::upload(
+                    $request->file('receipt_file')->getRealPath(),
+                    ['folder' => 'receipt_files']
+                )->getSecurePath();
+            }
+
+            // อัปเดต cost
+            $latestCost->update(['receipt_file' => $uploadedFileUrl]);
         }
 
-        return redirect()->back()->with('success', 'แก้ไข StoreHouse สำเร็จ และอัปเดตใบเสร็จใน Cost เรียบร้อย');
+
+        return redirect()->back()->with('success', 'แก้ไข StoreHouse และอัปเดตใบเสร็จใน Cost เรียบร้อย');
     }
+
+
 
 
 

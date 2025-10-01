@@ -22,6 +22,20 @@ class BatchPenAllocation extends Model
 
     // ----------- Relationships ----------- //
 
+    /*public function batches()
+    {
+        return $this->belongsTo(Batch::class, 'batch_pen_allocations')
+            ->withPivot(['allocated_at', 'deallocated_at'])
+            ->withTimestamps();
+    }
+
+    public function pens()
+    {
+        return $this->belongsTo(Pen::class, 'batch_pen_allocations')
+            ->withPivot(['allocated_at', 'deallocated_at'])
+            ->withTimestamps();
+    }*/
+
     public function batch()
     {
         return $this->belongsTo(Batch::class);
@@ -36,4 +50,6 @@ class BatchPenAllocation extends Model
     {
         return $this->belongsTo(Pen::class);
     }
+
+
 }

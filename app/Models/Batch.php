@@ -39,4 +39,15 @@ class Batch extends Model
     {
         return $this->hasMany(Cost::class, 'batch_id', 'id');
     }
+
+    //ใช้เพื่อให้เรียกดูได้ง่ายว่า batch นี่อยู่เล้าไหนคอกไหน
+    public function allocations()
+{
+    return $this->hasMany(BatchPenAllocation::class, 'batch_id');
+}
+    public function inventory_movements()
+{
+    return $this->hasMany(InventoryMovement::class, 'batch_id', 'id');
+}
+
 }

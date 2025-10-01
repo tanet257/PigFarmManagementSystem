@@ -12,25 +12,12 @@ class DairyRecord extends Model
     protected $table = 'dairy_records'; // ชื่อตาราง
 
     protected $fillable = [
-        'farm_id',
         'batch_id',
         'barn_id',
-        'pen_id',
-
-        'record_date',
-        'food_type',
-        'food_amount',
-        'medicine_name',
-        'dosage',
-        'dead_pigs',
-        'cause',
+        'date',
         'note',
     ];
 
-    public function farm()
-    {
-        return $this->belongsTo(Farm::class);
-    }
 
     public function batch()
     {
@@ -42,8 +29,30 @@ class DairyRecord extends Model
         return $this->belongsTo(Barn::class);
     }
 
-    public function pen()
+    public function pig_deaths()
     {
-        return $this->belongsTo(Pen::class);
+        return $this->hasMany(PigDeath::class);
+    }
+
+    public function batch_treatments()
+    {
+        return $this->hasMany(BatchTreatment::class);
+    }
+
+    public function feed_uses()
+    {
+        return $this->dairy_storehouse_uses()->where('item_type', 'food');
+    }
+
+    public function dairy_storehouse_uses()
+    {
+        return $this->hasMany(DairyStorehouseUse::class, 'dairy_record_id');
+        // สมมติว่า foreign key ใน DairyStorehouseUse คือ dairy_record_id
+    }
+
+    public function inventory_movements()
+    {
+        return $this->hasMany(InventoryMovement::class, 'batch_id', 'batch_id')
+            ->where('change_type', 'out');
     }
 }

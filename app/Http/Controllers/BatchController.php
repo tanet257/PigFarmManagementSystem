@@ -66,29 +66,36 @@ class BatchController extends Controller
 
     //Index batch
     public function indexBatch(Request $request)
-    {
-        $query = Batch::with('farm.barns.pens');
+{
+    $query = Batch::with('farm.barns.pens');
 
-        if ($request->filled('search')) {
-            $query->where('batch_code', 'like', '%' . $request->search . '%');
-        }
-
-        if ($request->filled('farm_id')) {
-            $query->where('farm_id', $request->farm_id);
-        }
-
-        if ($request->filled('sort_by')) {
-            $sortOrder = $request->get('sort_order', 'asc');
-            $query->orderBy($request->sort_by, $sortOrder);
-        }
-
-        $perPage = $request->get('per_page', 10);
-        $batches = $query->paginate($perPage);
-
-        $farms = Farm::all();
-
-        return view('admin.batches.index', compact('batches', 'farms'));
+    if ($request->filled('search')) {
+        $query->where('batch_code', 'like', '%' . $request->search . '%');
     }
+
+    if ($request->filled('farm_id')) {
+        $query->where('farm_id', $request->farm_id);
+    }
+
+    if ($request->filled('sort_by')) {
+        $sortOrder = $request->get('sort_order', 'asc');
+        $query->orderBy($request->sort_by, $sortOrder);
+    }
+
+    $perPage = $request->get('per_page', 10);
+    $batches = $query->paginate($perPage);
+
+    // --- คำนวณค่าเฉลี่ยน้ำหนักต่อตัว ---
+    foreach ($batches as $batch) {
+        $batch->avg_pig_weight = $batch->total_pig_amount > 0
+            ? $batch->total_pig_weight / $batch->total_pig_amount
+            : 0;
+    }
+
+    $farms = Farm::all();
+
+    return view('admin.batches.index', compact('batches', 'farms'));
+}
 
 
 
@@ -186,7 +193,7 @@ class BatchController extends Controller
         $options->set('defaultFont', 'Sarabun'); // ตั้ง default font
 
         // สร้าง PDF
-        $pdf = Pdf::loadView('admin.exports.batches_pdf', compact('batches'))
+        $pdf = Pdf::loadView('admin.batches.exports.pdf', compact('batches'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
                 'isHtml5ParserEnabled' => true,

@@ -8,6 +8,9 @@ yarn-error.log
 dist/
 out/
 package-lock.json
+*.log
+*.tmp
+
 
 # =========================================
 # Laravel / PHP

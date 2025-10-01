@@ -3,7 +3,6 @@
 
 <head>
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     @include('admin.css')
     <style>
         body {
@@ -87,132 +86,12 @@
             text-align: center;
         }
 
-        /* snackbar */
-        .snackbar {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 9999;
-            right: 20px;
-            bottom: 30px;
-            font-size: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .snackbar.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 10s;
-        }
-
-        .snackbar button {
-            background: none;
-            border: none;
-            color: #fff;
-            font-weight: bold;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-
-        @keyframes fadein {
-            from {
-                bottom: 0;
-                opacity: 0;
-            }
-
-            to {
-                bottom: 30px;
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeout {
-            from {
-                bottom: 30px;
-                opacity: 1;
-            }
-
-            to {
-                bottom: 0;
-                opacity: 0;
-            }
-        }
     </style>
 
-    <script>
-        window.onload = function() {
-            const sb = document.getElementById("snackbar");
-            const sbMsg = document.getElementById("snackbarMessage");
 
-            @if (session('success'))
-                sbMsg.innerText = "{{ session('success') }}";
-                sb.style.backgroundColor = "#28a745"; // เขียว
-                sb.style.display = "flex";
-                sb.classList.add("show");
-                setTimeout(() => {
-                    sb.classList.remove("show");
-                    sb.style.display = "none";
-                }, 10500);
-            @elseif (session('error'))
-                sbMsg.innerText = "{{ session('error') }}";
-                sb.style.backgroundColor = "#dc3545"; // แดง
-                sb.style.display = "flex";
-                sb.classList.add("show");
-                setTimeout(() => {
-                    sb.classList.remove("show");
-                    sb.style.display = "none";
-                }, 10500);
-            @endif
-        };
-
-        function showSnackbar(message, bgColor = "#dc3545") {
-            const sb = document.getElementById("snackbar");
-            const sbMsg = document.getElementById("snackbarMessage");
-            sbMsg.innerText = message;
-            sb.style.backgroundColor = bgColor;
-            sb.style.display = "flex";
-            sb.classList.add("show");
-            setTimeout(() => {
-                sb.classList.remove("show");
-                sb.style.display = "none";
-            }, 5000);
-        }
-
-        function copySnackbar() {
-            let text = document.getElementById("snackbarMessage").innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                let btn = document.getElementById("copyBtn");
-                btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
-                btn.disabled = true;
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="bi bi-copy"></i>';
-                    btn.disabled = false;
-                }, 2000);
-            });
-        }
-
-        function closeSnackbar() {
-            let sb = document.getElementById("snackbar");
-            sb.classList.remove("show");
-            sb.style.display = "none";
-        }
-    </script>
 </head>
 
 <body>
-    <div id="snackbar" class="snackbar">
-        <span id="snackbarMessage"></span>
-        <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
-        <button onclick="closeSnackbar()">✕</button>
-    </div>
 
     @include('admin.header')
     @include('admin.sidebar')
@@ -292,7 +171,7 @@
                     <table class="table table-dark table-hover align-middle text-center">
                         <thead>
                             <tr>
-                                <th>วันที่</th>
+                                <th>วันที่เพิ่มเข้าคลัง</th>
                                 <th>ชื่อฟาร์ม</th>
 
                                 <th>ประเภทรายการ</th>
@@ -332,14 +211,26 @@
                                             <span class="badge bg-dark">-</span>
                                         @endif
                                     </td>
+                                    {{-- ดึงภาพจาก cloudinary --}}
                                     <td>
-                                        @if ($storehouse->receipt_file && file_exists(public_path('receipt_files/' . $storehouse->receipt_file)))
-                                            <img src="{{ asset('receipt_files/' . $storehouse->receipt_file) }}"
-                                                alt="Receipt" style="max-width: 100px; max-height: 100px;">
+                                        @if ($storehouse->latestCost && !empty($storehouse->latestCost->receipt_file))
+                                            @php
+                                                $file = $storehouse->latestCost->receipt_file;
+                                            @endphp
+
+                                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                                <img src="{{ $file }}" alt="Receipt"
+                                                    style="max-width:100px; max-height:100px;">
+                                            @else
+                                                <a href="{{ $file }}" target="_blank">Download</a>
+                                            @endif
                                         @else
-                                            -
+                                            <span class="text-muted">ไม่มีไฟล์</span>
                                         @endif
                                     </td>
+
+
+
 
                                     <td>{{ $storehouse->note ?? '-' }}</td>
                                     <td>
@@ -401,25 +292,43 @@
                                                         <input type="text" name="unit" class="form-control"
                                                             value="{{ $storehouse->unit }}">
                                                     </div>
+
                                                     <div class="mb-3">
                                                         <label>โน๊ต</label>
                                                         <textarea name="note" class="form-control">{{ $storehouse->note }}</textarea>
                                                     </div>
 
-                                                    <div class="mb-3">
-                                                        <label>ใบเสร็จ (อัปเดตไปยัง Costs)</label>
-                                                        <input type="file" name="receipt_file"
-                                                            class="form-control" accept=".jpg,.jpeg,.png,.pdf">
-                                                        @if ($storehouse->costs()->latest()->first()?->receipt_file)
-                                                            <p>ไฟล์เก่า:
-                                                                <a href="{{ asset('receipt_files/' . $storehouse->costs()->latest()->first()->receipt_file) }}"
-                                                                    target="_blank">
-                                                                    ดูไฟล์
-                                                                </a>
-                                                            </p>
+                                                    <div class="mb-3"> <label>แนบไฟล์ใบเสร็จ (ถ้ามี)</label> <input
+                                                            type="file" name="receipt_file" class="form-control">
+                                                        {{-- delete file --}}
+                                                        @if ($storehouse->latestCost && $storehouse->latestCost->receipt_file)
+                                                            @php$file = $storehouse->latestCost->receipt_file;
+                                                                                                                        @endphp ?>
+                                                            <small class="text-muted">ไฟล์ปัจจุบัน:</small>
+                                                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                                                <div><img src="{{ $file }}" alt="Receipt"
+                                                                        style="max-width:100px;"></div>
+                                                            @else
+                                                                <div><a href="{{ $file }}"
+                                                                        target="_blank">Download</div>
+                                                            @endif
 
+                                                            {{-- hidden input กันเคสไม่ได้ติ๊ก checkbox --}}
+                                                            <input type="hidden" name="delete_receipt_file"
+                                                                value="0">
+
+                                                            <div class="form-check mt-1">
+                                                                <input type="checkbox" name="delete_receipt_file"
+                                                                    value="1" class="form-check-input"
+                                                                    id="deleteReceipt{{ $storehouse->id }}">
+                                                                <label class="form-check-label"
+                                                                    for="deleteReceipt{{ $storehouse->id }}">
+                                                                    ลบไฟล์ปัจจุบัน
+                                                                </label>
+                                                            </div>
                                                         @endif
                                                     </div>
+
                                                     <div class="modal-footer">
                                                         <button type="submit" class="btn btn-primary">บันทึก</button>
                                                         <button type="button" class="btn btn-secondary"

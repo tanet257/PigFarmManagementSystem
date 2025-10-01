@@ -24,7 +24,11 @@ class Barn extends Model
     {
         return $this->hasMany(Batch::class);
     }
-    
+
+    public function farm()
+{
+    return $this->belongsTo(Farm::class);
+}
     public function pens()
     {
         return $this->hasMany(Pen::class, 'barn_id', 'id');

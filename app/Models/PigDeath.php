@@ -12,11 +12,11 @@ class PigDeath extends Model
     protected $table = 'pig_deaths'; // ชื่อตาราง
 
     protected $fillable = [
-        'farm_id',
         'batch_id',
         'pen_id',
+        'dairy_record_id',
 
-        'amount',
+        'quantity',
         'cause',
 
         'note',
@@ -25,10 +25,6 @@ class PigDeath extends Model
 
     // ------------ Relationships ------------ //
 
-    public function farm()
-    {
-        return $this->belongsTo(Farm::class);
-    }
 
     public function batch()
     {
@@ -36,8 +32,14 @@ class PigDeath extends Model
     }
 
     public function pen()
+{
+    return $this->belongsTo(Pen::class, 'pen_id', 'id'); // pen_id ใน batch_treatments ชี้ไป id ของ pens
+}
+
+
+    public function dairy_record()
     {
-        return $this->belongsTo(Pen::class);
+        return $this->belongsTo(DairyRecord::class);
     }
 
 }

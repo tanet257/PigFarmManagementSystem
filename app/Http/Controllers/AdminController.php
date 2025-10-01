@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Models\Barn;
@@ -594,8 +595,5 @@ class AdminController extends Controller
         return view('admin.view.view_pig_death', compact('pig_deaths'));
     }
 
-
-
-
-
+    
 }

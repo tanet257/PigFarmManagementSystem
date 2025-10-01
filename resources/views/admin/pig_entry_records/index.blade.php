@@ -2,9 +2,56 @@
 <html lang="th">
 
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     @include('admin.css')
+
+
     <style>
+        /* พื้นหลังของ dropdown */
+        .choices__list--dropdown,
+        .choices__list[aria-expanded] {
+            background-color: #2c2540;
+            /* ม่วงเข้มตามธีม */
+            color: #f0e6ff;
+            /* สีตัวอักษร */
+        }
+
+        /* พื้นหลังตอน hover */
+        .choices__list--dropdown .choices__item--selectable.is-highlighted {
+            background-color: #5a4e7c !important;
+            /* ม่วงอ่อน */
+            color: #ffffff;
+        }
+
+        /* ตัวเลือกปกติ */
+        .choices__list--dropdown .choices__item--selectable {
+            color: #f0e6ff;
+        }
+
+        /* กล่องที่เลือกแล้ว */
+        .choices__inner {
+            background-color: #1e1b29;
+            color: #f0e6ff;
+            border: 1px solid #5a4e7c;
+        }
+
+        /* search input ด้านบนของ dropdown */
+        .choices__list--dropdown .choices__input {
+            background-color: #2c2540;
+            /* พื้นหลังเหมือนกัน */
+            color: #f0e6ff;
+            /* ตัวอักษรเหมือนกัน */
+            border: 1px solid #5a4e7c;
+        }
+
+        /* ตอน focus กล่อง search */
+        .choices__list--dropdown .choices__input:focus {
+            outline: none;
+            border-color: #7e6fc1;
+            background-color: #2c2540;
+            color: #f0e6ff;
+        }
+
+
         body {
             background-color: #1e1b29;
             color: #f0e6ff;
@@ -279,15 +326,23 @@
                                         ) }}
                                     </td>
                                     <td>{{ $record->note ?? '-' }}</td>
+                                    {{-- ดึงภาพจาก cloudinary --}}
                                     <td>
-    @if ($record->receipt_file && file_exists(public_path('receipt_files/' . $record->receipt_file)))
-        <img src="{{ asset('receipt_files/' . $record->receipt_file) }}"
-             alt="Receipt"
-             style="max-width: 100px; max-height: 100px;">
-    @else
-        -
-    @endif
-</td>
+                                        @if ($record->latestCost && !empty($record->latestCost->receipt_file))
+                                            @php
+                                                $file = $record->latestCost->receipt_file;
+                                            @endphp
+
+                                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                                <img src="{{ $file }}" alt="Receipt"
+                                                    style="max-width:100px; max-height:100px;">
+                                            @else
+                                                <a href="{{ $file }}" target="_blank">Download</a>
+                                            @endif
+                                        @else
+                                            <span class="text-muted">ไม่มีไฟล์</span>
+                                        @endif
+                                    </td>
 
 
                                     <td>
@@ -324,32 +379,29 @@
                                                 <div class="modal-body">
 
                                                     <div class="mb-3">
-                                                        <label>ฟาร์ม (Farm)</label>
-                                                        <select name="farm_id" class="form-select" required>
+                                                        <label>ฟาร์ม</label>
+                                                        <select id="editFarmSelect{{ $record->id }}"
+                                                            class="farmSelect form-select" name="farm_id" required>
+                                                            <option value="">-- เลือกฟาร์ม --</option>
                                                             @foreach ($farms as $farm)
                                                                 <option value="{{ $farm->id }}"
                                                                     {{ $record->farm_id == $farm->id ? 'selected' : '' }}>
-                                                                    {{ $farm->farm_name }}
-                                                                </option>
+                                                                    {{ $farm->farm_name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
-
                                                     <div class="mb-3">
                                                         <label>รุ่น (Batch)</label>
-                                                        <select name="batch_id" class="form-select" required>
-                                                            @foreach ($batches as $batch)
-                                                                <option value="{{ $batch->id }}"
-                                                                    {{ $record->batch_id == $batch->id ? 'selected' : '' }}>
-                                                                    {{ $batch->batch_code }}
-                                                                </option>
-                                                            @endforeach
+                                                        <select id="editBatchSelect{{ $record->id }}"
+                                                            class="batchSelect form-select" name="batch_id" required>
+                                                            <option value="{{ $record->batch_id }}" selected>
+                                                                {{ $record->batch->batch_code ?? '-' }}</option>
                                                         </select>
                                                     </div>
 
                                                     <div class="mb-3">
                                                         <label>วันที่หมูเข้า</label>
-                                                        <input type="date" name="pig_entry_date" class="form-control"
+                                                        <input type="text" name="pig_entry_date" class="form-control dateWrapper"
                                                             value="{{ $record->pig_entry_date }}" required>
                                                     </div>
 
@@ -370,14 +422,14 @@
                                                     <div class="mb-3">
                                                         <label>ราคารวม (บาท)</label>
                                                         <input type="number" step="0.01" name="total_pig_price"
-                                                            class="form-control" value="{{ $record->total_pig_price }}"
-                                                            required>
+                                                            class="form-control"
+                                                            value="{{ $record->total_pig_price }}" required>
                                                     </div>
 
                                                     <div class="mb-3">
                                                         <label>ค่าน้ำหนักส่วนเกิน</label>
-                                                        <input type="number" step="0.01" name="excess_weight_cost"
-                                                            class="form-control"
+                                                        <input type="number" step="0.01"
+                                                            name="excess_weight_cost" class="form-control"
                                                             value="{{ $record->batch->costs->where('cost_type', 'excess_weight')->sum('total_price') ?? 0 }}">
                                                     </div>
 
@@ -393,13 +445,34 @@
                                                         <textarea name="note" class="form-control">{{ $record->note }}</textarea>
                                                     </div>
 
-                                                    <div class="mb-3">
-                                                        <label>แนบไฟล์ใบเสร็จ (ถ้ามี)</label>
-                                                        <input type="file" name="receipt_file"
-                                                            class="form-control">
-                                                        @if ($record->receipt_file ?? false)
-                                                            <small class="text-muted">ไฟล์ปัจจุบัน:
-                                                                {{ $record->receipt_file }}</small>
+                                                    <div class="mb-3"> <label>แนบไฟล์ใบเสร็จ (ถ้ามี)</label> <input
+                                                            type="file" name="receipt_file" class="form-control">
+                                                        {{-- delete file --}}
+                                                        @if ($record->latestCost && $record->latestCost->receipt_file)
+                                                            @php$file = $record->latestCost->receipt_file;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @endphp ?> ?> ?> ?> ?> ?> ?>
+                                                            <small class="text-muted">ไฟล์ปัจจุบัน:</small>
+                                                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                                                <div><img src="{{ $file }}" alt="Receipt"
+                                                                        style="max-width:100px;"></div>
+                                                            @else
+                                                                <div><a href="{{ $file }}"
+                                                                        target="_blank">Download</div>
+                                                            @endif
+
+                                                            {{-- hidden input กันเคสไม่ได้ติ๊ก checkbox --}}
+                                                            <input type="hidden" name="delete_receipt_file"
+                                                                value="0">
+
+                                                            <div class="form-check mt-1">
+                                                                <input type="checkbox" name="delete_receipt_file"
+                                                                    value="1" class="form-check-input"
+                                                                    id="deleteReceipt{{ $record->id }}">
+                                                                <label class="form-check-label"
+                                                                    for="deleteReceipt{{ $record->id }}">
+                                                                    ลบไฟล์ปัจจุบัน
+                                                                </label>
+                                                            </div>
                                                         @endif
                                                     </div>
 
@@ -450,31 +523,32 @@
                 <form action="{{ route('pig_entry_records.upload') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
+
                         <div class="mb-3">
                             <label>ฟาร์ม</label>
-                            <select name="farm_id" class="form-select" required>
+                            <select name="farm_id" id="createFarmSelect" class="farmSelect form-select" required>
                                 <option value="">-- เลือกฟาร์ม --</option>
                                 @foreach ($farms as $farm)
                                     <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
                                 @endforeach
                             </select>
                         </div>
-
                         <div class="mb-3">
                             <label>รุ่น (Batch)</label>
-                            <select name="batch_id" class="form-select" required>
+                            <select name="batch_id" id="createBatchSelect" class="batchSelect form-select" required>
                                 <option value="">-- เลือกรุ่น --</option>
-                                @foreach ($batches as $batch)
-                                    <option value="{{ $batch->id }}">{{ $batch->batch_code }}
-                                        ({{ $batch->farm->farm_name ?? '-' }})
-                                    </option>
-                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>เล้า (Barn)</label>
+                            <select name="barn_id[]" id="createBarnSelect" class="barnSelect form-select" multiple required>
+                                <option value="">-- เลือกเล้า --</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
                             <label>วันที่เข้า</label>
-                            <input type="date" name="pig_entry_date" class="form-control" required>
+                            <input type="text" name="pig_entry_date" placeholer="ว/ด/ป ชม. นาที" class="form-control dateWrapper" required>
                         </div>
 
                         <div class="mb-3">
@@ -528,6 +602,102 @@
         </div>
     </div>
     {{-- End Create Modal --}}
+
+    <!--flatpickr-->
+    <script>
+        // ใช้ class dateWrapper
+        document.addEventListener('shown.bs.modal', function(event) {
+    event.target.querySelectorAll('.dateWrapper').forEach(el => {
+        if (!el._flatpickr) {
+            flatpickr(el, {
+                enableTime: true,
+                dateFormat: "d/m/Y H:i",
+                maxDate: "today",
+            });
+        }
+    });
+});
+
+    </script>
+
+    {{-- JS สำหรับ fetch barns + batches --}}
+
+    <script>
+        function initFarmBatchBarnChoices(farmSelect, batchSelect, barnSelect) {
+            const farmChoice = new Choices(farmSelect, {
+                searchEnabled: false,
+                itemSelectText: '',
+                shouldSort: false
+            });
+            const batchChoice = new Choices(batchSelect, {
+                searchEnabled: false,
+                itemSelectText: '',
+                shouldSort: false,
+                removeItemButton: true,
+                placeholderValue: '-- เลือกรุ่น --'
+            });
+            const barnChoice = new Choices(barnSelect, {
+                searchEnabled: false,
+                itemSelectText: '',
+                shouldSort: false,
+                removeItemButton: true,
+                placeholderValue: '-- เลือกเล้า --'
+            });
+
+            farmSelect.addEventListener('change', function() {
+                const farmId = this.value;
+                batchChoice.clearChoices();
+                barnChoice.clearChoices();
+
+                if (!farmId) return;
+
+                fetch('/get-batches/' + farmId)
+                    .then(res => res.json())
+                    .then(data => {
+                        batchChoice.setChoices(
+                            data.map(batch => ({
+                                value: batch.id,
+                                label: batch.batch_code
+                            })), 'value', 'label', true
+                        );
+                    });
+
+                fetch('/get-available-barns/' + farmId)
+                    .then(res => res.json())
+                    .then(data => {
+                        barnChoice.setChoices(
+                            data.map(barn => ({
+                                value: barn.id,
+                                label: barn.barn_code + ' (เหลือ ' + barn.remaining + ' ตัว)'
+                            })),
+                            'value', 'label', true
+                        );
+                    });
+            });
+        }
+
+        // Create modal
+        document.addEventListener('shown.bs.modal', function(event) {
+            if (event.target.id === 'createModal') {
+                const farm = document.getElementById('createFarmSelect');
+                const batch = document.getElementById('createBatchSelect');
+                const barn = document.getElementById('createBarnSelect');
+                if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
+            }
+        });
+
+       /* // Edit modal
+        @foreach ($pigEntryRecords as $record)
+            document.addEventListener('shown.bs.modal', function(event) {
+                if (event.target.id === 'editModal{{ $record->id }}') {
+                    const farm = document.getElementById('editFarmSelect{{ $record->id }}');
+                    const batch = document.getElementById('editBatchSelect{{ $record->id }}');
+                    const barn = document.getElementById('editBarnSelect{{ $record->id }}');
+                    if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
+                }
+            });
+        @endforeach*/
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @include('admin.js')

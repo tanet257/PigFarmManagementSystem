@@ -3,7 +3,6 @@
 <html lang="th">
 
 <head>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     @include('admin.css')
 
     <style>
@@ -83,140 +82,15 @@
             color: #f0e6ff;
         }
 
-        /* snackbar */
-        .snackbar {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 9999;
-            right: 20px;
-            bottom: 30px;
-            font-size: 16px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .snackbar.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 10s;
-        }
-
-        .snackbar button {
-            background: none;
-            border: none;
-            color: #fff;
-            font-weight: bold;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-
-        @keyframes fadein {
-            from {
-                bottom: 0;
-                opacity: 0;
-            }
-
-            to {
-                bottom: 30px;
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeout {
-            from {
-                bottom: 30px;
-                opacity: 1;
-            }
-
-            to {
-                bottom: 0;
-                opacity: 0;
-            }
-        }
     </style>
 
-    <script>
-        window.onload = function() {
-            const sb = document.getElementById("snackbar");
-            const sbMsg = document.getElementById("snackbarMessage");
 
-            @if (session('success'))
-                sbMsg.innerText = "{{ session('success') }}";
-                sb.style.backgroundColor = "#28a745"; // เขียว
-                sb.style.display = "flex";
-                sb.classList.add("show");
-                setTimeout(() => {
-                    sb.classList.remove("show");
-                    sb.style.display = "none";
-                }, 10500);
-            @elseif (session('error'))
-                sbMsg.innerText = "{{ session('error') }}";
-                sb.style.backgroundColor = "#dc3545"; // แดง
-                sb.style.display = "flex";
-                sb.classList.add("show");
-                setTimeout(() => {
-                    sb.classList.remove("show");
-                    sb.style.display = "none";
-                }, 10500);
-            @endif
-        };
-
-        function showSnackbar(message, bgColor = "#dc3545") {
-            const sb = document.getElementById("snackbar");
-            const sbMsg = document.getElementById("snackbarMessage");
-            sbMsg.innerText = message;
-            sb.style.backgroundColor = bgColor;
-            sb.style.display = "flex";
-            sb.classList.add("show");
-            setTimeout(() => {
-                sb.classList.remove("show");
-                sb.style.display = "none";
-            }, 5000);
-        }
-
-        function copySnackbar() {
-            let text = document.getElementById("snackbarMessage").innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                let btn = document.getElementById("copyBtn");
-                btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
-                btn.disabled = true;
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="bi bi-copy"></i>';
-                    btn.disabled = false;
-                }, 2000);
-            });
-        }
-
-        function closeSnackbar() {
-            let sb = document.getElementById("snackbar");
-            sb.classList.remove("show");
-            sb.style.display = "none";
-        }
-    </script>
 </head>
 
 <body>
 
-    <div id="snackbar" class="snackbar">
-        <span id="snackbarMessage"></span>
-        <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
-        <button onclick="closeSnackbar()">✕</button>
-    </div>
-
     @include('admin.header')
     @include('admin.sidebar')
-
-    <!-- DateSelect Plugin -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
     <div class="page-content">
         <div class="container my-5 table-container">
@@ -292,11 +166,12 @@
                                 <th>ชื่อฟาร์ม</th>
                                 <th>รหัสรุ่น</th>
                                 <th>จำนวนเล้า</th>
-                                <th>จำนวนสุกร</th>
+                                <!-- <th>จำนวนสุกรแต่ละเล้า</th> -->
                                 <th>จำนวนคอก</th>
-                                <th>น้ำหนักรวม</th>
-                                <th>จำนวนรวม</th>
-                                <th>ราคารวม</th>
+                                <th>น้ำหนักหมูรวม</th>
+                                <th>น้ำหนักหมูเฉลี่ยต่อตัว</th>
+                                <th>จำนวนหมูรวม</th>
+                                <th>ต้นทุนหมูเข้า</th>
                                 <th>สถานะ</th>
                                 <th>หมายเหตุ</th>
                                 <th>วันที่เริ่มต้น</th>
@@ -307,6 +182,7 @@
                         <tbody>
                             @forelse($batches as $batch)
                                 <tr>
+
                                     <td>{{ $batch->farm->farm_name ?? '-' }}</td>
                                     <td>{{ $batch->batch_code }}</td>
 
@@ -314,10 +190,11 @@
                                     <td>{{ $batch->farm->barns->count() ?? '-' }}</td>
 
                                     {{-- เลือก pen แรกของ barn --}}
-                                    <td>{{ $batch->farm->barns->first()->pig_capacity ?? '-' }}</td>
+                                    {{-- <td>{{ $batch->farm->barns->first()->pig_capacity ?? '-' }}</td> --}}
                                     <td>{{ $batch->farm->barns->first()->pens->count() ?? '-' }}</td>
 
                                     <td>{{ number_format($batch->total_pig_weight ?? 0, 2) }}</td>
+                                    <td>{{ number_format($batch->avg_pig_weight ?? 0, 2) }}</td>
                                     <td>{{ number_format($batch->total_pig_amount ?? 0) }}</td>
                                     <td>{{ number_format($batch->total_pig_price ?? 0, 2) }}</td>
                                     <td>
@@ -489,7 +366,6 @@
             });
         @endforeach
     </script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @include('admin.js')
 </body>

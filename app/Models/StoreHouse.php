@@ -44,6 +44,6 @@ class StoreHouse extends Model
 
     public function latestCost()
     {
-        return $this->hasOne(Cost::class, 'item_code', 'item_code')->latestOfMany();
+        return $this->hasOne(Cost::class, 'item_code', 'item_code')->latestOfMany('updated_at');
     }
 }

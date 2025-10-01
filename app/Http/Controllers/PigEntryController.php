@@ -3,275 +3,341 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-
 use Carbon\Carbon;
 use Illuminate\Validation\Rule;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 
-use App\Models\Barn;
-use App\Models\Pen;
 use App\Models\Farm;
 use App\Models\Batch;
-use App\Models\BatchTreatment;
+use App\Models\Barn;
+use App\Models\Pen;
 use App\Models\Cost;
-use App\Models\PigSell;
-use App\Models\Feeding;
-use App\Models\PigDeath;
 use App\Models\PigEntryRecord;
-use App\Models\DairyRecord;
-use App\Models\StoreHouse;
-use App\Models\InventoryMovement;
-
 
 class PigEntryController extends Controller
 {
-
-
-    public function view_pig_entry_record()
+    //-------------------------AJAX HELPER--------------------------------------//
+    public function getBarnsByFarm($farmId)
     {
-        $pig_entry_records = PigEntryRecord::with(['batch', 'costs'])->get();
-        return view('admin.pig_entry_records.index', compact('pig_entry_records'));
+        $barns = Barn::where('farm_id', $farmId)->get(['id', 'barn_code']);
+        return response()->json($barns);
     }
 
+    public function getBatchesByFarm($farmId)
+    {
+        $batches = Batch::where('farm_id', $farmId)->get(['id', 'batch_code']);
+        return response()->json($batches);
+    }
 
-    //add_pig_entry_record
+    public function getAvailableBarnsByFarm($farmId)
+    {
+        $barns = Barn::where('farm_id', $farmId)->get();
+
+        $barns = $barns->map(function ($barn) {
+            $allocated = DB::table('batch_pen_allocations')
+                ->where('barn_id', $barn->id)
+                ->sum('allocated_pigs');
+
+            $barn->remaining = $barn->pig_capacity - $allocated;
+            return $barn;
+        });
+
+        //เฉพาะ barn ที่ยังมีที่ว่าง
+        $barns = $barns->filter(function ($barn) {
+            return $barn->remaining > 0;
+        })->values(); //reset keys
+
+        return response()->json($barns);
+    }
+
+    // หน้าเพิ่ม Pig Entry
     public function pig_entry_record()
     {
         $farms = Farm::all();
         $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.record.pig_entry_record', compact('farms', 'batches'));
+        return view('admin.pig_entry_records.record.pig_entry_record', compact('farms', 'batches'));
     }
 
-    //upload_pig_entry_record
-   public function upload_pig_entry_record(Request $request)
-{
-    try {
-        // validate
-        $validated = $request->validate([
-            'batch_id' => [
-                'required',
-                Rule::exists('batches', 'id')->where(function ($query) use ($request) {
-                    return $query->where('status', 'กำลังเลี้ยง')
-                                 ->where('farm_id', $request->farm_id);
-                }),
-            ],
-            'pig_entry_date'   => 'required|date',
-            'total_pig_amount' => 'required|numeric|min:1',
-            'total_pig_weight' => 'required|numeric|min:0',
-            'total_pig_price'  => 'required|numeric|min:0',
-            'excess_weight_cost' => 'nullable|numeric|min:0',
-            'transport_cost'     => 'nullable|numeric|min:0',
-            'note' => 'nullable|string',
-            'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
+    // Upload Pig Entry Record
+    public function upload_pig_entry_record(Request $request)
+    {
+        try {
+            $status = $request->input('status');
 
-        $batch = Batch::findOrFail($validated['batch_id']);
+            if ($status === "กำลังเลี้ยง") {
+                $validated = $request->validate([
+                    'farm_id'            => 'required|exists:farms,id',
+                    'batch_id'           => 'required|exists:batches,id',
+                    'barn_id'            => 'required|array|min:1',
+                    'barn_id.*'          => 'exists:barns,id',
+                    'pig_entry_date'     => 'required|string',
+                    'total_pig_amount'   => 'required|numeric|min:1',
+                    'total_pig_weight'   => 'required|numeric|min:0',
+                    'total_pig_price'    => 'required|numeric|min:0',
+                    'excess_weight_cost' => 'nullable|numeric|min:0',
+                    'transport_cost'     => 'nullable|numeric|min:0',
+                    'note'               => 'nullable|string',
+                    'receipt_file'       => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+                ]);
 
-        // ✅ บันทึก pig_entry_record (ไม่เก็บไฟล์)
-        $pigEntry = PigEntryRecord::create([
-            'batch_id' => $batch->id,
-            'farm_id'  => $batch->farm_id,
-            'pig_entry_date'   => $validated['pig_entry_date'],
-            'total_pig_amount' => $validated['total_pig_amount'],
-            'total_pig_weight' => $validated['total_pig_weight'],
-            'total_pig_price'  => $validated['total_pig_price'],
-            'note' => $validated['note'] ?? null,
-        ]);
+                // แปลงวันที่
+                $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['pig_entry_date']);
+                $formattedDate = $dt->format('Y-m-d H:i');
 
-        // ✅ อัปโหลดไฟล์ครั้งเดียว
-        $filename = null;
-        if ($request->hasFile('receipt_file')) {
-            $file = $request->file('receipt_file');
-            $filename = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('receipt_files'), $filename);
+                $batch = Batch::findOrFail($validated['batch_id']);
+                $totalPigs = $validated['total_pig_amount'];
+                $selectedBarns = Barn::whereIn('id', $validated['barn_id'])->get();
+
+                // ตรวจสอบความจุรวมของ barns
+                $totalBarnCapacity = $selectedBarns->sum(fn($barn) => $barn->pig_capacity);
+                if ($totalBarnCapacity < $totalPigs) {
+                    return redirect()->back()->with('error', 'จำนวนหมูมากกว่าความจุรวมของ barns ที่เลือก');
+                }
+
+                foreach ($selectedBarns as $barn) {
+                    $allocateToBarn = min($barn->pig_capacity, $totalPigs);
+                    $totalPigs -= $allocateToBarn;
+
+                    $pens = Pen::where('barn_id', $barn->id)
+                        ->where('status', 'กำลังใช้งาน')
+                        ->get();
+
+                    $remainingPigs = $allocateToBarn;
+                    foreach ($pens as $pen) {
+                        if ($remainingPigs <= 0) break;
+
+                        $allocatedInPen = DB::table('batch_pen_allocations')
+                            ->where('pen_id', $pen->id)
+                            ->sum('allocated_pigs');
+
+                        $availableInPen = $pen->pig_capacity - $allocatedInPen;
+                        if ($availableInPen <= 0) continue;
+
+                        $allocateToPen = min($availableInPen, $remainingPigs);
+                        $remainingPigs -= $allocateToPen;
+
+                        DB::table('batch_pen_allocations')->insert([
+                            'batch_id'       => $batch->id,
+                            'barn_id'        => $barn->id,
+                            'pen_id'         => $pen->id,
+                            'allocated_pigs' => $allocateToPen,
+                            'created_at'     => now(),
+                            'updated_at'     => now(),
+                        ]);
+                    }
+                }
+
+                // บันทึก PigEntryRecord
+                $pigEntry = PigEntryRecord::create([
+                    'batch_id'          => $batch->id,
+                    'farm_id'           => $batch->farm_id,
+                    'pig_entry_date'    => $formattedDate,
+                    'total_pig_amount'  => $validated['total_pig_amount'],
+                    'total_pig_weight'  => $validated['total_pig_weight'],
+                    'total_pig_price'   => $validated['total_pig_price'],
+                    'note'              => $validated['note'] ?? null,
+                ]);
+
+                // อัปโหลด Cloudinary
+                $uploadedFileUrl = null;
+                if ($request->hasFile('receipt_file')) {
+                    $file = $request->file('receipt_file');
+                    if ($file->isValid()) {
+                        $uploadedFileUrl = Cloudinary::upload(
+                            $file->getRealPath(),
+                            ['folder' => 'receipt_files']
+                        )->getSecurePath();
+                    } else {
+                        return redirect()->back()->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
+                    }
+                }
+
+                // สร้าง Cost ลูกหมู
+                Cost::create([
+                    'farm_id'        => $batch->farm_id,
+                    'batch_id'       => $batch->id,
+                    'date'           => $formattedDate,
+                    'cost_type'      => 'piglet',
+                    'quantity'       => $validated['total_pig_amount'],
+                    'price_per_unit' => $validated['total_pig_price'] / $validated['total_pig_amount'],
+                    'total_price'    => $validated['total_pig_price'],
+                    'note'           => 'ค่าลูกหมู',
+                    'receipt_file'   => $uploadedFileUrl,
+                    'transport_cost' => $validated['transport_cost'] ?? 0,
+                ]);
+
+                // สร้าง Cost น้ำหนักเกิน
+                if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
+                    Cost::create([
+                        'farm_id'        => $batch->farm_id,
+                        'batch_id'       => $batch->id,
+                        'date'           => $formattedDate,
+                        'cost_type'      => 'excess_weight',
+                        'quantity'       => 1,
+                        'price_per_unit' => $validated['excess_weight_cost'],
+                        'total_price'    => $validated['excess_weight_cost'],
+                        'note'           => 'ค่าน้ำหนักส่วนเกิน',
+                        'receipt_file'   => $uploadedFileUrl,
+                    ]);
+                }
+
+                // อัปเดต totals ของ batch
+                $batch->total_pig_amount = ($batch->total_pig_amount ?? 0) + $validated['total_pig_amount'];
+                $batch->total_pig_weight = ($batch->total_pig_weight ?? 0) + $validated['total_pig_weight'];
+                $batch->total_pig_price  = ($batch->total_pig_price ?? 0)  + $validated['total_pig_price'];
+                $batch->save();
+
+                return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่ายเรียบร้อย');
+            } else {
+                throw new \Exception("สถานะไม่ถูกต้อง ต้องเป็นกำลังเลี้ยงเท่านั้น");
+            }
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
-
-        // ✅ สร้าง row ค่าลูกหมู
-        $cost = Cost::create([
-            'farm_id' => $batch->farm_id,
-            'batch_id' => $batch->id,
-            'cost_type' => 'piglet',
-            'quantity' => $validated['total_pig_amount'],
-            'price_per_unit' => $validated['total_pig_price'] / $validated['total_pig_amount'],
-            'total_price' => $validated['total_pig_price'],
-            'note' => 'ค่าลูกหมู',
-            'receipt_file' => $filename,
-            // 👇 transport_cost ตรงนี้
-            'transport_cost' => $validated['transport_cost'] ?? 0,
-        ]);
-
-        // ✅ บันทึกค่าน้ำหนักเกิน (row แยก)
-        if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
-            Cost::create([
-                'farm_id' => $batch->farm_id,
-                'batch_id' => $batch->id,
-                'cost_type' => 'excess_weight',
-                'quantity' => 1,
-                'price_per_unit' => $validated['excess_weight_cost'],
-                'total_price' => $validated['excess_weight_cost'],
-                'note' => 'ค่าน้ำหนักส่วนเกิน',
-                'receipt_file' => $filename,
-            ]);
-        }
-
-        // ✅ อัปเดต totals ของ batch
-        $batch->total_pig_amount = ($batch->total_pig_amount ?? 0) + $validated['total_pig_amount'];
-        $batch->total_pig_weight = ($batch->total_pig_weight ?? 0) + $validated['total_pig_weight'];
-        $batch->total_pig_price  = ($batch->total_pig_price ?? 0)  + $validated['total_pig_price'];
-        $batch->save();
-
-        return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่ายเรียบร้อย');
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
     }
-}
 
 
+    // ====================== Index / Edit / Update / Delete ======================== //
 
-    //--------------------------------------- Index ------------------------------------------//
-    //Index Pig Entry Record
     public function indexPigEntryRecord(Request $request)
-{
-    $farms = Farm::all();
-    $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+    {
+        $farms = Farm::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $barns = Barn::all();
 
-    $query = PigEntryRecord::with(['farm', 'batch.costs']); // <-- สำคัญ!
+        $query = PigEntryRecord::with(['farm', 'batch.costs']);
 
-    // search
-    if ($request->filled('search')) {
-        $query->where('note', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $query->where('note', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->filled('farm_id')) {
+            $query->where('farm_id', $request->farm_id);
+        }
+
+        $sortBy = $request->get('sort_by', 'updated_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        if (in_array($sortBy, ['pig_entry_date', 'total_pig_amount', 'total_pig_price', 'updated_at'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->orderBy('updated_at', 'desc');
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $pigEntryRecords = $query->paginate($perPage);
+
+        return view('admin.pig_entry_records.index', compact('barns', 'farms', 'batches', 'pigEntryRecords'));
     }
 
-    // filter farm
-    if ($request->filled('farm_id')) {
-        $query->where('farm_id', $request->farm_id);
-    }
-
-    // sort
-    $sortBy = $request->get('sort_by', 'updated_at');
-    $sortOrder = $request->get('sort_order', 'desc');
-
-    if (in_array($sortBy, ['pig_entry_date', 'total_pig_amount', 'total_pig_price', 'updated_at'])) {
-        $query->orderBy($sortBy, $sortOrder);
-    } else {
-        $query->orderBy('updated_at', 'desc');
-    }
-
-    // pagination
-    $perPage = $request->get('per_page', 10);
-    $pigEntryRecords = $query->paginate($perPage);
-
-    return view('admin.pig_entry_records.index', compact('farms', 'batches', 'pigEntryRecords'));
-}
-
-
-
-
-
-    // Edit PigEntryRecord
     public function editPigEntryRecord(Request $request)
     {
         $farms = Farm::all();
         $pigEntryRecords = PigEntryRecord::paginate(10);
-
-        // ส่งไปหน้า index พร้อม modal แก้ไข
         return view('admin.pig_entry_records.index', compact('farms', 'pigEntryRecords'));
     }
 
-    // Update PigEntryRecord
     public function updatePigentryrecord(Request $request, $id)
-{
-    try {
-        $validated = $request->validate([
-            'batch_id' => 'required|exists:batches,id',
-            'pig_entry_date' => 'required|date',
-            'total_pig_amount' => 'required|numeric|min:1',
-            'total_pig_weight' => 'required|numeric|min:0',
-            'total_pig_price' => 'required|numeric|min:0',
-            'excess_weight_cost' => 'nullable|numeric|min:0',
-            'transport_cost' => 'nullable|numeric|min:0',
-            'note' => 'nullable|string',
-            'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
-        ]);
+    {
+        try {
+            $validated = $request->validate([
+                'batch_id' => 'required|exists:batches,id',
+                'pig_entry_date'    => 'required|string',
+                'total_pig_amount' => 'required|numeric|min:1',
+                'total_pig_weight' => 'required|numeric|min:0',
+                'total_pig_price' => 'required|numeric|min:0',
+                'excess_weight_cost' => 'nullable|numeric|min:0',
+                'transport_cost' => 'nullable|numeric|min:0',
+                'note' => 'nullable|string',
+                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+                'delete_receipt_file' => 'sometimes',
+            ]);
 
-        $record = PigEntryRecord::findOrFail($id);
-        $batch = Batch::findOrFail($validated['batch_id']);
+            $record = PigEntryRecord::findOrFail($id);
+            $batch = Batch::findOrFail($validated['batch_id']);
 
-        // อัปโหลดไฟล์ใหม่ถ้ามี
-        $filename = $record->receipt_file;
-        if ($request->hasFile('receipt_file')) {
-            $file = $request->file('receipt_file');
-            $filename = time() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('receipt_files'), $filename);
-        }
+            // แปลงวันที่ให้เป็นรูปแบบ database
+            $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['pig_entry_date']);
+            $formattedDate = $dt->format('Y-m-d H:i');
 
-        // อัปเดตข้อมูล PigEntryRecord
-        $record->update([
-            'batch_id' => $batch->id,
-            'farm_id' => $batch->farm_id,
-            'pig_entry_date' => $validated['pig_entry_date'],
-            'total_pig_amount' => $validated['total_pig_amount'],
-            'total_pig_weight' => $validated['total_pig_weight'],
-            'total_pig_price' => $validated['total_pig_price'],
-            'note' => $validated['note'] ?? null,
-            'receipt_file' => $filename,
-        ]);
+            $uploadedFileUrl = $record->receipt_file ?? null;
+            $wantsDelete = $request->boolean('delete_receipt_file');
+            if ($wantsDelete) $uploadedFileUrl = null;
 
-        // อัปเดต Cost ค่าลูกหมู
-        Cost::updateOrCreate(
-            ['batch_id' => $batch->id, 'cost_type' => 'piglet'],
-            [
+            if ($request->hasFile('receipt_file')) {
+                $file = $request->file('receipt_file');
+                if (!$file->isValid()) return redirect()->back()->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
+
+                $uploadedFileUrl = Cloudinary::upload(
+                    $file->getRealPath(),
+                    ['folder' => 'receipt_files']
+                )->getSecurePath();
+            }
+
+            $record->update([
+                'batch_id' => $batch->id,
                 'farm_id' => $batch->farm_id,
-                'quantity' => $validated['total_pig_amount'],
-                'price_per_unit' => $validated['total_pig_price'] / $validated['total_pig_amount'],
-                'total_price' => $validated['total_pig_price'],
-                'note' => 'ค่าลูกหมู',
-                'receipt_file' => $filename,
-            ]
-        );
+                'pig_entry_date' => $formattedDate,
+                'total_pig_amount' => $validated['total_pig_amount'],
+                'total_pig_weight' => $validated['total_pig_weight'],
+                'total_pig_price' => $validated['total_pig_price'],
+                'note' => $validated['note'] ?? null,
+                'receipt_file' => $uploadedFileUrl,
+            ]);
 
-        // อัปเดตค่าน้ำหนักส่วนเกิน
-        if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
             Cost::updateOrCreate(
-                ['batch_id' => $batch->id, 'cost_type' => 'excess_weight'],
+                ['batch_id' => $batch->id, 'cost_type' => 'piglet'],
                 [
                     'farm_id' => $batch->farm_id,
-                    'quantity' => 1,
-                    'price_per_unit' => $validated['excess_weight_cost'],
-                    'total_price' => $validated['excess_weight_cost'],
-                    'note' => 'ค่าน้ำหนักส่วนเกิน',
-                    'receipt_file' => $filename,
+                    'quantity' => $validated['total_pig_amount'],
+                    'price_per_unit' => $validated['total_pig_price'] / max(1, $validated['total_pig_amount']),
+                    'total_price' => $validated['total_pig_price'],
+                    'note' => 'ค่าลูกหมู',
+                    'receipt_file' => $uploadedFileUrl,
                 ]
             );
-        } else {
-            Cost::where('batch_id', $batch->id)->where('cost_type', 'excess_weight')->delete();
+
+            if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
+                Cost::updateOrCreate(
+                    ['batch_id' => $batch->id, 'cost_type' => 'excess_weight'],
+                    [
+                        'farm_id' => $batch->farm_id,
+                        'quantity' => 1,
+                        'price_per_unit' => $validated['excess_weight_cost'],
+                        'total_price' => $validated['excess_weight_cost'],
+                        'note' => 'ค่าน้ำหนักส่วนเกิน',
+                        'receipt_file' => $uploadedFileUrl,
+                    ]
+                );
+            } else {
+                Cost::where('batch_id', $batch->id)->where('cost_type', 'excess_weight')->delete();
+            }
+
+            Cost::where('batch_id', $batch->id)
+                ->where('cost_type', 'transport')
+                ->update([
+                    'total_price' => $validated['transport_cost'] ?? 0,
+                    'transport_cost' => $validated['transport_cost'] ?? 0
+                ]);
+
+            return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
-
-        // อัปเดตค่าขนส่ง
-        Cost::where('batch_id', $batch->id)->update(['transport_cost' => $validated['transport_cost'] ?? 0]);
-
-        return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
-    } catch (\Exception $e) {
-        return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
     }
-}
 
-    // Delete PigEntryRecord
     public function deletePigEntryRecord($id)
     {
         $pigEntryRecord = PigEntryRecord::find($id);
-        if (!$pigEntryRecord) {
-            return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการลบ');
-        }
+        if (!$pigEntryRecord) return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการลบ');
 
         $pigEntryRecord->delete();
         return redirect()->route('pig_entry_records.index')->with('success', 'ลบรายการเรียบร้อยแล้ว');
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//
-
-    // Export PigEntryRecord to PDF
     public function exportPigEntryPdf()
     {
         $farms = Farm::all();
@@ -286,15 +352,12 @@ class PigEntryController extends Controller
             ]);
 
         $filename = "pig_entry_records_" . date('Y-m-d_H-i-s') . ".pdf";
-
         return $pdf->download($filename);
     }
 
-    // Export PigEntryRecord to CSV
     public function exportPigEntryCsv()
     {
         $pigEntryRecords = PigEntryRecord::with(['farm', 'batch'])->get();
-
         $filename = "pig_entry_records_" . date('Y-m-d_H-i-s') . ".csv";
 
         return response()->streamDownload(function () use ($pigEntryRecords) {

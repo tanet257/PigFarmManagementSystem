@@ -4,16 +4,13 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\StoreHouseController;
+use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\PigEntryController;
+use App\Http\Controllers\DairyController;
 use App\Http\Controllers\BatchPenAllocationController;
+use App\Http\Controllers\DashboardController;
 
-$path = public_path('receipt_files/1758264009.png');
-if(file_exists($path)){
-    echo "เจอไฟล์: $path";
-}else{
-    echo "ไม่เจอไฟล์: $path";
-}
 //------------------- route home/admin -------------------------//
 Route::get('/', [HomeController::class, 'my_home'])->name('home.my_home');
 Route::get('/home', [HomeController::class, 'index'])->name('home');
@@ -67,6 +64,10 @@ Route::get('/view_pig_death', [AdminController::class, 'view_pig_death'])->name(
 //------------------- route pig entry record -----------------//
 Route::get('/pig_entry_record', [PigEntryController::class, 'pig_entry_record'])->name('pig_entry_records.record');
 Route::post('/upload_pig_entry_record', [PigEntryController::class, 'upload_pig_entry_record'])->name('pig_entry_records.upload');
+//------------------- route pig entry helper -----------------//
+Route::get('/get-batches/{farmId}', [PigEntryController::class, 'getBatchesByFarm']);
+Route::get('/get-barns/{farmId}', [PigEntryController::class, 'getBarnsByFarm']);
+Route::get('/get-available-barns/{farmId}', [PigEntryController::class, 'getAvailableBarnsByFarm']);
 
 //------------------- route crud pig_entry_record -----------------------//
 Route::prefix('pigentryrecord')->group(function () {
@@ -80,25 +81,38 @@ Route::prefix('pigentryrecord')->group(function () {
     Route::get('/export/pdf', [PigEntryController::class, 'exportPdf'])->name('pig_entry_records.export.pdf');
 });
 
-Route::prefix('batch-pen-allocation')->group(function () {
+//------------------- route r batch pen allocation -----------------------//
+Route::prefix('batch_pen_allocations')->group(function () {
     Route::get('/', [BatchPenAllocationController::class, 'index'])->name('batch_pen_allocations.index');
-    Route::post('/create', [BatchPenAllocationController::class, 'create'])->name('batch_pen_allocations.create');
-    Route::get('/{id}/edit', [BatchPenAllocationController::class, 'edit'])->name('batch_pen_allocations.edit');
-    Route::put('/{id}', [BatchPenAllocationController::class, 'update'])->name('batch_pen_allocations.update');
-    Route::delete('/{id}', [BatchPenAllocationController::class, 'delete'])->name('batch_pen_allocations.delete');
+        //------------------- route export batch ---------------------//
+    Route::get('/export/csv', [BatchPenAllocationController::class, 'exportCsv'])->name('batch_pen_allocations.export.csv');
+    Route::get('/export/pdf', [BatchPenAllocationController::class, 'exportPdf'])->name('batch_pen_allocations.export.pdf');
 });
 
 
 //------------------- route dairy record ---------------------//
-Route::get('/dairy_record', [AdminController::class, 'dairy_record'])->name('dairy_record.record');
-Route::post('/upload_dairy_record', [AdminController::class, 'upload_dairy_record'])->name('dairy_record.upload');
-Route::get('/view_dairy_record', [AdminController::class, 'view_dairy_record'])->name('dairy_record.view');
 
-//------------------- route storehouse record ---------------------//
-Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.record');
-Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record']);
+    Route::get('/viewDairy', [DairyController::class, 'viewDairy'])->name('dairy_records.record');
+    Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dairy_records.upload');
+    
+    //------------------- route crud storehouse -----------------------//
 
-//------------------- route crud storehouse -----------------------//
+Route::prefix('dairy_record')->group(function () {
+    Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');
+    Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
+    Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
+    Route::delete('/{id}', [DairyController::class, 'deleteDairy'])->name('dairy_records.delete');
+    //------------------- route export batch ---------------------//
+    Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
+    Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
+
+});
+
+    //------------------- route storehouse record ---------------------//
+    Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.recordview');
+    Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record'])->name('store_house_record.upload');
+
+    //------------------- route crud storehouse -----------------------//
 Route::prefix('storehouses')->group(function () {
     Route::get('/', [StoreHouseController::class, 'indexStorehouse'])->name('storehouses.index');
     Route::post('/create', [StoreHouseController::class, 'createItem'])->name('storehouses.create');
@@ -106,8 +120,16 @@ Route::prefix('storehouses')->group(function () {
     Route::put('/{id}', [StoreHouseController::class, 'updateStorehouse'])->name('storehouses.update');
     Route::delete('/{id}', [StoreHouseController::class, 'deleteStorehouse'])->name('storehouses.delete');
     //------------------- route export batch ---------------------//
-    Route::get('/storehouses/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouses.export.csv');
-    Route::get('/storehouses/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouses.export.pdf');
+    Route::get('/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouses.export.csv');
+    Route::get('/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouses.export.pdf');
+});
+
+//------------------- route r inventory movement -----------------------//
+Route::prefix('inventory_movements')->group(function () {
+    Route::get('/', [InventoryMovementController::class, 'index'])->name('inventory_movements.index');
+    //------------------- route export batch ---------------------//
+    Route::get('/export/csv', [InventoryMovementController::class, 'exportCsv'])->name('inventory_movements.export.csv');
+    Route::get('/export/pdf', [InventoryMovementController::class, 'exportPdf'])->name('inventory_movements.export.pdf');
 });
 
 //------------------- route crud batch -----------------------//
@@ -121,6 +143,10 @@ Route::prefix('batches')->group(function () {
     Route::get('/export/csv', [BatchController::class, 'exportCsv'])->name('batches.export.csv');
     Route::get('/export/pdf', [BatchController::class, 'exportPdf'])->name('batches.export.pdf');
 });
+
+
+Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.dashboard');
+
 
 //------------------- route dashboard ------------------------//
 Route::middleware([

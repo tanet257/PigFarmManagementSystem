@@ -39,6 +39,10 @@ class PigEntryRecord extends Model
         return $this->batch->costs->where('cost_type', 'excess_weight')->sum('total_price');
     }
 
+    public function latestCost()
+{
+    return $this->hasOne(Cost::class, 'batch_id', 'batch_id')->latestOfMany();
+}
 
 
     public function farm()

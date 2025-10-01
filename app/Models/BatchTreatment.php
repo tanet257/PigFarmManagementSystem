@@ -12,10 +12,10 @@ class BatchTreatment extends Model
     protected $table = 'batch_treatments'; // ชื่อตาราง
 
     protected $fillable = [
-        'barn_id',
+
         'pen_id',
         'batch_id',
-        'farm_id',
+        'dairy_record_id',
 
         'medicine_name',
         'medicine_code',
@@ -27,25 +27,24 @@ class BatchTreatment extends Model
     ];
 
     //---------------relation ship------------------------//
-    public function barn()
-    {
-        return $this->belongsTo(Barn::class);
-    }
 
     public function pen()
-    {
-        return $this->belongsTo(Pen::class);
-    }
+{
+    return $this->belongsTo(Pen::class, 'pen_id', 'id'); // pen_id ใน batch_treatments ชี้ไป id ของ pens
+}
+
 
     public function batch()
     {
         return $this->belongsTo(Batch::class);
     }
 
-    public function farm()
+    public function dairy_record()
     {
-        return $this->belongsTo(Farm::class);
+        return $this->belongsTo(DairyRecord::class);
     }
+
+
 
 
 }
