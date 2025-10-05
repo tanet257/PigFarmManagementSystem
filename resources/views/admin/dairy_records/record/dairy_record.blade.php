@@ -4,78 +4,157 @@
     @include('admin.css')
 
     <style>
-        .cardTemplateRow {
-            background: #CBCBCB;
-            border-radius: 10px;
+        /* ทำให้ dropdown-container เป็น reference point (เพื่อ width:100% ของเมนูอ้างอิงได้) */
+        .dropdown {
+            position: relative;
         }
 
-        /* กล่องที่เลือกแล้ว */
+        /* บังคับเมนูให้มีความกว้างเท่าปุ่มและไม่ขยายตามเนื้อหา */
+        .dropdown .dropdown-menu.w-100 {
+            width: 100% !important;
+            min-width: 0 !important;
+            /* ป้องกัน min-width ของ bootstrap ขยาย */
+            max-width: 100% !important;
+            box-sizing: border-box;
+            left: 0 !important;
+        }
+
+        /* ปุ่มที่แสดงผลการเลือก ให้ตัดข้อความยาวเป็น ... */
+        .dropdown-toggle {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* รายการในเมนูให้ตัดข้อความยาวเป็น ... */
+        .dropdown-item.text-truncate,
+        .dropdown-menu .dropdown-item.d-block.text-truncate {
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+
+        /* ถ้าคุณใช้ปุ่มแบบ item-dropdown-btn (ปุ่มแสดงรายการ item) */
+        .item-dropdown-btn {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            display: block;
+        }
+
+        /* Card Row */
+        .cardTemplateRow {
+            background: #a3a3a3;
+            /* สีพื้นอ่อน */
+            border-radius: 10px;
+            padding: 12px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .cardTemplateRow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        /* Label */
         label {
             display: inline-block;
-            font-weight: bold;
+            font-weight: 600;
             margin-bottom: 6px;
+            color: #333333;
         }
 
-        /* ปิด spin button ของ number */
+        /* Input / Textarea / Select */
+        input.form-control,
+        select.form-select,
+        textarea.form-control {
+            border-radius: 8px;
+            background: #fafafa;
+            border: 1px solid #d1d1d1;
+            color: #333333;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+            padding: 8px 12px;
+            transition: all 0.2s;
+        }
+
+        input.form-control:focus,
+        select.form-select:focus,
+        textarea.form-control:focus {
+            outline: none;
+            border-color: #4a90e2;
+            background-color: #fafafa;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+
+        /* Number input hide spin buttons */
         input[type=number]::-webkit-outer-spin-button,
         input[type=number]::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
 
-        input[type=number],
-        .no-scroll {
+        input[type=number] {
             -moz-appearance: textfield;
         }
 
-        /* กล่อง input / select ธรรมดา */
-        input.form-control,
-        select.form-select,
-        textarea.form-control {
+        /* Dropdown button */
+        .dropdown-toggle {
+            background-color: #fafafa;
+            border: 1px solid #d1d1d1;
             border-radius: 8px;
-            /* มุมโค้งเหมือน dropdown */
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
-            color: #000000;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
-            padding: 6px 10px;
+            color: #333333;
+            padding: 8px 12px;
+            text-align: left;
+            transition: all 0.2s;
         }
 
-        /* effect ตอน focus */
-        input.form-control:focus,
-        select.form-select:focus,
-        textarea.form-control:focus {
-            outline: none;
-            border-color: #999999;
-            background-color: #f9f9f9;
-            /* เทาอ่อน */
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        .dropdown-toggle:hover {
+            background-color: rgba(0, 0, 0, 0.03);
+            /* สีดำจาง 3% เหมือนเงาจางๆ */
         }
 
-        /* input type file */
+        .dropdown-menu {
+            border-radius: 8px;
+            border: 1px solid #CBCBCB;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .dropdown-item {
+            transition: background-color 0.15s;
+        }
+
+        .dropdown-item:hover {
+            background-color: #CBCBCB;
+            color: #333333;
+        }
+
+        /* File input */
         input[type="file"].form-control {
-            border: 1px solid #cccccc;
+            border: 1px solid #d1d1d1;
             border-radius: 8px;
             background-color: #ffffff;
-            padding: 6px;
+            padding: 8px;
             box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
         }
 
         input[type="file"].form-control::file-selector-button {
-            background-color: #717171;
+            background-color: #4a90e2;
             color: #ffffff;
             border: none;
-            padding: 8px 12px;
+            padding: 8px 14px;
             border-radius: 6px;
             cursor: pointer;
             transition: background-color 0.2s;
         }
 
         input[type="file"].form-control::file-selector-button:hover {
-            background-color: #555555;
+            background-color: #357ab8;
         }
     </style>
+
 </head>
 
 <body>
@@ -99,21 +178,41 @@
                                     style="background: #CBCBCB">
                                     <div class="col-md-5">
                                         <label>ฟาร์ม</label>
-                                        <select name="farm_id" id="farmSelect" class="form-select" title="เลือกฟาร์ม"
-                                            required>
-                                            <option value="">-- เลือกฟาร์ม --</option>
-                                            @foreach ($farms as $farm)
-                                                <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="dropdown">
+                                            <button class="btn btn-white dropdown-toggle w-100 text-start"
+                                                type="button" id="farmDropdownBtn" data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                                เลือกฟาร์ม
+                                            </button>
+                                            <ul class="dropdown-menu w-100" aria-labelledby="farmDropdownBtn"
+                                                id="farmDropdownMenu">
+                                                @foreach ($farms as $farm)
+                                                    <li>
+                                                        <a class="dropdown-item" href="#"
+                                                            data-farm-id="{{ $farm->id }}">{{ $farm->farm_name }}</a>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                            <input type="hidden" name="farm_id" id="farmSelect" value="">
+                                        </div>
                                     </div>
+
                                     <div class="col-md-5">
                                         <label>รุ่น / Batch</label>
-                                        <select name="batch_id" class="form-select" id="batchSelect" title="เลือกรุ่น"
-                                            required>
-                                            <option value="">-- เลือกรุ่น --</option>
-                                        </select>
+                                        <div class="dropdown">
+                                            <button class="btn btn-white dropdown-toggle w-100 text-start"
+                                                type="button" id="batchDropdownBtn" data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                                เลือกรุ่น
+                                            </button>
+                                            <ul class="dropdown-menu w-100" aria-labelledby="batchDropdownBtn"
+                                                id="batchDropdownMenu">
+                                                <!-- ตัวเลือกจะ populate หลังจากเลือกฟาร์ม -->
+                                            </ul>
+                                            <input type="hidden" name="batch_id" id="batchSelect" value="">
+                                        </div>
                                     </div>
+
                                 </div>
 
                                 <!--Feed Section-->
@@ -132,50 +231,65 @@
                                         style="display:none">
                                         <input type="hidden" name="feed_use[0][farm_id]" class="farm-id">
                                         <input type="hidden" name="feed_use[0][batch_id]" class="batch-id">
+                                        <input type="hidden" name="feed_use[0][item_type]" class="item-type"
+                                            value="feed">
+
                                         <div class="card-body cardTemplateRow">
-                                            <div class="row g-3">
+                                            <div class="row g-2">
+                                                <!-- แถว 1: วันที่ + เล้า + อาหาร -->
                                                 <div class="col-md-4">
                                                     <input type="text" name="feed_use[0][date]"
                                                         class="form-control date-input" placeholder="ว/ด/ป ชม.นาที"
                                                         required>
                                                 </div>
-                                                <!-- เล้า -->
-                                                <div class="col-md-4">
-                                                    <select class="form-select barn-select" multiple required>
-                                                        <option value="">-- เลือกเล้า --</option>
-                                                        @foreach ($barns as $barn)
-                                                            <option value="{{ $barn->id }}"
-                                                                data-farm="{{ $barn->farm_id }}">
-                                                                เล้า {{ $barn->barn_code }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                    <input type="hidden" name="feed_use[0][barn_id]" class="barn-id">
+                                                <div data-cloned="1">
+                                                    <div class="col-md-4">
+                                                        <button
+                                                            class="barn-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
+                                                            type="button" data-bs-toggle="dropdown"
+                                                            aria-expanded="false">เลือกเล้า</button>
+                                                        <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                        <input type="hidden" class="barn-id"
+                                                            name="feed_use[0][barn_id]" value="">
+                                                    </div>
                                                 </div>
-
-
                                                 <div class="col-md-4">
-                                                    <select name="feed_use[0][item_code]"
-                                                        class="form-select feed-item-select" required>
-                                                        <option value="">-- เลือกอาหาร --</option>
-                                                    </select>
-                                                    <input type="hidden" name="feed_use[0][item_name]"
-                                                        class="item-name">
+                                                    <div class="dropdown">
+                                                        <button
+                                                            class="btn btn-white dropdown-toggle w-100 text-start item-dropdown-btn"
+                                                            type="button" id="feedItemDropdownBtn0"
+                                                            data-bs-toggle="dropdown"
+                                                            aria-expanded="false">เลือกอาหาร</button>
+                                                        <ul class="dropdown-menu w-100 item-dropdown-menu"
+                                                            aria-labelledby="feedItemDropdownBtn0"
+                                                            id="feedItemDropdownMenu0">
+                                                            <!-- ตัวเลือกจะ populate หลังจากเลือก batch -->
+                                                        </ul>
+                                                        <input type="hidden" name="feed_use[0][item_code]"
+                                                            class="item-code" value="">
+                                                        <input type="hidden" name="feed_use[0][item_name]"
+                                                            class="item-name" value="">
+                                                    </div>
                                                 </div>
+                                            </div>
+
+                                            <div class="row g-2 mt-2">
+                                                <!-- แถว 2: จำนวน + หมายเหตุ + ปุ่มลบ -->
                                                 <div class="col-md-4">
                                                     <input type="number" name="feed_use[0][quantity]"
                                                         class="form-control" placeholder="จำนวน" required>
                                                 </div>
-                                                <div class="col-md-12">
-                                                    <textarea name="feed_use[0][note]" class="form-control" rows="2" placeholder="หมายเหตุ"></textarea>
+                                                <div class="col-md-7">
+                                                    <textarea name="feed_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
                                                 </div>
                                                 <div class="col-md-1 d-flex align-items-end">
                                                     <button type="button"
-                                                        class="btn btn-danger remove-row">ลบแถว</button>
+                                                        class="btn btn-danger remove-row w-100">ลบ</button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
                                 </template>
                                 <!-- END FEED -->
 
@@ -196,78 +310,107 @@
                                         data-template style="display:none">
                                         <input type="hidden" name="medicine_use[0][farm_id]" class="farm-id">
                                         <input type="hidden" name="medicine_use[0][batch_id]" class="batch-id">
+                                        <input type="hidden" name="medicine_use[0][item_type]" class="item-type"
+                                            value="medicine">
+                                        <input type="hidden" name="medicine_use[0][barn_pen]" class="barn-pen-json">
+
                                         <div class="card-body cardTemplateRow">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
+                                            <!-- แถว 1: วันที่ + เล้า + คอก + ยา/วัคซีน -->
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
                                                     <input type="text" name="medicine_use[0][date]"
                                                         class="form-control date-input" placeholder="ว/ด/ป ชม.นาที"
                                                         required>
                                                 </div>
-
-                                                <!-- เล้า -->
-                                                <div class="col-md-4">
-                                                    <select class="form-select barn-select" multiple required>
-                                                        <option value="">-- เลือกเล้า --</option>
-                                                        @foreach ($barns as $barn)
-                                                            <option value="{{ $barn->id }}"
-                                                                data-farm="{{ $barn->farm_id }}">
-                                                                เล้า {{ $barn->barn_code }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
+                                                <div data-cloned="1">
+                                                    <div class="col-md-2">
+                                                        <button
+                                                            class="barn-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
+                                                            type="button" data-bs-toggle="dropdown"
+                                                            aria-expanded="false">
+                                                            เลือกเล้า
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                        <input type="hidden" class="barn-id"
+                                                            name="medicine_use[0][barn_id]" value="">
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <button
+                                                            class="pen-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
+                                                            type="button" data-bs-toggle="dropdown"
+                                                            aria-expanded="false">
+                                                            เลือกคอก
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100 pen-dropdown"></ul>
+                                                        <input type="hidden" class="barn-pen-json"
+                                                            name="medicine_use[0][barn_pen]" value="">
+                                                    </div>
                                                 </div>
-
-                                                <!-- คอก -->
-                                                <div class="col-md-4">
-                                                    <select class="form-select pen-select" multiple disabled>
-                                                        <option value="">-- เลือกคอก --</option>
-                                                        <!-- จะเติม options จาก script -->
-                                                    </select>
+                                                <div class="col-md-5">
+                                                    <div class="dropdown">
+                                                        <button
+                                                            class="btn btn-white dropdown-toggle w-100 text-start item-dropdown-btn"
+                                                            type="button" id="medicineItemDropdownBtn0"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                            เลือกยา/วัคซีน
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100 item-dropdown-menu"
+                                                            aria-labelledby="medicineItemDropdownBtn0"
+                                                            id="medicineItemDropdownMenu0">
+                                                            <!-- ตัวเลือก populate หลังเลือก batch -->
+                                                        </ul>
+                                                        <input type="hidden" name="medicine_use[0][item_code]"
+                                                            class="item-code" value="">
+                                                        <input type="hidden" name="medicine_use[0][item_name]"
+                                                            class="item-name" value="">
+                                                    </div>
                                                 </div>
+                                            </div>
 
-                                                <!-- hidden input เก็บ barn_pen array -->
-                                                <input type="hidden" name="medicine_use[0][barn_pen]"
-                                                    class="barn-pen-json">
-
-
-                                                <div class="col-md-4">
-                                                    <select name="medicine_use[0][item_code]"
-                                                        class="form-select medicine-item-select" required>
-                                                        <option value="">-- เลือกยา/วัคซีน --</option>
-                                                    </select>
-                                                    <input type="hidden" name="medicine_use[0][item_name]"
-                                                        class="item-name">
-                                                </div>
-
-                                                <div class="col-md-4">
+                                            <!-- แถว 2: จำนวน + สถานะ + หมายเหตุ + ปุ่มลบ -->
+                                            <div class="row g-2 mt-2">
+                                                <div class="col-md-2">
                                                     <input type="number" name="medicine_use[0][quantity]"
                                                         class="form-control" placeholder="จำนวน" required>
                                                 </div>
-
-                                                <div class="col-md-4">
-                                                    <select name="medicine_use[0][status]" class="form-select"
-                                                        placeholder="สถานะการรักษา" required>
-                                                        <option value="">-- เลือกสถานะ --</option>
-                                                        <option value="วางแผนว่าจะให้ยา">วางแผนว่าจะให้ยา</option>
-                                                        <option value="กำลังดำเนินการ (กำลังฉีด/กำลังให้ยาอยู่)">
-                                                            กำลังดำเนินการ</option>
-                                                        <option value="ให้ยาเสร็จแล้ว">ให้ยาเสร็จแล้ว</option>
-                                                        <option value="ยกเลิก">ยกเลิก</option>
-
-                                                    </select>
+                                                <div class="col-md-3">
+                                                    <div class="dropdown">
+                                                        <button
+                                                            class="btn btn-white dropdown-toggle w-100 text-start
+                                                        medicine-status-dropdown-btn"
+                                                            type="button" id="medicineStatusDropdownBtn0"
+                                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                                            เลือกสถานะ
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100 medicine-status-dropdown-menu"
+                                                            aria-labelledby="medicineStatusDropdownBtn0">
+                                                            <li><a class="dropdown-item" href="#"
+                                                                    data-value="วางแผนว่าจะให้ยา">วางแผนว่าจะให้ยา</a>
+                                                            </li>
+                                                            <li><a class="dropdown-item" href="#"
+                                                                    data-value="กำลังดำเนินการ (กำลังฉีด/กำลังให้ยาอยู่)">กำลังดำเนินการ</a>
+                                                            </li>
+                                                            <li><a class="dropdown-item" href="#"
+                                                                    data-value="ให้ยาเสร็จแล้ว">ให้ยาเสร็จแล้ว</a></li>
+                                                            <li><a class="dropdown-item" href="#"
+                                                                    data-value="ยกเลิก">ยกเลิก</a></li>
+                                                        </ul>
+                                                        <input type="hidden" name="medicine_use[0][status]"
+                                                            class="status-value" value="">
+                                                    </div>
                                                 </div>
-
-                                                <div class="col-md-12">
-                                                    <textarea name="medicine_use[0][note]" class="form-control" rows="2" placeholder="หมายเหตุ"></textarea>
+                                                <div class="col-md-6">
+                                                    <textarea name="medicine_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
                                                 </div>
                                                 <div class="col-md-1 d-flex align-items-end">
                                                     <button type="button"
-                                                        class="btn btn-danger remove-row">ลบแถว</button>
+                                                        class="btn btn-danger remove-row w-100">ลบ</button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </template>
+
 
                                 <!-- END MEDICINE -->
 
@@ -287,60 +430,63 @@
                                         style="display:none">
                                         <input type="hidden" name="dead_pig[0][farm_id]" class="farm-id">
                                         <input type="hidden" name="dead_pig[0][batch_id]" class="batch-id">
+                                        <input type="hidden" name="dead_pig[0][barn_pen]" class="barn-pen-json">
+
                                         <div class="card-body cardTemplateRow">
-                                            <div class="row g-3">
-                                                <div class="col-md-4">
+                                            <!-- แถว 1: วันที่ + เล้า + คอก + จำนวน -->
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
                                                     <input type="text" name="dead_pig[0][date]"
                                                         class="form-control date-input" placeholder="ว/ด/ป ชม.นาที"
                                                         required>
                                                 </div>
-                                                <!-- เล้า -->
-                                                <div class="col-md-4">
-                                                    <select class="form-select barn-select" multiple required>
-                                                        <option value="">-- เลือกเล้า --</option>
-                                                        @foreach ($barns as $barn)
-                                                            <option value="{{ $barn->id }}"
-                                                                data-farm="{{ $barn->farm_id }}">
-                                                                เล้า {{ $barn->barn_code }}
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
+                                                <div data-cloned="1">
+                                                    <div class="col-md-3">
+                                                        <button
+                                                            class="barn-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
+                                                            type="button" data-bs-toggle="dropdown"
+                                                            aria-expanded="false">
+                                                            เลือกเล้า
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                        <input type="hidden" class="barn-id"
+                                                            name="dead_pig[0][barn_id]" value="">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <button
+                                                            class="pen-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
+                                                            type="button" data-bs-toggle="dropdown"
+                                                            aria-expanded="false">
+                                                            เลือกคอก
+                                                        </button>
+                                                        <ul class="dropdown-menu w-100 pen-dropdown"></ul>
+                                                        <input type="hidden" class="barn-pen-json"
+                                                            name="dead_pig[0][barn_pen]" value="">
+                                                    </div>
                                                 </div>
-
-                                                <!-- คอก -->
-                                                <div class="col-md-4">
-                                                    <select class="form-select pen-select" multiple disabled>
-                                                        <option value="">-- เลือกคอก --</option>
-                                                        <!-- จะเติม options จาก script -->
-                                                    </select>
-                                                </div>
-
-                                                <!-- hidden input เก็บ barn_pen array -->
-                                                <input type="hidden" name="dead_pig[0][barn_pen]"
-                                                    class="barn-pen-json">
-
-
-                                                <div class="col-md-4">
+                                                <div class="col-md-3">
                                                     <input type="number" name="dead_pig[0][quantity]"
                                                         class="form-control" placeholder="จำนวนสุกรตาย" required>
                                                 </div>
+                                            </div>
 
-                                                <div class="col-md-4">
-                                                    <textarea name="dead_pig[0][cause]" class="form-control" rows="2" placeholder="สาเหตุการตาย"></textarea>
+                                            <!-- แถว 2: สาเหตุ + หมายเหตุ + ปุ่มลบ -->
+                                            <div class="row g-2 mt-2">
+                                                <div class="col-md-5">
+                                                    <textarea name="dead_pig[0][cause]" class="form-control" rows="1" placeholder="สาเหตุการตาย"></textarea>
                                                 </div>
-
-                                                <div class="col-md-4">
-                                                    <textarea name="dead_pig[0][note]" class="form-control" rows="2" placeholder="หมายเหตุ"></textarea>
+                                                <div class="col-md-6">
+                                                    <textarea name="dead_pig[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
                                                 </div>
-                                                
                                                 <div class="col-md-1 d-flex align-items-end">
                                                     <button type="button"
-                                                        class="btn btn-danger remove-row">ลบแถว</button>
+                                                        class="btn btn-danger remove-row w-100">ลบ</button>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </template>
+
 
                                 <!-- END PIGDEATH -->
 
@@ -360,16 +506,17 @@
 
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                // ---------------- Data จาก Blade ----------------
-                const batches = @json($batches); // batch ทั้งหมด
-                const barns = @json($barns); // barn ทั้งหมด
-                const pens = @json($pens); // pen ทั้งหมด
-                const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch); // feed/medicine ตาม type+batch
+
+                // ---------------------- ข้อมูลจาก backend ----------------------
+                const batches = @json($batches);
+                const barns = @json($barns);
+                const pens = @json($pens);
+                const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
 
                 const farmSelect = document.getElementById('farmSelect');
                 const batchSelect = document.getElementById('batchSelect');
 
-                // ---------------- Date Input ----------------
+                // ---------------------- ฟังก์ชันช่วย ----------------------
                 function attachDateInputEvents(root) {
                     (root.querySelectorAll ? root : document).querySelectorAll('.date-input').forEach(input => {
                         if (input._attached) return;
@@ -391,64 +538,136 @@
                     });
                 }
 
-                // ---------------- Barn / Pen ----------------
-                function populateBarnSelect(barnSelect) {
-                    barnSelect.innerHTML = '';
-                    const farmId = parseInt(farmSelect.value) || null;
-                    if (!farmId) {
-                        barnSelect.disabled = true;
-                        return;
-                    }
-                    barnSelect.disabled = false;
-                    barns.filter(b => b.farm_id === farmId).forEach(b => {
-                        const opt = document.createElement('option');
-                        opt.value = b.id;
-                        opt.textContent = `เล้า ${b.barn_code}`;
-                        barnSelect.appendChild(opt);
-                    });
-                }
+                function attachFarmBatchDropdown() {
+                    document.querySelectorAll('#farmDropdownMenu .dropdown-item').forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            const farmId = this.dataset.farmId;
+                            farmSelect.value = farmId;
+                            document.getElementById('farmDropdownBtn').textContent = this.textContent;
 
-                function populatePensForBarnSelect(barnSelect) {
-                    const rowContainer = barnSelect.closest('.row') || barnSelect.closest('[data-cloned]') || document;
-                    const penSelect = rowContainer.querySelector('.pen-select');
-                    const hiddenInput = rowContainer.querySelector('.barn-pen-json');
-                    if (!penSelect || !hiddenInput) return;
+                            populateBatchDropdown(farmId);
 
-                    penSelect.innerHTML = '';
-                    const selectedBarnIds = Array.from(barnSelect.selectedOptions).map(o => parseInt(o.value));
-                    if (selectedBarnIds.length === 0) {
-                        penSelect.disabled = true;
-                        hiddenInput.value = JSON.stringify([]);
-                        return;
-                    }
+                            batchSelect.value = '';
+                            document.getElementById('batchDropdownBtn').textContent = 'เลือกรุ่น';
 
-                    penSelect.disabled = false;
-                    selectedBarnIds.forEach(barnId => {
-                        pens.filter(p => p.barn_id === barnId).forEach(p => {
-                            const opt = document.createElement('option');
-                            opt.value = p.id;
-                            opt.textContent = `คอก ${p.pen_code} (เล้า ${barnId})`;
-                            opt.dataset.barn = barnId;
-                            penSelect.appendChild(opt);
+                            // ---------------------- reset barn/pen ของทุก row ----------------------
+                            document.querySelectorAll('[data-cloned]').forEach(row => {
+                                const hiddenBarn = row.querySelector('.barn-id');
+                                if (hiddenBarn) hiddenBarn.value = '';
+                                const hiddenPen = row.querySelector('.barn-pen-json');
+                                if (hiddenPen) hiddenPen.value = JSON.stringify([]);
+                                attachBarnPenDropdowns(row);
+                            });
                         });
                     });
-
-                    updateBarnPenJson(rowContainer);
                 }
 
-                function updateBarnPenJson(rowContainer) {
-                    const penSelect = rowContainer.querySelector('.pen-select');
-                    const hiddenInput = rowContainer.querySelector('.barn-pen-json');
-                    if (!penSelect || !hiddenInput) return;
+                function populateBatchDropdown(farmId) {
+                    const batchMenu = document.getElementById('batchDropdownMenu');
+                    batchMenu.innerHTML = '';
+                    batches.filter(b => b.farm_id == farmId).forEach(b => {
+                        const li = document.createElement('li');
+                        li.innerHTML =
+                            `<a class="dropdown-item" href="#" data-batch-id="${b.id}">${b.batch_code}</a>`;
+                        batchMenu.appendChild(li);
 
-                    const selectedPens = Array.from(penSelect.selectedOptions).map(o => ({
-                        barn_id: parseInt(o.dataset.barn),
-                        pen_id: parseInt(o.value)
-                    }));
-                    hiddenInput.value = JSON.stringify(selectedPens);
+                        li.querySelector('a').addEventListener('click', function(e) {
+                            e.preventDefault();
+                            batchSelect.value = this.dataset.batchId;
+                            document.getElementById('batchDropdownBtn').textContent = this.textContent;
+
+                            document.querySelectorAll('[data-cloned]').forEach(row => {
+                                updateFarmBatchHiddenInputs(row);
+                                populateItemDropdown(row);
+
+                                const hiddenBarn = row.querySelector('.barn-id');
+                                if (hiddenBarn) hiddenBarn.value = '';
+                                const hiddenPen = row.querySelector('.barn-pen-json');
+                                if (hiddenPen) hiddenPen.value = JSON.stringify([]);
+                                attachBarnPenDropdowns(row);
+                            });
+                        });
+                    });
                 }
 
-                // ---------------- Hidden Inputs ----------------
+                function attachBarnPenDropdowns(root) {
+                    (root.querySelectorAll ? root : document).querySelectorAll('[data-cloned]').forEach(
+                    rowContainer => {
+                        const isFeed = rowContainer.closest('#feedUseContainer') !== null;
+                        const isMedicine = rowContainer.closest('#medicineUseContainer') !== null;
+
+                        const barnBtn = rowContainer.querySelector('.barn-select');
+                        const barnMenu = rowContainer.querySelector('.barn-dropdown');
+                        const hiddenBarn = rowContainer.querySelector('.barn-id');
+                        if (!barnBtn || !barnMenu || !hiddenBarn) return;
+
+                        // ---------------------- reset ----------------------
+                        barnMenu.innerHTML = '';
+                        barnBtn.textContent = 'เลือกเล้า';
+                        hiddenBarn.value = '';
+
+                        const selectedFarmId = parseInt(farmSelect.value) || parseInt(rowContainer
+                            .querySelector('.farm-id')?.value) || null;
+                        const selectedBatchId = parseInt(batchSelect.value) || parseInt(rowContainer
+                            .querySelector('.batch-id')?.value) || null;
+                        if (!selectedFarmId || !selectedBatchId) {
+                            barnBtn.classList.add('disabled');
+                            return;
+                        } else {
+                            barnBtn.classList.remove('disabled');
+                        }
+
+                        const filteredBarns = barns.filter(b => b.farm_id === selectedFarmId);
+
+                        filteredBarns.forEach(b => {
+                            const li = document.createElement('li');
+                            li.innerHTML =
+                                `<a class="dropdown-item" href="#" data-barn="${b.id}">เล้า ${b.barn_code}</a>`;
+                            barnMenu.appendChild(li);
+
+                            li.querySelector('a').addEventListener('click', function(e) {
+                                e.preventDefault();
+                                barnBtn.textContent = `เล้า ${b.barn_code}`;
+                                hiddenBarn.value = b.id;
+
+                                if (!isFeed) {
+                                    const penBtn = rowContainer.querySelector('.pen-select');
+                                    const penMenu = rowContainer.querySelector('.pen-dropdown');
+                                    const hiddenPen = rowContainer.querySelector(
+                                        '.barn-pen-json');
+                                    if (!penBtn || !penMenu || !hiddenPen) return;
+
+                                    // ---------------------- reset pen ----------------------
+                                    penMenu.innerHTML = '';
+                                    penBtn.textContent = 'เลือกคอก';
+                                    hiddenPen.value = JSON.stringify([]);
+
+                                    pens.filter(p => p.barn_id == b.id).forEach(p => {
+    const liPen = document.createElement('li');
+    liPen.innerHTML =
+        `<a class="dropdown-item" href="#" data-pen="${p.id}">คอก ${p.pen_code}</a>`;
+    penMenu.appendChild(liPen);
+
+    liPen.querySelector('a').addEventListener('click', function(e) {
+        e.preventDefault();
+        penBtn.textContent = `คอก ${p.pen_code}`;
+
+        if (isFeed) {
+            // feed_use ยังใช้ JSON array (เหมือนเดิม)
+            hiddenPen.value = JSON.stringify([{ barn_id: b.id, pen_id: p.id }]);
+        } else {
+            // medicine_use / dead_pig ใช้ scalar เลย
+            hiddenPen.value = p.id;
+        }
+    });
+});
+                                }
+                            });
+                        });
+                    });
+                }
+
                 function updateFarmBatchHiddenInputs(rowContainer) {
                     const farmId = parseInt(farmSelect.value) || '';
                     const batchId = parseInt(batchSelect.value) || '';
@@ -456,45 +675,50 @@
                     rowContainer.querySelectorAll('.batch-id').forEach(i => i.value = batchId);
                 }
 
-                // ---------------- Feed Barn Hidden Input (Multiple) ----------------
-                function attachFeedBarnHiddenUpdater(root) {
-                    (root.querySelectorAll ? root : document).querySelectorAll('.barn-select').forEach(sel => {
-                        if (sel._feedBarnAttached) return;
-                        sel._feedBarnAttached = true;
-
-                        sel.addEventListener('change', function() {
-                            const rowContainer = sel.closest('[data-cloned]') || sel.closest('.row');
-                            if (!rowContainer) return;
-
-                            const hiddenInput = rowContainer.querySelector('.barn-id');
-                            if (!hiddenInput) return;
-
-                            const selectedBarnIds = Array.from(sel.selectedOptions)
-                                .map(o => parseInt(o.value))
-                                .filter(v => !isNaN(v));
-                            hiddenInput.value = JSON.stringify(selectedBarnIds);
-                        });
-                    });
-                }
-
-                // ---------------- Item Select / Hidden ----------------
-                function populateItemSelect(rowContainer) {
+                function populateItemDropdown(rowContainer) {
                     const batchId = parseInt(batchSelect.value);
                     if (!batchId) return;
 
-                    rowContainer.querySelectorAll('.feed-item-select, .medicine-item-select').forEach(sel => {
-                        sel.innerHTML = '<option value="">-- เลือก --</option>';
-                        const type = sel.classList.contains('feed-item-select') ? 'feed' : 'medicine';
+                    const isFeed = rowContainer.closest('#feedUseContainer') !== null;
+                    const isMedicine = rowContainer.closest('#medicineUseContainer') !== null;
 
-                        if (storehousesByTypeAndBatch[type] && storehousesByTypeAndBatch[type][batchId]) {
-                            Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
-                                const opt = document.createElement('option');
-                                opt.value = item.item_code;
-                                opt.textContent = item.item_name;
-                                sel.appendChild(opt);
+                    const btn = rowContainer.querySelector('.item-dropdown-btn');
+                    const menu = rowContainer.querySelector('.item-dropdown-menu');
+                    const hiddenCode = rowContainer.querySelector('input.item-code');
+                    const hiddenName = rowContainer.querySelector('input.item-name');
+
+                    let hiddenType = rowContainer.querySelector('input.item-type');
+                    if (!hiddenType && hiddenCode) {
+                        hiddenType = document.createElement('input');
+                        hiddenType.type = 'hidden';
+                        hiddenType.classList.add('item-type');
+                        hiddenType.name = hiddenCode.name.replace('[item_code]', '[item_type]');
+                        rowContainer.appendChild(hiddenType);
+                    }
+
+                    if (!btn || !menu || !hiddenCode || !hiddenName) return;
+
+                    const type = isFeed ? 'feed' : (isMedicine ? 'medicine' : null);
+                    if (!type) return;
+                    hiddenType.value = type;
+
+                    menu.innerHTML = '';
+                    if (storehousesByTypeAndBatch[type] && storehousesByTypeAndBatch[type][batchId]) {
+                        Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
+                            const li = document.createElement('li');
+                            li.innerHTML =
+                                `<a class="dropdown-item" href="#" data-code="${item.item_code}" data-name="${item.item_name}">${item.item_name}</a>`;
+                            menu.appendChild(li);
+
+                            li.querySelector('a').addEventListener('click', function(e) {
+                                e.preventDefault();
+                                btn.textContent = item.item_name;
+                                hiddenCode.value = item.item_code;
+                                hiddenName.value = item.item_name;
+                                hiddenType.value = type;
                             });
-                        }
-                    });
+                        });
+                    }
                 }
 
                 function attachItemNameUpdater(root) {
@@ -519,29 +743,6 @@
                         });
                 }
 
-                // ---------------- Attach Event ----------------
-                function attachBarnPenEvents(root) {
-                    (root.querySelectorAll ? root : document).querySelectorAll('.barn-select').forEach(sel => {
-                        if (sel._barnAttached) return;
-                        sel._barnAttached = true;
-                        sel.addEventListener('change', () => populatePensForBarnSelect(sel));
-                    });
-
-                    (root.querySelectorAll ? root : document).querySelectorAll('.pen-select').forEach(ps => {
-                        if (ps._penInit) return;
-                        ps._penInit = true;
-                        ps.addEventListener('change', function() {
-                            const rowContainer = ps.closest('.row') || ps.closest('[data-cloned]') ||
-                                document;
-                            updateBarnPenJson(rowContainer);
-                        });
-                    });
-
-                    // attach feed hidden updater
-                    attachFeedBarnHiddenUpdater(root);
-                }
-
-                // ---------------- Add Row ----------------
                 function addRow(containerId, templateId) {
                     const container = document.getElementById(containerId);
                     const template = document.getElementById(templateId);
@@ -558,21 +759,21 @@
                     });
                     newRow.querySelectorAll('select').forEach(s => s.selectedIndex = -1);
 
-                    // update name index
                     newRow.querySelectorAll('input[name], select[name], textarea[name]').forEach(el => {
                         if (!el.name) return;
                         el.name = el.name.replace(/\[\d+\]/, `[${newIndex}]`);
                     });
 
-                    updateFarmBatchHiddenInputs(newRow);
+                    // copy farm + batch จาก global
+                    newRow.querySelectorAll('.farm-id').forEach(i => i.value = farmSelect.value || '');
+                    newRow.querySelectorAll('.batch-id').forEach(i => i.value = batchSelect.value || '');
+
                     container.appendChild(newRow);
 
                     attachDateInputEvents(newRow);
-                    attachBarnPenEvents(newRow);
                     attachItemNameUpdater(newRow);
-                    populateBarnSelects();
-                    populatePensForBarnSelect(newRow.querySelector('.barn-select'));
-                    populateItemSelect(newRow);
+                    attachBarnPenDropdowns(newRow);
+                    populateItemDropdown(newRow);
 
                     return newRow;
                 }
@@ -583,7 +784,7 @@
                     container.querySelectorAll('[data-cloned]').forEach(c => c.remove());
                 }
 
-                // ---------------- Remove Row (Event Delegation) ----------------
+                // ---------------------- Event remove row ----------------------
                 ['feedUseContainer', 'medicineUseContainer', 'deadPigContainer'].forEach(containerId => {
                     const container = document.getElementById(containerId);
                     container?.addEventListener('click', function(e) {
@@ -594,74 +795,66 @@
                     });
                 });
 
-                // ---------------- Buttons ----------------
-                document.getElementById('addFeedUseBtn')?.addEventListener('click', () =>
-                    addRow('feedUseContainer', 'feedUseTemplate')
-                );
-                document.getElementById('clearFeedUseBtn')?.addEventListener('click', () =>
-                    clearRows('feedUseContainer')
-                );
-                document.getElementById('addMedicineUseBtn')?.addEventListener('click', () =>
-                    addRow('medicineUseContainer', 'medicineUseTemplate')
-                );
-                document.getElementById('clearMedicineUseBtn')?.addEventListener('click', () =>
-                    clearRows('medicineUseContainer')
-                );
-                document.getElementById('addDeadPigBtn')?.addEventListener('click', () =>
-                    addRow('deadPigContainer', 'deadPigTemplate')
-                );
-                document.getElementById('clearDeadPigBtn')?.addEventListener('click', () =>
-                    clearRows('deadPigContainer')
-                );
+                // ---------------------- Add / Clear buttons ----------------------
+                document.getElementById('addFeedUseBtn')?.addEventListener('click', () => addRow('feedUseContainer',
+                    'feedUseTemplate'));
+                document.getElementById('clearFeedUseBtn')?.addEventListener('click', () => clearRows(
+                    'feedUseContainer'));
+                document.getElementById('addMedicineUseBtn')?.addEventListener('click', () => addRow(
+                    'medicineUseContainer', 'medicineUseTemplate'));
+                document.getElementById('clearMedicineUseBtn')?.addEventListener('click', () => clearRows(
+                    'medicineUseContainer'));
+                document.getElementById('addDeadPigBtn')?.addEventListener('click', () => addRow('deadPigContainer',
+                    'deadPigTemplate'));
+                document.getElementById('clearDeadPigBtn')?.addEventListener('click', () => clearRows(
+                    'deadPigContainer'));
 
-                // ---------------- Farm / Batch Change ----------------
-                function updateAllHiddenFarmBatch() {
-                    document.querySelectorAll('[data-cloned]').forEach(row => {
-                        updateFarmBatchHiddenInputs(row);
-                        populateItemSelect(row);
-                    });
-                }
-
-                farmSelect.addEventListener('change', function() {
-                    const farmId = parseInt(this.value) || null;
-                    batchSelect.innerHTML = '<option value="">-- เลือกรุ่น --</option>';
-                    batches.filter(b => b.farm_id === farmId).forEach(b => {
-                        const opt = document.createElement('option');
-                        opt.value = b.id;
-                        opt.textContent = b.batch_code;
-                        batchSelect.appendChild(opt);
-                    });
-
-                    document.querySelectorAll('.barn-select').forEach(sel => {
-                        sel.innerHTML = '';
-                        sel.disabled = true;
-                    });
-                    document.querySelectorAll('.pen-select').forEach(sel => {
-                        sel.innerHTML = '';
-                        sel.disabled = true;
-                    });
-
-                    updateAllHiddenFarmBatch();
-                });
-
-                batchSelect.addEventListener('change', function() {
-                    document.querySelectorAll('.barn-select').forEach(populateBarnSelect);
-                    document.querySelectorAll('.pen-select').forEach(sel => {
-                        sel.innerHTML = '';
-                        sel.disabled = true;
-                    });
-                    updateAllHiddenFarmBatch();
-                });
-
-                // ---------------- Init ----------------
+                // ---------------------- Init ----------------------
                 attachDateInputEvents(document);
-                attachBarnPenEvents(document);
                 attachItemNameUpdater(document);
-                populateBarnSelects = () => document.querySelectorAll('.barn-select').forEach(populateBarnSelect);
-                populateBarnSelects();
-                updateAllHiddenFarmBatch();
+                attachBarnPenDropdowns(document);
+                attachFarmBatchDropdown();
+                document.querySelectorAll('[data-cloned]').forEach(row => {
+                    updateFarmBatchHiddenInputs(row);
+                    populateItemDropdown(row);
+                });
+
+            });
+
+            // ---------------------- Dropdown ปุ่มเลือกสถานะ (ยา) ----------------------
+            document.addEventListener('click', function(e) {
+                const item = e.target.closest('.medicine-status-dropdown-menu .dropdown-item');
+                if (!item) return;
+
+                const dropdown = item.closest('.dropdown');
+                if (!dropdown) return;
+
+                const button = dropdown.querySelector('.medicine-status-dropdown-btn');
+                const hiddenInput = dropdown.querySelector('input.status-value');
+
+                if (button && hiddenInput) {
+                    e.preventDefault();
+                    const value = item.dataset.value ?? item.textContent.trim();
+                    button.textContent = value;
+                    hiddenInput.value = value;
+
+                    const rowContainer = dropdown.closest('[data-cloned]');
+                    if (rowContainer) {
+                        const farmIdInput = rowContainer.querySelector('.farm-id');
+                        const batchIdInput = rowContainer.querySelector('.batch-id');
+
+                        if (farmIdInput && batchIdInput) {
+                            farmIdInput.value = parseInt(farmSelect.value) || '';
+                            batchIdInput.value = parseInt(batchSelect.value) || '';
+                        }
+                    }
+                }
             });
         </script>
+
+
+
+
 
 
 

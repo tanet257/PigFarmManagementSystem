@@ -17,6 +17,7 @@ class Batch extends Model
         'total_pig_weight',
         'total_pig_amount',
         'total_pig_price',
+        'total_deaths',
         'status',
         'note',
         'start_date',
@@ -42,12 +43,18 @@ class Batch extends Model
 
     //ใช้เพื่อให้เรียกดูได้ง่ายว่า batch นี่อยู่เล้าไหนคอกไหน
     public function allocations()
-{
-    return $this->hasMany(BatchPenAllocation::class, 'batch_id');
-}
+    {
+        return $this->hasMany(BatchPenAllocation::class, 'batch_id');
+    }
     public function inventory_movements()
-{
-    return $this->hasMany(InventoryMovement::class, 'batch_id', 'id');
-}
+    {
+        return $this->hasMany(InventoryMovement::class, 'batch_id', 'id');
+    }
+
+    public function pig_deaths()
+    {
+        return $this->hasMany(PigDeath::class);
+    }
+
 
 }

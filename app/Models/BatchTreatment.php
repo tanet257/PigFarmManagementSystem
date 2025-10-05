@@ -29,9 +29,9 @@ class BatchTreatment extends Model
     //---------------relation ship------------------------//
 
     public function pen()
-{
-    return $this->belongsTo(Pen::class, 'pen_id', 'id'); // pen_id ใน batch_treatments ชี้ไป id ของ pens
-}
+    {
+        return $this->belongsTo(Pen::class, 'pen_id', 'id'); // pen_id ใน batch_treatments ชี้ไป id ของ pens
+    }
 
 
     public function batch()
@@ -44,7 +44,8 @@ class BatchTreatment extends Model
         return $this->belongsTo(DairyRecord::class);
     }
 
-
-
-
+    public function storehouse()
+    {
+        return $this->belongsTo(Storehouse::class, 'medicine_code', 'item_code');
+    }
 }

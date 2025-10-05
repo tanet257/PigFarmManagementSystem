@@ -95,9 +95,9 @@
         <div class="container my-5 table-container">
             <h1 class="text-center">บันทึกประจำวัน (Dairy Records)</h1>
 
+            <!-- Toolbar Filter -->
             <div class="toolbar">
                 <form method="GET" action="{{ route('dairy_records.index') }}" class="d-flex flex-wrap gap-2">
-
                     <input type="search" name="search" class="form-control form-control-sm" placeholder="ค้นหา..."
                         value="{{ request('search') }}">
 
@@ -164,8 +164,15 @@
 
                     <button type="submit" class="btn btn-sm btn-outline-light">ค้นหา</button>
                 </form>
+
+                <div class="d-flex gap-2">
+                    <a href="{{ route('dairy_records.export.csv') }}" class="btn btn-sm btn-outline-success">Export
+                        CSV</a>
+                    <a href="{{ route('dairy_records.export.pdf') }}" class="btn btn-sm btn-primary">Export PDF</a>
+                </div>
             </div>
 
+            <!-- Table -->
             <div class="card-custom">
                 <div class="table-responsive">
                     <table class="table table-bordered">
@@ -174,75 +181,81 @@
                                 <th>#</th>
                                 <th>ฟาร์ม</th>
                                 <th>รุ่น</th>
-                                <th>เล้า</th>
+                                <th>เล้า/คอก</th>
                                 <th>วันที่</th>
                                 <th>โน๊ต</th>
                                 <th>ประเภท</th>
                                 <th>รายละเอียด</th>
                                 <th>จำนวน</th>
+                                <th>จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($dairyRecords as $index => $record)
-                                {{-- ถ้ามี feed (อาหาร) --}}
-                                @foreach ($record->dairy_storehouse_uses as $use)
-                                    <tr>
-                                        <td>{{ $dairyRecords->firstItem() + $index }}</td>
-                                        <td>{{ $record->batch?->farm?->farm_name ?? '-' }}</td>
-                                        <td>{{ $record->batch?->batch_code ?? '-' }}</td>
-                                        <td>{{ $use->barn?->barn_code ?? '-' }}</td>
-                                        <td>{{ $record->updated_at }}</td>
-                                        <td>{{ $record->note ?? '-' }}</td>
-                                        <td>อาหาร</td>
-                                        <td>รหัส: {{ $use->storehouse?->item_code }}, หน่วย:
-                                            {{ $use->storehouse?->unit }}</td>
-                                        <td>{{ $use->quantity }}</td>
-                                    </tr>
-                                @endforeach
+    @forelse($dairyRecords as $index => $record)
+        @php
+            $items = collect();
+            $record->dairy_storehouse_uses->each(fn($use) => $items->push([
+                'type' => $use->storehouse?->item_type == 'feed' ? 'อาหาร' : ($use->storehouse?->item_type == 'medicine' ? 'การรักษา' : '-'),
+                'detail' => 'รหัส: '.$use->storehouse?->item_code.', หน่วย: '.$use->storehouse?->unit,
+                'quantity' => $use->quantity,
+                'edit_id' => $use->id,
+                'delete_route' => route('dairy_storehouse_uses.destroy', $use->id),
+                'modal_target' => 'editUseModal'.$use->id,
+            ]));
+            $record->batch_treatments->each(fn($bt) => $items->push([
+                'type' => 'การรักษา',
+                'detail' => 'ยา: '.$bt->medicine_code.', หน่วย: '.$bt->unit.', สถานะ: '.$bt->status,
+                'quantity' => $bt->quantity,
+                'edit_id' => $bt->id,
+                'delete_route' => route('batch_treatments.destroy', $bt->id),
+                'modal_target' => 'editMedicineModal'.$bt->id,
+            ]));
+            $record->pig_deaths->each(fn($pd) => $items->push([
+                'type' => 'หมูตาย',
+                'detail' => 'จำนวน: '.$pd->quantity.', สาเหตุ: '.($pd->cause ?? '-'),
+                'quantity' => $pd->quantity,
+                'edit_id' => $pd->id,
+                'delete_route' => route('pig_deaths.destroy', $pd->id),
+                'modal_target' => 'editDeathModal'.$pd->id,
+            ]));
+        @endphp
 
-                                {{-- ถ้ามีการรักษา --}}
-                                @foreach ($record->batch_treatments as $bt)
-                                    <tr>
-                                        <td>{{ $dairyRecords->firstItem() + $index }}</td>
-                                        <td>{{ $record->batch?->farm?->farm_name ?? '-' }}</td>
-                                        <td>{{ $record->batch?->batch_code ?? '-' }}</td>
-                                        <td>{{ $record->barn?->barn_code ?? '-' }}/{{ $bt->pen?->pen_code ?? '-' }}
-                                        </td>
-                                        <td>{{ $record->updated_at }}</td>
-                                        <td>{{ $record->note ?? '-' }}</td>
-                                        <td>การรักษา</td>
-                                        <td>
-                                            ยา: {{ $bt->medicine_code }},
-                                            หน่วย: {{ $bt->unit }},
-                                            สถานะ: {{ $bt->status }}
-                                        </td>
-                                        <td>{{ $bt->quantity }}</td>
-                                    </tr>
-                                @endforeach
-
-                                {{-- ถ้ามีหมูตาย --}}
-                                @foreach ($record->pig_deaths as $pd)
-                                    <tr>
-                                        <td>{{ $dairyRecords->firstItem() + $index }}</td>
-                                        <td>{{ $record->batch?->farm?->farm_name ?? '-' }}</td>
-                                        <td>{{ $record->batch?->batch_code ?? '-' }}</td>
-                                        <td>{{ $record->barn?->barn_code ?? '-' }}/{{ $pd->pen?->pen_code ?? '-' }}
-                                        </td>
-                                        <td>{{ $record->updated_at }}</td>
-                                        <td>{{ $record->note ?? '-' }}</td>
-                                        <td>หมูตาย</td>
-                                        <td>คอก: {{ $pd->pen?->pen_code ?? '-' }}</td>
-                                        <td>{{ $pd->quantity }}</td>
-                                    </tr>
-                                @endforeach
-                            @empty
-                                <tr>
-                                    <td colspan="9" class="text-center">ไม่มีข้อมูล</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-
-
+        @foreach($items as $item)
+            <tr>
+                <td>{{ $dairyRecords->firstItem() + $index }}</td>
+                <td>{{ $record->batch?->farm?->farm_name ?? '-' }}</td>
+                <td>{{ $record->batch?->batch_code ?? '-' }}</td>
+                <td>
+                    @php
+                        $barn_codes = $record->dairy_storehouse_uses->pluck('barn.barn_code')
+                                        ->merge($record->batch_treatments->pluck('barn.barn_code'))
+                                        ->merge($record->pig_deaths->pluck('barn.barn_code'))
+                                        ->filter()->unique()->values()->join('/');
+                    @endphp
+                    {{ $barn_codes }}
+                </td>
+                <td>{{ $record->updated_at }}</td>
+                <td>{{ $record->note ?? '-' }}</td>
+                <td>{{ $item['type'] }}</td>
+                <td>{{ $item['detail'] }}</td>
+                <td>{{ $item['quantity'] }}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                        data-bs-target="#{{ $item['modal_target'] }}">Edit</button>
+                    <form action="{{ $item['delete_route'] }}" method="POST" style="display:inline-block;"
+                        onsubmit="return confirm('คุณแน่ใจจะลบหรือไม่?');">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                    </form>
+                </td>
+            </tr>
+        @endforeach
+    @empty
+        <tr>
+            <td colspan="10" class="text-center">ไม่มีข้อมูล</td>
+        </tr>
+    @endforelse
+</tbody>
 
                     </table>
 
@@ -251,6 +264,137 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Modals (เหมือนของคุณ, ไม่แก้) -->
+            @foreach ($dairyRecords as $record)
+                {{-- Feed Edit Modal --}}
+                @foreach ($record->dairy_storehouse_uses as $use)
+                    <div class="modal fade" id="editUseModal{{ $use->id }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <form action="{{ route('dairy_records.update_feed', [$record->id, $use->id, 'feed']) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+
+                                <div class="modal-content bg-dark text-light">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">แก้ไขข้อมูลอาหาร</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label>จำนวน</label>
+                                            <input type="number" name="quantity" min="0"
+                                                class="form-control" value="{{ $use->quantity }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>โน๊ต</label>
+                                            <input type="text" name="note" class="form-control"
+                                                value="{{ $use->note }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>วันที่</label>
+                                            <input type="datetime-local" name="date" class="form-control"
+                                                value="{{ old('date', \Carbon\Carbon::parse($use->date ?? ($record->date ?? now()))->format('Y-m-d\TH:i')) }}">
+
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success">บันทึก</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+
+                {{-- Treatment Edit Modal --}}
+                @foreach ($record->batch_treatments as $bt)
+                    <div class="modal fade" id="editMedicineModal{{ $bt->id }}" tabindex="-1"
+                        aria-hidden="true">
+                        <div class="modal-dialog">
+                            <form action="{{ route('dairy_records.update_medicine', [$record->id, $bt->id, 'medicine']) }}" method="POST">
+                                @csrf
+                                @method('PUT')
+
+                                <div class="modal-content bg-dark text-light">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">แก้ไขข้อมูลยา</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label>จำนวน</label>
+                                            <input type="number" name="quantity" class="form-control"
+                                                value="{{ $bt->quantity }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>สถานะ</label>
+                                            <input type="text" name="status" class="form-control"
+                                                value="{{ $bt->status }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>โน้ต</label>
+                                            <input type="text" name="note" class="form-control"
+                                                value="{{ $bt->note }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>วันที่</label>
+                                            <input type="date" name="date" class="form-control"
+                                                value="{{ \Carbon\Carbon::parse($bt->date)->format('Y-m-d') }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success">บันทึก</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+
+                {{-- Pig Death Edit Modal --}}
+                @foreach ($record->pig_deaths as $pd)
+                    <div class="modal fade" id="editDeathModal{{ $pd->id }}" tabindex="-1"
+                        aria-hidden="true">
+                        <div class="modal-dialog">
+                            <form method="POST" action="{{ route('pig_deaths.update', $pd->id) }}">
+                                @csrf @method('PUT')
+                                <input type="hidden" name="batch_id" value="{{ $pd->batch_id }}">
+                                <input type="hidden" name="dairy_record_id" value="{{ $pd->dairy_record_id }}">
+                                <div class="modal-content bg-dark text-light">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">แก้ไขข้อมูลหมูตาย</h5>
+                                        <button type="button" class="btn-close btn-close-white"
+                                            data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label>จำนวน</label>
+                                            <input type="number" name="quantity" min="0"
+                                                class="form-control" value="{{ $pd->quantity }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>สาเหตุ</label>
+                                            <input type="text" name="cause" class="form-control"
+                                                value="{{ $pd->cause }}">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label>โน๊ต</label>
+                                            <input type="text" name="note" class="form-control"
+                                                value="{{ $pd->note }}">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success">บันทึก</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            @endforeach
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

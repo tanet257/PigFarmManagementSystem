@@ -84,7 +84,7 @@ Route::prefix('pigentryrecord')->group(function () {
 //------------------- route r batch pen allocation -----------------------//
 Route::prefix('batch_pen_allocations')->group(function () {
     Route::get('/', [BatchPenAllocationController::class, 'index'])->name('batch_pen_allocations.index');
-        //------------------- route export batch ---------------------//
+    //------------------- route export batch ---------------------//
     Route::get('/export/csv', [BatchPenAllocationController::class, 'exportCsv'])->name('batch_pen_allocations.export.csv');
     Route::get('/export/pdf', [BatchPenAllocationController::class, 'exportPdf'])->name('batch_pen_allocations.export.pdf');
 });
@@ -92,27 +92,41 @@ Route::prefix('batch_pen_allocations')->group(function () {
 
 //------------------- route dairy record ---------------------//
 
-    Route::get('/viewDairy', [DairyController::class, 'viewDairy'])->name('dairy_records.record');
-    Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dairy_records.upload');
-    
-    //------------------- route crud storehouse -----------------------//
+Route::get('/viewDairy', [DairyController::class, 'viewDairy'])->name('dairy_records.record');
+Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dairy_records.upload');
+
+//------------------- route crud storehouse -----------------------//
 
 Route::prefix('dairy_record')->group(function () {
     Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');
     Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
-    Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
-    Route::delete('/{id}', [DairyController::class, 'deleteDairy'])->name('dairy_records.delete');
+
+    //Route::put('/{dairyId}/{useId}/{type}/update-uses', [DairyController::class, 'updateDairyUse'])->name('dairy_records.update_uses');
+    // Feed
+    Route::put('/{dairyId}/{useId}/{type}/update-feed', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
+
+    // Medicine
+    Route::put('/{dairyId}/{btId}/{type}/update-medicine', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
+
+
+
+
+    Route::delete('/dairy_storehouse_uses/{id}', [DairyController::class, 'destroyFeed'])->name('dairy_storehouse_uses.destroy');
+    Route::delete('/batch_treatments/{id}', [DairyController::class, 'destroyMedicine'])->name('batch_treatments.destroy');
+    Route::delete('/pig_deaths/{id}', [DairyController::class, 'destroyPigDeath'])->name('pig_deaths.destroy');
+
     //------------------- route export batch ---------------------//
     Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
     Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
-
 });
+Route::put('/pig-deaths/{id}', [DairyController::class, 'updatePigDeath'])
+    ->name('pig_deaths.update');
 
-    //------------------- route storehouse record ---------------------//
-    Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.recordview');
-    Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record'])->name('store_house_record.upload');
+//------------------- route storehouse record ---------------------//
+Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.recordview');
+Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record'])->name('store_house_record.upload');
 
-    //------------------- route crud storehouse -----------------------//
+//------------------- route crud storehouse -----------------------//
 Route::prefix('storehouses')->group(function () {
     Route::get('/', [StoreHouseController::class, 'indexStorehouse'])->name('storehouses.index');
     Route::post('/create', [StoreHouseController::class, 'createItem'])->name('storehouses.create');

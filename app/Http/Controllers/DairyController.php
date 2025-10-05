@@ -145,327 +145,324 @@ class DairyController extends Controller
     //--------------------------------------- UPLOAD / CREATE ------------------------------------------//
 
     public function uploadDairy(Request $request)
-    {
-        try {
-            $sections = [
-                'feed_use'     => 'feed',
-                'medicine_use' => 'medicine',
-                'dead_pig'     => 'pigdeath',
-            ];
+{
+    try {
+        $sections = [
+            'feed_use'     => 'feed',
+            'medicine_use' => 'medicine',
+            'dead_pig'     => 'pigdeath',
+        ];
 
-            // --- Filter row ที่ add จริง ---
-            $feedUses = collect($request->feed_use ?? [])
-                ->filter(fn($row) => !empty($row['item_code']) || !empty($row['barn_id']))
-                ->values()
-                ->all();
+        // --- Filter row ที่ add จริง ---
+        $feedUses = collect($request->feed_use ?? [])
+            ->filter(fn($row) => !empty($row['item_code']) || !empty($row['barn_id']))
+            ->values()
+            ->all();
 
-            $medicineUses = collect($request->medicine_use ?? [])
-                ->filter(fn($row) => !empty($row['item_code']) || !empty($row['barn_id']))
-                ->values()
-                ->all();
+        $medicineUses = collect($request->medicine_use ?? [])
+            ->filter(fn($row) => !empty($row['item_code']) || !empty($row['barn_id']))
+            ->values()
+            ->all();
 
-            $deadPigs = collect($request->dead_pig ?? [])
-                ->filter(fn($row) => !empty($row['quantity']))
-                ->values()
-                ->all();
+        $deadPigs = collect($request->dead_pig ?? [])
+            ->filter(fn($row) => !empty($row['quantity']))
+            ->values()
+            ->all();
 
-            // --- Merge กลับ request ---
-            $request->merge([
-                'feed_use'     => $feedUses,
-                'medicine_use' => $medicineUses,
-                'dead_pig'     => $deadPigs,
-            ]);
+        // --- Merge กลับ request ---
+        $request->merge([
+            'feed_use'     => $feedUses,
+            'medicine_use' => $medicineUses,
+            'dead_pig'     => $deadPigs,
+        ]);
 
-            // ใช้ transaction เพื่อความ atomic
-            DB::beginTransaction();
+        DB::beginTransaction();
 
-            foreach ($sections as $inputName => $section) {
-                $rows = $request->input($inputName, []);
+        foreach ($sections as $inputName => $section) {
+            $rows = $request->input($inputName, []);
 
-                foreach ($rows as $i => $rowInput) {
-                    // --- แปลง empty string เป็น null ---
-                    foreach (['item_code', 'item_name', 'note', 'cause', 'status', 'quantity'] as $field) {
-                        if (isset($rowInput[$field]) && $rowInput[$field] === '') {
-                            $rowInput[$field] = null;
+            foreach ($rows as $i => $rowInput) {
+                // --- Normalize single to array ---
+                if (isset($rowInput['barn_id']) && !is_array($rowInput['barn_id'])) {
+                    $rowInput['barn_id'] = [$rowInput['barn_id']];
+                }
+
+                // --- แปลง empty string เป็น null ---
+                foreach (['item_code', 'item_name', 'note', 'cause', 'status', 'quantity'] as $field) {
+                    if (isset($rowInput[$field]) && $rowInput[$field] === '') {
+                        $rowInput[$field] = null;
+                    }
+                }
+
+                // --- Decode barn_pen ---
+                $barnPenList = [];
+
+                if ($section === 'feed') {
+                    // feed_use ใช้ JSON array
+                    if (!empty($rowInput['barn_pen'])) {
+                        $decoded = json_decode($rowInput['barn_pen'], true);
+                        if (is_array($decoded)) {
+                            $barnPenList = $decoded; // [{barn_id, pen_id}]
                         }
                     }
-
-                    // --- Decode barn_pen ---
-                    $barnPenList = [];
-                    if (!empty($rowInput['barn_pen'])) {
-                        $barnPenList = json_decode($rowInput['barn_pen'], true) ?: [];
-                    }
-
-                    // feed: ถ้าไม่มี barn_pen ให้ใช้ barn_id hidden multiple
-                    if ($section === 'feed' && empty($barnPenList) && !empty($rowInput['barn_id'])) {
-                        $barnIds = json_decode($rowInput['barn_id'], true) ?: [];
-                        foreach ($barnIds as $bid) {
+                    // fallback ใช้ barn_id ถ้า pen_id ไม่มี
+                    if (empty($barnPenList) && !empty($rowInput['barn_id'])) {
+                        foreach ((array)$rowInput['barn_id'] as $bid) {
                             $barnPenList[] = ['barn_id' => $bid, 'pen_id' => null];
                         }
                     }
+                } else {
+                    // medicine_use / dead_pig ใช้ pen_id เป็น scalar
+                    $penId = $rowInput['barn_pen'] ?? null;
+                    $barnId = $rowInput['barn_id'] ?? null;
 
-                    if (empty($barnPenList)) {
-                        // เก็บขั้นต่ำเพื่อให้สร้าง DairyRecord ได้ (แต่จะเช็ค barnId จริงก่อนใช้)
+                    if ($penId) {
+                        $pen = Pen::find($penId);
+                        $barnId = $pen ? $pen->barn_id : $barnId;
+                        $barnPenList[] = ['barn_id' => $barnId, 'pen_id' => $penId];
+                    } elseif ($barnId) {
+                        $barnPenList[] = ['barn_id' => $barnId, 'pen_id' => null];
+                    } else {
                         $barnPenList[] = ['barn_id' => null, 'pen_id' => null];
                     }
+                }
 
-                    // --- Validation ---
-                    $rules = [
-                        'farm_id'  => 'required|exists:farms,id',
-                        'batch_id' => 'required|exists:batches,id',
-                        'date'     => 'required|date_format:d/m/Y H:i',
-                    ];
+                // --- Validation ---
+                $rules = [
+                    'farm_id'  => 'required|exists:farms,id',
+                    'batch_id' => 'required|exists:batches,id',
+                    'date'     => 'required|date_format:d/m/Y H:i',
+                ];
 
-                    if ($section === 'feed' || $section === 'medicine') {
-                        $rules = array_merge($rules, [
-                            'item_code' => 'nullable|string',
-                            'item_name' => 'nullable|string',
-                            'quantity'  => 'nullable|integer|min:1',
-                            'note'      => 'nullable|string',
-                        ]);
+                if ($section === 'feed' || $section === 'medicine') {
+                    $rules = array_merge($rules, [
+                        'item_code' => 'nullable|string',
+                        'item_name' => 'nullable|string',
+                        'quantity'  => 'nullable|integer|min:1',
+                        'note'      => 'nullable|string',
+                    ]);
+                }
+
+                if ($section === 'pigdeath') {
+                    $rules = array_merge($rules, [
+                        'quantity' => 'required|integer|min:1',
+                        'cause'    => 'nullable|string',
+                        'note'     => 'nullable|string',
+                    ]);
+                }
+
+                $validated = validator($rowInput, $rules)->validate();
+
+                // --- แปลงวันที่ ---
+                $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
+                $formattedDate = $dt->format('Y-m-d H:i:s');
+
+                // --- หา barn_id ตัวแทน ---
+                $representBarnId = null;
+                foreach ($barnPenList as $bp) {
+                    if (!empty($bp['barn_id'])) {
+                        $representBarnId = $bp['barn_id'];
+                        break;
                     }
-
-                    if ($section === 'pigdeath') {
-                        $rules = array_merge($rules, [
-                            'quantity' => 'required|integer|min:1',
-                            'cause'    => 'nullable|string',
-                            'note'     => 'nullable|string',
-                        ]);
-                    }
-
-                    $validated = validator($rowInput, $rules)->validate();
-
-                    // --- แปลงวันที่ ---
-                    $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
-                    $formattedDate = $dt->format('Y-m-d H:i:s');
-
-                    // --- หา barn_id ตัวแทน สำหรับสร้าง DairyRecord ---
-                    $representBarnId = null;
-                    foreach ($barnPenList as $bp) {
-                        if (!empty($bp['barn_id'])) {
-                            $representBarnId = $bp['barn_id'];
+                    if (!empty($bp['pen_id'])) {
+                        $pen = Pen::find($bp['pen_id']);
+                        if ($pen) {
+                            $representBarnId = $pen->barn_id;
                             break;
                         }
-                        if (!empty($bp['pen_id'])) {
-                            $pen = Pen::find($bp['pen_id']);
-                            if ($pen) {
-                                $representBarnId = $pen->barn_id;
-                                break;
-                            }
+                    }
+                }
+
+                if (!$representBarnId) {
+                    throw new \Exception("ไม่พบ barn_id กรุณาเลือกเล้าหรือคอกให้ครบ (แถวที่ index: {$i})");
+                }
+
+                // --- สร้าง DairyRecord ---
+                $dairy = DairyRecord::create([
+                    'batch_id' => $validated['batch_id'],
+                    'barn_id'  => $representBarnId,
+                    'date'     => $formattedDate,
+                    'note'     => $validated['note'] ?? null,
+                ]);
+
+                $dairyId = $dairy->id;
+
+                // --- Loop ทุก barn/pen ที่เลือก ---
+                foreach ($barnPenList as $bp) {
+                    $barnId = $bp['barn_id'] ?? null;
+                    $penId  = $bp['pen_id'] ?? null;
+
+                    if (!$barnId && $penId) {
+                        $pen = Pen::find($penId);
+                        $barnId = $pen ? $pen->barn_id : null;
+                    }
+
+                    if (!$barnId) {
+                        throw new \Exception("ไม่พบ barn_id กรุณาเลือกเล้าหรือคอกให้ครบ (ภายในแถวเดียวกัน)");
+                    }
+
+                    // --- Storehouse / Feed / Medicine / PigDeath ---
+                    $storehouse = null;
+                    if (in_array($section, ['feed', 'medicine']) && !empty($validated['item_code'])) {
+                        $storehouse = Storehouse::where('farm_id', $validated['farm_id'])
+                            ->where('item_code', $validated['item_code'])
+                            ->first();
+
+                        if (!$storehouse) {
+                            throw new \Exception("ไม่พบสินค้าในคลังสำหรับรหัส {$validated['item_code']} ที่ฟาร์ม {$validated['farm_id']}");
                         }
                     }
 
-                    if (!$representBarnId) {
-                        throw new \Exception("ไม่พบ barn_id กรุณาเลือกเล้าหรือคอกให้ครบ (แถวที่ index: {$i})");
+                    // --- Feed ---
+                    if ($section === 'feed' && !empty($validated['item_code'])) {
+                        $usedQuantity = (int)($validated['quantity'] ?? 0);
+
+                        DairyStorehouseUse::create([
+                            'dairy_record_id' => $dairyId,
+                            'storehouse_id'   => $storehouse->id,
+                            'barn_id'         => $barnId,
+                            'quantity'        => $usedQuantity,
+                            'date'            => $formattedDate,
+                            'note'            => $validated['note'] ?? null,
+                        ]);
+
+                        if ($usedQuantity > 0) {
+                            if ($storehouse->stock < $usedQuantity) {
+                                throw new \Exception("สินค้า {$validated['item_name']} ({$validated['item_code']}) สต็อกไม่พอ (เหลือ {$storehouse->stock}, ต้องการ {$usedQuantity})");
+                            }
+                            $storehouse->stock -= $usedQuantity;
+                            $storehouse->save();
+
+                            InventoryMovement::create([
+                                'storehouse_id' => $storehouse->id,
+                                'batch_id'      => $validated['batch_id'],
+                                'change_type'   => 'out',
+                                'quantity'      => $usedQuantity,
+                                'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
+                                'date'          => $formattedDate,
+                            ]);
+                        }
                     }
 
-                    // --- สร้าง DairyRecord (ครั้งเดียวต่อ row) ---
-                    $dairy = DairyRecord::create([
-                        'batch_id' => $validated['batch_id'],
-                        'barn_id'  => $representBarnId,
-                        'date'     => $formattedDate,
-                        'note'     => $validated['note'] ?? null,
-                    ]);
-                    $dairyId = $dairy->id;
+                    // --- Medicine ---
+                    if ($section === 'medicine' && !empty($validated['item_code'])) {
+                        $usedQuantity = (int)($validated['quantity'] ?? 0);
 
-                    // --- Loop ทุก barn/pen ที่เลือกในแถว ---
-                    foreach ($barnPenList as $bp) {
-                        $barnId = $bp['barn_id'] ?? null;
-                        $penId  = $bp['pen_id'] ?? null;
+                        BatchTreatment::create([
+                            'dairy_record_id' => $dairyId,
+                            'batch_id'        => $validated['batch_id'],
+                            'pen_id'          => $penId,
+                            'medicine_name'   => $validated['item_name'],
+                            'medicine_code'   => $validated['item_code'],
+                            'quantity'        => $usedQuantity,
+                            'unit'            => $storehouse->unit ?? null,
+                            'status'          => $validated['status'] ?? 'วางแผนว่าจะให้ยา',
+                            'note'            => $validated['note'] ?? null,
+                            'date'            => $formattedDate,
+                        ]);
 
-                        if (!$barnId && $penId) {
-                            $pen = Pen::find($penId);
-                            $barnId = $pen ? $pen->barn_id : null;
-                        }
+                        DairyStorehouseUse::create([
+                            'dairy_record_id' => $dairyId,
+                            'storehouse_id'   => $storehouse->id,
+                            'barn_id'         => $barnId,
+                            'quantity'        => $usedQuantity,
+                            'date'            => $formattedDate,
+                            'note'            => $validated['note'] ?? null,
+                        ]);
 
-                        if (!$barnId) {
-                            throw new \Exception("ไม่พบ barn_id กรุณาเลือกเล้าหรือคอกให้ครบ (ภายในแถวเดียวกัน)");
-                        }
-
-                        // --- หา storehouse ถ้ามี item_code (สำหรับ feed หรือ medicine) ---
-                        $storehouse = null;
-                        if (in_array($section, ['feed', 'medicine']) && !empty($validated['item_code'])) {
-                            $storehouse = Storehouse::where('farm_id', $validated['farm_id'])
-                                ->where('item_code', $validated['item_code'])
-                                ->first();
-
-                            if (! $storehouse) {
-                                throw new \Exception("ไม่พบสินค้าในคลังสำหรับรหัส {$validated['item_code']} ที่ฟาร์ม {$validated['farm_id']}");
+                        if ($usedQuantity > 0) {
+                            if ($storehouse->stock < $usedQuantity) {
+                                throw new \Exception("สินค้า {$validated['item_name']} ({$validated['item_code']}) สต็อกไม่พอ (เหลือ {$storehouse->stock}, ต้องการ {$usedQuantity})");
                             }
+                            $storehouse->stock -= $usedQuantity;
+                            $storehouse->save();
+
+                            InventoryMovement::create([
+                                'storehouse_id' => $storehouse->id,
+                                'batch_id'      => $validated['batch_id'],
+                                'change_type'   => 'out',
+                                'quantity'      => $usedQuantity,
+                                'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
+                                'date'          => $formattedDate,
+                            ]);
                         }
+                    }
 
-                        // --- Feed ---
-                        if ($section === 'feed' && !empty($validated['item_code'])) {
-                            $usedQuantity = (int)($validated['quantity'] ?? 0);
+                    // --- PigDeath ---
+                    if ($section === 'pigdeath') {
+                        $deadQuantity = $validated['quantity'] ?? 0;
+                        if ($deadQuantity <= 0) continue;
 
-                            Log::info('Feed Row to save', [
-                                'dairy_id' => $dairyId,
-                                'farm_id' => $validated['farm_id'],
-                                'batch_id' => $validated['batch_id'],
-                                'barn_id' => $barnId,
-                                'item_code' => $validated['item_code'],
-                                'quantity' => $usedQuantity,
-                            ]);
+                        $batch = Batch::find($validated['batch_id']);
+                        if (!$batch) continue;
 
-                            // สร้าง dairy_storehouse_use (มี quantity)
-                            DairyStorehouseUse::create([
-                                'dairy_record_id' => $dairyId,
-                                'storehouse_id'   => $storehouse->id,
-                                'barn_id'         => $barnId,
-                                'quantity'        => $usedQuantity,
-                                'date'            => $formattedDate,
-                                'note'            => $validated['note'] ?? null,
-                            ]);
+                        $batch->total_deaths += $deadQuantity;
+                        $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $deadQuantity, 0);
 
-                            // --- อัปเดต inventory และสร้าง movement ---
-                            if ($usedQuantity > 0) {
-                                if ($storehouse->stock < $usedQuantity) {
-                                    throw new \Exception("สินค้า {$validated['item_name']} ({$validated['item_code']}) สต็อกไม่พอ (เหลือ {$storehouse->stock}, ต้องการ {$usedQuantity})");
+                        $currentAmount = $batch->total_pig_amount + $deadQuantity;
+                        $avgWeightPerPig = ($currentAmount > 0 && ($batch->total_pig_weight ?? 0) > 0)
+                            ? $batch->total_pig_weight / $currentAmount
+                            : 0;
+                        $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $deadQuantity), 0);
+                        $batch->save();
+
+                        $remainingDead = $deadQuantity;
+
+                        foreach ($barnPenList as $bp2) {
+                            $barnId2 = $bp2['barn_id'] ?? null;
+                            $penId2  = $bp2['pen_id'] ?? null;
+
+                            $reduce = $remainingDead;
+
+                            if ($penId2) {
+                                $allocation = DB::table('batch_pen_allocations')
+                                    ->where('batch_id', $batch->id)
+                                    ->where('pen_id', $penId2)
+                                    ->first();
+
+                                if ($allocation) {
+                                    $reduce = min($remainingDead, $allocation->allocated_pigs);
+
+                                    DB::table('batch_pen_allocations')
+                                        ->where('id', $allocation->id)
+                                        ->update([
+                                            'allocated_pigs' => $allocation->allocated_pigs - $reduce,
+                                            'updated_at'     => now(),
+                                        ]);
                                 }
-
-                                $storehouse->stock -= $usedQuantity;
-                                $storehouse->save();
-
-                                InventoryMovement::create([
-                                    'storehouse_id' => $storehouse->id,
-                                    'batch_id'      => $validated['batch_id'],
-                                    'change_type'   => 'out',
-                                    'quantity'      => $usedQuantity,
-                                    'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
-                                    'date'          => $formattedDate,
-                                ]);
                             }
-                        }
 
-                        // --- Medicine ---
-                        if ($section === 'medicine' && !empty($validated['item_code'])) {
-                            $usedQuantity = (int)($validated['quantity'] ?? 0);
-
-                            Log::info('Medicine Row to save', [
-                                'dairy_id' => $dairyId,
-                                'farm_id' => $validated['farm_id'],
-                                'batch_id' => $validated['batch_id'],
-                                'barn_id' => $barnId,
-                                'pen_id' => $penId,
-                                'item_code' => $validated['item_code'],
-                                'quantity' => $usedQuantity,
-                            ]);
-
-                            BatchTreatment::create([
+                            PigDeath::create([
                                 'dairy_record_id' => $dairyId,
-                                'batch_id'        => $validated['batch_id'],
-                                'pen_id'          => $penId,
-                                'medicine_name'   => $validated['item_name'],
-                                'medicine_code'   => $validated['item_code'],
-                                'quantity'        => $usedQuantity,
-                                'unit'            => $storehouse->unit ?? null,
-                                'status'          => $validated['status'] ?? 'วางแผนว่าจะให้ยา',
+                                'batch_id'        => $batch->id,
+                                'pen_id'          => $penId2,
+                                'quantity'        => $reduce,
+                                'cause'           => $validated['cause'] ?? null,
                                 'note'            => $validated['note'] ?? null,
                                 'date'            => $formattedDate,
                             ]);
 
-                            // บันทึก dairy_storehouse_use (เพื่อเชื่อมกับ inventory)
-                            DairyStorehouseUse::create([
-                                'dairy_record_id' => $dairyId,
-                                'storehouse_id'   => $storehouse->id,
-                                'barn_id'         => $barnId,
-                                'quantity'        => $usedQuantity,
-                                'date'            => $formattedDate,
-                                'note'            => $validated['note'] ?? null,
-                            ]);
-
-                            // --- อัปเดต inventory และสร้าง movement ---
-                            if ($usedQuantity > 0) {
-                                if ($storehouse->stock < $usedQuantity) {
-                                    throw new \Exception("สินค้า {$validated['item_name']} ({$validated['item_code']}) สต็อกไม่พอ (เหลือ {$storehouse->stock}, ต้องการ {$usedQuantity})");
-                                }
-
-                                $storehouse->stock -= $usedQuantity;
-                                $storehouse->save();
-
-                                InventoryMovement::create([
-                                    'storehouse_id' => $storehouse->id,
-                                    'batch_id'      => $validated['batch_id'],
-                                    'change_type'   => 'out',
-                                    'quantity'      => $usedQuantity,
-                                    'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
-                                    'date'          => $formattedDate,
-                                ]);
-                            }
+                            $remainingDead -= $reduce;
+                            if ($remainingDead <= 0) break;
                         }
-
-                        // --- PigDeath ---
-                        if ($section === 'pigdeath') {
-                            $deadQuantity = $validated['quantity'] ?? 0;
-                            if ($deadQuantity <= 0) continue;
-
-                            $batch = Batch::find($validated['batch_id']);
-                            if (!$batch) continue;
-
-                            $currentAmount = $batch->total_pig_amount ?? 0;
-                            $avgWeightPerPig = ($currentAmount > 0 && ($batch->total_pig_weight ?? 0) > 0)
-                                ? $batch->total_pig_weight / $currentAmount
-                                : 0;
-
-                            $batch->total_pig_amount = max($currentAmount - $deadQuantity, 0);
-                            $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $deadQuantity), 0);
-                            $batch->save();
-
-                            $remainingDead = $deadQuantity;
-                            foreach ($barnPenList as $bp2) {
-                                $barnId2 = $bp2['barn_id'] ?? null;
-                                $penId2  = $bp2['pen_id'] ?? null;
-
-                                $reduce = $remainingDead;
-
-                                if ($penId2) {
-                                    $allocation = DB::table('batch_pen_allocations')
-                                        ->where('batch_id', $batch->id)
-                                        ->where('pen_id', $penId2)
-                                        ->first();
-
-                                    if ($allocation) {
-                                        $reduce = min($remainingDead, $allocation->allocated_pigs);
-
-                                        DB::table('batch_pen_allocations')
-                                            ->where('id', $allocation->id)
-                                            ->update([
-                                                'allocated_pigs' => $allocation->allocated_pigs - $reduce,
-                                                'updated_at'     => now(),
-                                            ]);
-                                    }
-                                }
-
-                                PigDeath::create([
-                                    'dairy_record_id' => $dairyId,
-                                    'batch_id'        => $batch->id,
-                                    'pen_id'          => $penId2,
-                                    'quantity'        => $reduce,
-                                    'cause'           => $validated['cause'] ?? null,
-                                    'note'            => $validated['note'] ?? null,
-                                    'date'            => $formattedDate,
-                                ]);
-
-                                $remainingDead -= $reduce;
-                                if ($remainingDead <= 0) break;
-                            }
-                        }
-                    } // end foreach barnPenList
-                } // end foreach row
-            } // end foreach section
-
-            DB::commit();
-
-            return redirect()->back()->with('success', 'บันทึกประจำวันเรียบร้อย');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Upload Dairy error", [
-                'message' => $e->getMessage(),
-                'trace'   => $e->getTraceAsString(),
-            ]);
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                    }
+                }
+            }
         }
+
+        DB::commit();
+
+        return redirect()->back()->with('success', 'บันทึกประจำวันเรียบร้อย');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error("Upload Dairy error", [
+            'message' => $e->getMessage(),
+            'trace'   => $e->getTraceAsString(),
+        ]);
+        return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
     }
+}
+
 
 
 
@@ -473,65 +470,439 @@ class DairyController extends Controller
 
 
     //--------------------------------------- EDIT / UPDATE ------------------------------------------//
-
-    public function update(Request $request, $id)
+    //edit_feed_treatment
+    public function updateFeed(Request $request, $dairyId, $useId, $type)
     {
-        $record = DairyRecord::findOrFail($id);
+        DB::beginTransaction();
+        try {
+            $dairy = DairyRecord::findOrFail($dairyId);
+
+
+            $use = DairyStorehouseUse::findOrFail($useId);
+
+            $validated = $request->validate([
+                'quantity' => 'required|integer|min:0',
+                'note'     => 'nullable|string',
+                'date'     => 'required|date',
+            ]);
+
+            $oldQuantity = $use->quantity;
+            $newQuantity = $validated['quantity'];
+            $date        = Carbon::parse($validated['date'])->format('Y-m-d H:i:s');
+
+            // 1️⃣ อัปเดต DairyStorehouseUse
+            $use->update([
+                'quantity' => $newQuantity,
+                'note'     => $validated['note'] ?? $use->note,
+                'date'     => $date,
+            ]);
+
+            // 2️⃣ อัปเดต DairyRecord
+            $dairy->update([
+                'note' => $validated['note'] ?? $dairy->note,
+                'date' => $date,
+            ]);
+
+            // 3️⃣ อัปเดต Storehouse stock
+            $storehouse = $use->storehouse;
+            if (!$storehouse) throw new \Exception('ไม่พบสินค้าจาก DairyStorehouseUse');
+
+            $diff = $newQuantity - $oldQuantity;
+            if ($diff > 0 && $storehouse->stock < $diff) {
+                throw new \Exception("สต็อกสินค้าไม่เพียงพอ (เหลือ {$storehouse->stock}, ต้องการเพิ่ม {$diff})");
+            }
+            $storehouse->stock -= $diff;
+            $storehouse->save();
+
+            // 4️⃣ อัปเดต InventoryMovement (เลือกตาม storehouse + batch + out)
+            $movement = InventoryMovement::where('storehouse_id', $storehouse->id)
+                ->where('batch_id', $dairy->batch_id)
+                ->where('change_type', 'out')
+                ->latest('id')
+                ->first();
+
+            if ($movement) {
+                $movement->update([
+                    'quantity' => $newQuantity,
+                    'note'     => 'ปรับแก้การใช้สินค้า (Batch: ' . $dairy->batch_id . ')',
+                    'date'     => $date,
+                ]);
+            }
+
+            DB::commit();
+            return back()->with('success', 'แก้ไขอาหารเรียบร้อย');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+
+    //edit medicine use
+    public function updateMedicine(Request $request, $dairyId, $btId, $type)
+    {
+        DB::beginTransaction();
+
+        try {
+            $bt = BatchTreatment::findOrFail($btId);
+            $dairy = DairyRecord::findOrFail($bt->dairy_record_id);
+            $validated = $request->validate([
+                'quantity' => 'required|integer|min:0',
+                'status'   => 'nullable|string',
+                'note'     => 'nullable|string',
+                'date'     => 'required|date',
+            ]);
+
+            $oldQuantity = $bt->quantity;
+            $newQuantity = $validated['quantity'];
+            $date = Carbon::parse($validated['date'])->format('Y-m-d H:i:s');
+
+            // 1️⃣ อัปเดต BatchTreatment โดยตรง
+            $bt->update([
+                'quantity' => $newQuantity,
+                'note'     => $validated['note'] ?? $bt->note,
+                'status'   => $validated['status'] ?? $bt->status,
+                'date'     => $date,
+            ]);
+
+            // 2️⃣ อัปเดตสต็อกใน Storehouse
+            $storehouse = Storehouse::where('item_code', $bt->medicine_code)->first();
+            if ($storehouse) {
+                $diff = $newQuantity - $oldQuantity;
+                if ($diff > 0 && $storehouse->stock < $diff) {
+                    throw new \Exception("สต็อกสินค้าไม่เพียงพอ (เหลือ {$storehouse->stock}, ต้องการเพิ่ม {$diff})");
+                }
+                $storehouse->stock -= $diff;
+                $storehouse->save();
+            }
+
+            // 3️⃣ อัปเดต InventoryMovement
+            if ($storehouse) {
+                $movement = InventoryMovement::where('storehouse_id', $storehouse->id)
+                    ->where('batch_id', $dairy->batch_id)
+                    ->where('change_type', 'out')
+                    ->latest('id')
+                    ->first();
+
+                if ($movement) {
+                    $movement->update([
+                        'quantity' => $newQuantity,
+                        'movement_note' => 'ปรับแก้การใช้ยา (Batch: ' . $dairy->batch_id . ')',
+                        'movement_date' => $date,
+                    ]);
+                } else {
+                    InventoryMovement::create([
+                        'storehouse_id' => $storehouse->id,
+                        'batch_id'      => $dairy->batch_id,
+                        'change_type'   => 'out',
+                        'quantity'      => $newQuantity,
+                        'movement_note' => 'สร้างใหม่จากการปรับแก้การใช้ยา (Batch: ' . $dairy->batch_id . ')',
+                        'movement_date' => $date,
+                    ]);
+                }
+            }
+
+            // 4️⃣ อัปเดต DairyRecord
+            $dairy->update([
+                'note' => $validated['note'] ?? $dairy->note,
+                'date' => $date,
+            ]);
+
+            DB::commit();
+            return back()->with('success', 'แก้ไขยารักษาเรียบร้อย');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+
+
+    //edit_pig_death
+    public function updatePigDeath(Request $request, $id)
+    {
+        $pigDeath = PigDeath::findOrFail($id);
 
         $validated = $request->validate([
-            'batch_id' => 'required|exists:batches,id',
-            'barn_id' => 'required|exists:barns,id',
-            'date' => 'required|date_format:d/m/Y H:i',
-            'note' => 'nullable|string',
+            'quantity' => 'required|integer|min:0',
+            'cause'    => 'nullable|string',
+            'note'     => 'nullable|string',
         ]);
 
-        $record->batch_id = $validated['batch_id'];
-        $record->barn_id = $validated['barn_id'];
-        $record->date = Carbon::createFromFormat('d/m/Y H:i', $validated['date'])->format('Y-m-d H:i:s');
-        $record->note = $validated['note'] ?? null;
-        $record->save();
+        DB::beginTransaction();
+        try {
+            $batch = $pigDeath->batch;
 
-        return redirect()->back()->with('success', 'แก้ไข Dairy Record เรียบร้อย');
+            if (!$batch) {
+                throw new \Exception("ไม่พบ Batch ที่เกี่ยวข้อง");
+            }
+
+            // --- คำนวณการเปลี่ยนแปลงจำนวนตาย ---
+            $oldQuantity = $pigDeath->quantity;
+            $newQuantity = $validated['quantity'];
+            $diffQuantity = $newQuantity - $oldQuantity; // ถ้า + ก็เพิ่มตาย, ถ้า - ก็ลดตาย
+
+            // --- อัปเดต PigDeath ---
+            $pigDeath->update([
+                'quantity' => $newQuantity,
+                'cause'    => $validated['cause'] ?? $pigDeath->cause,
+                'note'     => $validated['note'] ?? $pigDeath->note,
+            ]);
+
+            // --- อัปเดต Batch ---
+            $batch->total_deaths += $diffQuantity; // ปรับ total_deaths ให้สะสมถูกต้อง
+            $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $diffQuantity, 0);
+
+            // --- อัปเดต weight ต่อหัว ถ้ามี ---
+            $avgWeightPerPig = ($batch->total_pig_amount + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
+                ? $batch->total_pig_weight / ($batch->total_pig_amount + $diffQuantity)
+                : 0;
+            $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $diffQuantity), 0);
+
+            $batch->save();
+
+            // --- อัปเดต allocations ถ้ามี pen_id ---
+            if ($pigDeath->pen_id) {
+                $allocation = DB::table('batch_pen_allocations')
+                    ->where('batch_id', $batch->id)
+                    ->where('pen_id', $pigDeath->pen_id)
+                    ->first();
+
+                if ($allocation) {
+                    $newAllocated = max($allocation->allocated_pigs - $diffQuantity, 0);
+                    DB::table('batch_pen_allocations')
+                        ->where('id', $allocation->id)
+                        ->update(['allocated_pigs' => $newAllocated, 'updated_at' => now()]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'แก้ไขข้อมูลหมูตายเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
+
+
+
 
     //--------------------------------------- DELETE ------------------------------------------//
 
-    public function delete($id)
+    public function destroyFeed($id)
     {
-        $record = DairyRecord::findOrFail($id);
-        $record->delete();
+        DB::beginTransaction();
+        try {
+            $use = DairyStorehouseUse::with(['storehouse', 'dairy_record'])->findOrFail($id);
 
-        return redirect()->back()->with('success', 'ลบ Dairy Record เรียบร้อย');
+            // คืน stock
+            if ($use->storehouse) {
+                $use->storehouse->stock += $use->quantity;
+                $use->storehouse->save();
+            }
+
+            // ลบ InventoryMovements
+            InventoryMovement::where('storehouse_id', $use->storehouse_id)
+                ->where('batch_id', $use->dairy_record->batch_id)
+                ->where('quantity', $use->quantity)
+                ->delete();
+
+            // เก็บ DairyRecord ไว้เพื่อลบทีหลัง
+            $record = $use->dairy_record;
+
+            // ลบ dairy_storehouse_use
+            $use->delete();
+
+            // ถ้า DairyRecord ไม่มีความสัมพันธ์อื่นแล้ว ค่อยลบ
+            if (
+                $record && $record->dairy_storehouse_uses()->count() == 0 &&
+                $record->batch_treatments()->count() == 0 &&
+                $record->pig_deaths()->count() == 0
+            ) {
+                $record->delete();
+            }
+
+            DB::commit();
+            return back()->with('success', 'ลบข้อมูลอาหารเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
+
+    public function destroyMedicine($id)
+    {
+        DB::beginTransaction();
+        try {
+            $treatment = BatchTreatment::with(['dairy_record', 'storehouse'])->findOrFail($id);
+
+            // คืน stock
+            if ($treatment->storehouse) {
+                $treatment->storehouse->stock += $treatment->quantity;
+                $treatment->storehouse->save();
+            }
+
+            // ลบ InventoryMovements
+            InventoryMovement::where('storehouse_id', $treatment->storehouse_id)
+                ->where('batch_id', $treatment->dairy_record->batch_id)
+                ->where('quantity', $treatment->quantity)
+                ->delete();
+
+            $record = $treatment->dairy_record;
+
+            // ลบ treatment
+            $treatment->delete();
+
+            // ถ้า DairyRecord ไม่มีอย่างอื่นเหลือ ให้ลบด้วย
+            if (
+                $record && $record->dairy_storehouse_uses()->count() == 0 &&
+                $record->batch_treatments()->count() == 0 &&
+                $record->pig_deaths()->count() == 0
+            ) {
+                $record->delete();
+            }
+
+            DB::commit();
+            return back()->with('success', 'ลบข้อมูลการรักษาเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyPigDeath($id)
+    {
+        DB::beginTransaction();
+        try {
+            $death = PigDeath::with(['dairy_record', 'batch'])->findOrFail($id);
+            $record = $death->dairy_record;
+            $batch  = $death->batch;
+
+            // คืนจำนวนหมูให้ batch
+            if ($batch) {
+                $batch->total_pig_amount += $death->quantity;
+                if ($death->weight) {
+                    $batch->total_pig_weight += $death->weight;
+                }
+                $batch->save();
+            }
+
+            // ลบ pig death
+            $death->delete();
+
+            // ถ้า DairyRecord ไม่มีอย่างอื่นเหลือ ให้ลบด้วย
+            if (
+                $record && $record->dairy_storehouse_uses()->count() == 0 &&
+                $record->batch_treatments()->count() == 0 &&
+                $record->pig_deaths()->count() == 0
+            ) {
+                $record->delete();
+            }
+
+            DB::commit();
+            return back()->with('success', 'ลบข้อมูลหมูตายเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
 
     //--------------------------------------- EXPORT ------------------------------------------//
 
     public function exportPdf()
     {
-        $dairyRecords = DairyRecord::with(['batch', 'barn'])->get();
-        $pdf = Pdf::loadView('admin.dairy_records.pdf', compact('dairyRecords'))
-            ->setPaper('a4', 'landscape');
+        $dairyRecords = DairyRecord::with([
+            'batch.farm',
+            'barn',
+            'dairy_storehouse_uses.storehouse',
+            'dairy_storehouse_uses.barn',
+            'batch_treatments.pen',
+            'pig_deaths.pen'
+        ])->orderBy('id', 'desc')->get();
 
-        return $pdf->download('dairy_records_' . date('Y-m-d_H-i-s') . '.pdf');
+        $pdf = Pdf::loadView('admin.dairy_records.pdf', [
+            'dairyRecords' => $dairyRecords
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('dairy_records_' . now()->format('Y-m-d_H-i-s') . '.pdf');
     }
+
 
     public function exportCsv()
     {
-        $filename = 'dairy_records_' . date('Y-m-d_H-i-s') . '.csv';
+        $filename = 'dairy_records_' . now()->format('Y-m-d_H-i-s') . '.csv';
 
-        return response()->streamDownload(function () {
+        $records = DairyRecord::with([
+            'batch.farm',
+            'barn',
+            'dairy_storehouse_uses.storehouse',
+            'dairy_storehouse_uses.barn',
+            'batch_treatments.pen',
+            'pig_deaths.pen'
+        ])->orderBy('id', 'desc')->get();
+
+        return response()->streamDownload(function () use ($records) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Batch', 'Barn', 'Date', 'Note']);
-            $records = DairyRecord::with(['batch', 'barn'])->get();
-            foreach ($records as $r) {
-                fputcsv($handle, [
-                    $r->batch->batch_code ?? '-',
-                    $r->barn->name ?? '-',
-                    $r->date,
-                    $r->note ?? '-'
-                ]);
+
+            // Header (Thai)
+            fputcsv($handle, ['ฟาร์ม', 'รุ่น', 'เล้า/คอก', 'ประเภท', 'รายละเอียด', 'จำนวน', 'วันที่', 'โน๊ต']);
+
+            foreach ($records as $record) {
+                // ให้เป็น string (format) ถ้ามี updated_at
+                $updatedAt = $record->updated_at ? $record->updated_at->format('Y-m-d H:i:s') : '';
+
+                // ---------- Feed ----------
+                foreach ($record->dairy_storehouse_uses as $use) {
+                    fputcsv($handle, [
+                        optional(optional($record->batch)->farm)->farm_name ?: '-',
+                        optional($record->batch)->batch_code ?: '-',
+                        optional($use->barn)->barn_code ?: '-',
+                        'อาหาร',
+                        'รหัส: ' . (optional($use->storehouse)->item_code ?: '-') . ', หน่วย: ' . (optional($use->storehouse)->unit ?: '-'),
+                        $use->quantity,
+                        $updatedAt,
+                        $record->note ?: '-',
+                    ]);
+                }
+
+                // ---------- Treatment ----------
+                foreach ($record->batch_treatments as $bt) {
+                    fputcsv($handle, [
+                        optional(optional($record->batch)->farm)->farm_name ?: '-',
+                        optional($record->batch)->batch_code ?: '-',
+                        (optional($record->barn)->barn_code ?: '-') . '/' . (optional($bt->pen)->pen_code ?: '-'),
+                        'การรักษา',
+                        'ยา: ' . ($bt->medicine_code ?: '-') . ', หน่วย: ' . ($bt->unit ?: '-') . ', สถานะ: ' . ($bt->status ?: '-'),
+                        $bt->quantity,
+                        $updatedAt,
+                        $record->note ?: '-',
+                    ]);
+                }
+
+                // ---------- Death ----------
+                foreach ($record->pig_deaths as $pd) {
+                    fputcsv($handle, [
+                        optional(optional($record->batch)->farm)->farm_name ?: '-',
+                        optional($record->batch)->batch_code ?: '-',
+                        (optional($record->barn)->barn_code ?: '-') . '/' . (optional($pd->pen)->pen_code ?: '-'),
+                        'หมูตาย',
+                        'คอก: ' . (optional($pd->pen)->pen_code ?: '-'),
+                        $pd->quantity,
+                        $updatedAt,
+                        $record->note ?: '-',
+                    ]);
+                }
+
+                // หากกรณีแถวใดไม่มี sub-record (เช่น ไม่มี feed/treatment/death) คุณอาจต้องการบันทึกแถว summary ของ DairyRecord เดี่ยวๆ
+                // (ผมไม่เพิ่มตรงนี้ตามที่คุณต้องการแสดงเหมือน index — แต่ถ้าต้องการให้มีแถว summary ด้วย แจ้งได้)
             }
+
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
     }
 }
