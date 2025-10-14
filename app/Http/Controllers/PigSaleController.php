@@ -455,6 +455,47 @@ class PigSaleController extends Controller
         }
     }
 
+    //--------------------------------------- Reject Sale ------------------------------------------//
+
+    public function reject(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $pigSale = PigSale::findOrFail($id);
+
+            // ตรวจสอบว่าอนุมัติแล้วหรือไม่
+            if ($pigSale->approved_at) {
+                return redirect()->back()->with('error', 'ไม่สามารถปฏิเสธการขายที่อนุมัติแล้ว');
+            }
+
+            // ตรวจสอบไม่ให้ปฏิเสธการขายที่ตัวเองสร้าง (ยกเว้น Admin)
+            $user = auth()->user();
+            if ($pigSale->created_by === $user->name && !$user->hasRole('admin')) {
+                return redirect()->back()->with('error', 'คุณไม่สามารถปฏิเสธการขายที่ตัวเองสร้างได้');
+            }
+
+            // ตรวจสอบว่ามีเหตุผลในการปฏิเสธหรือไม่
+            $validated = $request->validate([
+                'rejection_reason' => 'nullable|string|max:500',
+            ]);
+
+            // บันทึกข้อมูลการปฏิเสธ
+            $pigSale->status = 'rejected';
+            $pigSale->rejection_reason = $validated['rejection_reason'] ?? 'ไม่ระบุเหตุผล';
+            $pigSale->rejected_by = $user->name;
+            $pigSale->rejected_at = now();
+            $pigSale->save();
+
+            DB::commit();
+
+            return redirect()->route('pig_sale.index')->with('success', 'ปฏิเสธการขายเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('PigSale Reject Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
     //--------------------------------------- Upload Receipt ------------------------------------------//
 
     public function uploadReceipt(Request $request, $id)

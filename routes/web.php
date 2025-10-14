@@ -179,6 +179,8 @@ Route::prefix('pig_sale')->middleware(['auth'])->group(function () {
     Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sale.edit');
     Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sale.update');
     Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sale.cancel');
+    Route::post('/{id}/approve', [PigSaleController::class, 'approve'])->name('pig_sale.approve')->middleware('permission:approve_sales');
+    Route::post('/{id}/reject', [PigSaleController::class, 'reject'])->name('pig_sale.reject')->middleware('permission:approve_sales');
     //------------------- route export batch ---------------------//
     Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sale.export.csv');
     Route::get('/export/pdf', [PigSaleController::class, 'exportPdf'])->name('pig_sale.export.pdf');
