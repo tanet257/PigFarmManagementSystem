@@ -1,16 +1,54 @@
 $(function () {
 
     // ------------------------------------------------------- //
-    // Tooltips init
-    // ------------------------------------------------------ //    
+    // Bootstrap 5 Compatibility Layer for Bootstrap 4 Syntax
+    // ------------------------------------------------------- //
 
-    $('[data-toggle="tooltip"]').tooltip()        
+    // Convert data-toggle to data-bs-toggle for Bootstrap 5
+    document.querySelectorAll('[data-toggle="collapse"]').forEach(function(element) {
+        element.setAttribute('data-bs-toggle', 'collapse');
+
+        // Initialize Bootstrap 5 Collapse
+        var targetSelector = element.getAttribute('href') || element.getAttribute('data-target');
+        if (targetSelector) {
+            var target = document.querySelector(targetSelector);
+            if (target && typeof bootstrap !== 'undefined') {
+                // Ensure collapse instance exists
+                if (!bootstrap.Collapse.getInstance(target)) {
+                    new bootstrap.Collapse(target, {
+                        toggle: false
+                    });
+                }
+            }
+        }
+    });
+
+    // Handle tooltip conversion
+    document.querySelectorAll('[data-toggle="tooltip"]').forEach(function(element) {
+        element.setAttribute('data-bs-toggle', 'tooltip');
+    });
+
+    // Handle dropdown conversion
+    document.querySelectorAll('[data-toggle="dropdown"]').forEach(function(element) {
+        element.setAttribute('data-bs-toggle', 'dropdown');
+    });
+
+    // ------------------------------------------------------- //
+    // Tooltips init (Bootstrap 5)
+    // ------------------------------------------------------ //
+
+    if (typeof bootstrap !== 'undefined') {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    }
 
     // ------------------------------------------------------- //
     // Universal Form Validation
-    // ------------------------------------------------------ //
+    // ------------------------------------------------------- //
 
-    $('.form-validate').each(function() {  
+    $('.form-validate').each(function() {
         $(this).validate({
             errorElement: "div",
             errorClass: 'is-invalid',
@@ -22,7 +60,7 @@ $(function () {
                 //console.log(element);
                 if (element.prop("type") === "checkbox") {
                     error.insertAfter(element.siblings("label"));
-                } 
+                }
                 else {
                     error.insertAfter(element);
                 }
@@ -56,8 +94,8 @@ $(function () {
     });
 
     // ------------------------------------------------------- //
-    // Footer 
-    // ------------------------------------------------------ //   
+    // Footer
+    // ------------------------------------------------------ //
 
     var pageContent = $('.page-content');
 

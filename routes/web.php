@@ -10,6 +10,9 @@ use App\Http\Controllers\PigEntryController;
 use App\Http\Controllers\DairyController;
 use App\Http\Controllers\BatchPenAllocationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PigSaleController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\UserManagementController;
 
 //------------------- route home/admin -------------------------//
 Route::get('/', [HomeController::class, 'my_home'])->name('home.my_home');
@@ -161,6 +164,36 @@ Route::prefix('batches')->group(function () {
 
 Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.dashboard');
 
+
+//------------------- route pig sales (New System) -----------//
+Route::prefix('pig-sales')->middleware(['auth'])->group(function () {
+    Route::get('/', [PigSaleController::class, 'index'])->name('pig_sale.index');
+    Route::get('/create', [PigSaleController::class, 'create'])->name('pig_sale.create');
+    Route::post('/', [PigSaleController::class, 'store'])->name('pig_sale.store');
+    Route::get('/{id}', [PigSaleController::class, 'show'])->name('pig_sale.show');
+    Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sale.edit');
+    Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sale.update');
+    Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sale.destroy');
+});
+
+//------------------- route notifications --------------------//
+Route::prefix('notifications')->middleware(['auth'])->group(function () {
+    Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
+    Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
+    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_read');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+});
+
+//------------------- route user management ------------------//
+Route::prefix('user-management')->middleware(['auth', 'permission:manage_users'])->group(function () {
+    Route::get('/', [UserManagementController::class, 'index'])->name('users.index');
+    Route::get('/pending', [UserManagementController::class, 'pending'])->name('users.pending');
+    Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
+    Route::post('/{id}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
+    Route::post('/{id}/assign-role', [UserManagementController::class, 'assignRole'])->name('users.assign_role');
+    Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+});
 
 //------------------- route dashboard ------------------------//
 Route::middleware([
