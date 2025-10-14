@@ -19,6 +19,11 @@ Route::get('/', [HomeController::class, 'my_home'])->name('home.my_home');
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/admin_index', [AdminController::class, 'admin_index'])->name('admin.index');
 
+//------------------- route registration pending ---------------//
+Route::get('/registration-pending', function () {
+    return view('auth.registration-pending');
+})->name('registration.pending');
+
 //------------------- route batch ------------------------------//
 Route::get('/add_batch', [AdminController::class, 'add_batch'])->name('batch.add');
 Route::post('/upload_batch', [AdminController::class, 'upload_batch'])->name('batch.upload');
@@ -166,7 +171,7 @@ Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.
 
 
 //------------------- route pig sales (New System) -----------//
-Route::prefix('pig-sales')->middleware(['auth'])->group(function () {
+Route::prefix('pig_sale')->middleware(['auth'])->group(function () {
     Route::get('/', [PigSaleController::class, 'index'])->name('pig_sale.index');
     Route::get('/create', [PigSaleController::class, 'create'])->name('pig_sale.create');
     Route::post('/', [PigSaleController::class, 'store'])->name('pig_sale.store');
@@ -174,6 +179,11 @@ Route::prefix('pig-sales')->middleware(['auth'])->group(function () {
     Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sale.edit');
     Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sale.update');
     Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sale.destroy');
+    //------------------- route export batch ---------------------//
+    Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sale.export.csv');
+    Route::get('/export/pdf', [PigSaleController::class, 'exportPdf'])->name('pig_sale.export.pdf');
+
+
 });
 
 //------------------- route notifications --------------------//
@@ -193,6 +203,17 @@ Route::prefix('user_management')->middleware(['auth', 'permission:manage_users']
     Route::post('/{id}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
     Route::post('/{id}/assign-role', [UserManagementController::class, 'assignRole'])->name('users.assign_role');
     Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+});
+
+//------------------- route user approval --------------------//
+use App\Http\Controllers\UserApprovalController;
+Route::prefix('admin/user-approval')->middleware(['auth', 'permission:manage_users'])->group(function () {
+    Route::get('/', [UserApprovalController::class, 'index'])->name('admin.user_approval.index');
+    Route::post('/{user}/approve', [UserApprovalController::class, 'approve'])->name('admin.user_approval.approve');
+    Route::post('/{user}/reject', [UserApprovalController::class, 'reject'])->name('admin.user_approval.reject');
+    Route::post('/{user}/update-roles', [UserApprovalController::class, 'updateRoles'])->name('admin.user_approval.update_roles');
+    Route::post('/{user}/reopen', [UserApprovalController::class, 'reopen'])->name('admin.user_approval.reopen');
+    Route::post('/{user}/suspend', [UserApprovalController::class, 'suspend'])->name('admin.user_approval.suspend');
 });
 
 //------------------- route dashboard ------------------------//

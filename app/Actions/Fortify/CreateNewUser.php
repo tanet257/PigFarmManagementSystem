@@ -29,9 +29,10 @@ class CreateNewUser implements CreatesNewUsers
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
-            'phone' => $input['phone'],
-            'address' => $input['address'],
+            'phone' => $input['phone'] ?? null,
+            'address' => $input['address'] ?? null,
             'password' => Hash::make($input['password']),
+            'status' => 'pending', // รอการอนุมัติจาก Admin
         ]);
     }
 }

@@ -29,6 +29,10 @@ class User extends Authenticatable
         'password',
         'phone',
         'address',
+        'status',
+        'approved_by',
+        'approved_at',
+        'rejection_reason',
     ];
 
     /**
@@ -50,6 +54,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     /**
@@ -62,22 +67,42 @@ class User extends Authenticatable
     ];
 
     public function roles()
-{
-    return $this->belongsToMany(Role::class);
-}
-
-public function hasRole($roleName)
-{
-    return $this->roles->contains('name', $roleName);
-}
-
-public function hasPermission($permissionName)
-{
-    foreach ($this->roles as $role) {
-        if ($role->permissions->contains('name', $permissionName)) {
-            return true;
-        }
+    {
+        return $this->belongsToMany(Role::class, 'role_user');
     }
-    return false;
-}
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    public function hasRole($roleName)
+    {
+        return $this->roles->contains('name', $roleName);
+    }
+
+    public function hasPermission($permissionName)
+    {
+        foreach ($this->roles as $role) {
+            if ($role->permissions->contains('name', $permissionName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public function isApproved()
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isPending()
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isRejected()
+    {
+        return $this->status === 'rejected';
+    }
 }
