@@ -255,7 +255,7 @@
 
     /* ========== Custom Cards ========== */
     .card-custom {
-        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange)) !important;
         color: white;
         border: none;
         border-radius: 12px;

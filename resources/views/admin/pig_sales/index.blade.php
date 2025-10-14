@@ -25,7 +25,7 @@
                 </select>
 
                 <!-- Farm Filter (Dark Blue) -->
-                <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-blue">
+                <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-orange">
                     <option value="">ฟาร์มทั้งหมด</option>
                     @foreach ($farms as $farm)
                         <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
@@ -35,7 +35,7 @@
                 </select>
 
                 <!-- Batch Filter (Dark Blue) -->
-                <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-blue">
+                <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-orange">
                     <option value="">รุ่นทั้งหมด</option>
                     @foreach ($batches as $batch)
                         <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
@@ -60,7 +60,7 @@
         </div>
 
         {{-- Table --}}
-        <div class="card-custom-secondary mt-3">
+        <div class="card-custom mt-3">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
                     <thead class="table-header-custom">
