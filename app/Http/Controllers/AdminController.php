@@ -278,6 +278,4 @@ class AdminController extends Controller
 
         return view('admin.view.view_batch', compact('batches', 'farms'));
     }
-
-
 }

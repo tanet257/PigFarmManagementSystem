@@ -27,7 +27,7 @@ use App\Models\InventoryMovement;
 class DashboardController extends Controller
 {
 
-public function dashboard()
+    public function dashboard()
     {
         $totalPigs = PigEntryRecord::count();
         $totalCosts = Cost::sum('total_price');

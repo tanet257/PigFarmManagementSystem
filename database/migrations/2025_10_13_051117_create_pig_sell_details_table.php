@@ -21,7 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             // Foreign keys
-            $table->foreign('pig_sell_id')->references('id')->on('pig_sells')->onDelete('cascade');
+            $table->foreign('pig_sell_id')->references('id')->on('pig_sales')->onDelete('cascade');
             $table->foreign('pen_id')->references('id')->on('pens')->onDelete('cascade');
 
             // Index สำหรับ query

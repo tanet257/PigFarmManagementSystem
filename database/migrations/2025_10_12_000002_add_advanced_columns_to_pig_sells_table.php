@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pig_sells', function (Blueprint $table) {
+        Schema::table('pig_sales', function (Blueprint $table) {
             // เพิ่ม customer_id
             $table->foreignId('customer_id')->nullable()->after('batch_id')->constrained('customers')->onDelete('set null');
 
@@ -56,7 +56,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pig_sells', function (Blueprint $table) {
+        Schema::table('pig_sales', function (Blueprint $table) {
             $table->dropForeign(['customer_id']);
             $table->dropForeign(['created_by']);
             $table->dropForeign(['approved_by']);

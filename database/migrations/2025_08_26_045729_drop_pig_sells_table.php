@@ -18,7 +18,7 @@ return new class extends Migration
     public function up()
     {
         //
-        Schema::dropIfExists('pig_sells');
+        Schema::dropIfExists('pig_sales');
     }
 
     /**
@@ -29,7 +29,7 @@ return new class extends Migration
     public function down()
     {
         //
-        Schema::create('pig_sells', function (Blueprint $table) {
+        Schema::create('pig_sales', function (Blueprint $table) {
             $table->id();
 
             // foreign key

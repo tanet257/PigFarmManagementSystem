@@ -9,7 +9,7 @@ class PigSale extends Model
 {
     use HasFactory;
 
-    protected $table = 'pig_sells'; // ชื่อตาราง (ยังใช้ pig_sells ในฐานข้อมูล)
+    protected $table = 'pig_sales'; // ชื่อตารางในฐานข้อมูล
 
     protected $fillable = [
         'farm_id',

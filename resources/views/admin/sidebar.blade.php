@@ -63,10 +63,9 @@
                 </ul>
                 </li>
 
-                <li><a href="#pigsellMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Sell </a>
-                  <ul id="pigsellMenuDropdown" class="collapse list-unstyled ">
-                    <li><a href="{{url('add_pig_sell')}}">Pig Sell Record</a></li>
-                    <li><a href="{{url('view_pig_sell')}}">View Pig Sell</a></li>
+                <li><a href="#pigsaleMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i class="icon-windows"></i>Add Pig Sale </a>
+                  <ul id="pigsaleMenuDropdown" class="collapse list-unstyled ">
+                    <li><a href="{{route('pig_sale.index')}}">View Pig Sale</a></li>
                   </ul>
                 </li>
 

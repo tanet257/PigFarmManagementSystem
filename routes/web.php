@@ -186,7 +186,7 @@ Route::prefix('notifications')->middleware(['auth'])->group(function () {
 });
 
 //------------------- route user management ------------------//
-Route::prefix('user-management')->middleware(['auth', 'permission:manage_users'])->group(function () {
+Route::prefix('user_management')->middleware(['auth', 'permission:manage_users'])->group(function () {
     Route::get('/', [UserManagementController::class, 'index'])->name('users.index');
     Route::get('/pending', [UserManagementController::class, 'pending'])->name('users.pending');
     Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('users.approve');

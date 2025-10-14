@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pig_sells', function (Blueprint $table) {
+        Schema::table('pig_sales', function (Blueprint $table) {
             // เพิ่มคอลัมน์สำหรับเก็บราคาอ้างอิงจาก CPF
             $table->decimal('cpf_reference_price', 10, 2)->nullable()->after('price_per_kg');
             $table->date('cpf_reference_date')->nullable()->after('cpf_reference_price');
@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('pig_sells', function (Blueprint $table) {
+        Schema::table('pig_sales', function (Blueprint $table) {
             $table->dropColumn(['cpf_reference_price', 'cpf_reference_date']);
         });
     }
