@@ -1234,64 +1234,6 @@
             .clickable-row td:last-child>* {
                 pointer-events: auto;
             }
-
-            .dropdown-menu .dropdown-item.active {
-                background-color: #FF6500;
-                color: white;
-            }
-
-            /* Custom Select Styling - Pure CSS (No JS lag) */
-            .filter-select-orange,
-            .filter-select-blue {
-                min-width: 180px;
-                cursor: pointer;
-                font-weight: 500;
-                transition: all 0.3s ease;
-            }
-
-            .filter-select-orange {
-                background-color: #FF6500;
-                border: none;
-                color: white;
-                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-            }
-
-            .filter-select-orange:hover {
-                background-color: #ff7a3d;
-                box-shadow: 0 4px 12px rgba(255, 91, 34, 0.3);
-            }
-
-            .filter-select-orange:focus {
-                background-color: #FF6500;
-                border-color: #FF6500;
-                box-shadow: 0 0 0 0.25rem rgba(255, 91, 34, 0.25);
-            }
-
-            .filter-select-blue {
-                background-color: #1E3E62;
-                border: none;
-                color: white;
-                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-            }
-
-            .filter-select-blue:hover {
-                background-color: #2d5a8a;
-                box-shadow: 0 4px 12px rgba(30, 62, 98, 0.3);
-            }
-
-            .filter-select-blue:focus {
-                background-color: #1E3E62;
-                border-color: #1E3E62;
-                box-shadow: 0 0 0 0.25rem rgba(30, 62, 98, 0.25);
-            }
-
-            /* Style select dropdown options */
-            .filter-select-orange option,
-            .filter-select-blue option {
-                background-color: white;
-                color: #333;
-                padding: 8px 12px;
-            }
         </style>
     @endsection
 
