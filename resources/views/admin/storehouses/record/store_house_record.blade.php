@@ -487,7 +487,8 @@
                 // ITEM CODE / UNIT
                 // ---------------------
                 function updateItemCodeOptions(row) {
-                    const type = row.querySelector('.item-type-select')?.value;
+                    const typeHidden = row.querySelector('.item-type-hidden');
+                    const type = typeHidden?.value;
                     const batchId = parseInt(batchSelect.value);
                     const itemDropdownMenu = row.querySelector('.item-dropdown-menu');
                     const itemDropdownBtn = row.querySelector('.item-dropdown-btn');
