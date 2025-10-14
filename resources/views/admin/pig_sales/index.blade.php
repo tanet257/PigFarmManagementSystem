@@ -92,186 +92,205 @@
                     <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
                     </a>
-                    <a class="btn btn-outline-danger btn-sm" href="{{ route('pig_sale.export.pdf') }}">
-                        {{-- Table --}}
-                        <div class="card-custom-secondary mt-3">
-                            <div class="table-responsive">
-                                <table class="table table-hover mb-0">
-                                    <thead class="table-header-custom">
-                                        <tr>
-                                            <th class="text-center">เลขที่</th>
-                                            <th class="text-center">
-                                                <div class="d-flex justify-content-center align-items-center">
-                                                    <span>วันที่ขาย</span>
-                                                    <div class="icon-vertical ms-2">
-                                                        <i class="fa fa-arrow-up increment"
-                                                            onclick="sortTable('sell_date','asc')"></i>
-                                                        <i class="fa fa-arrow-down decrement"
-                                                            onclick="sortTable('sell_date','desc')"></i>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th class="text-center">ลูกค้า</th>
-                                            <th class="text-center">ฟาร์ม</th>
-                                            <th class="text-center">รุ่น</th>
-                                            <th class="text-center">
-                                                <div class="d-flex justify-content-center align-items-center">
-                                                    <span>จำนวน</span>
-                                                    <div class="icon-vertical ms-2">
-                                                        <i class="fa fa-arrow-up increment"
-                                                            onclick="sortTable('quantity','asc')"></i>
-                                                        <i class="fa fa-arrow-down decrement"
-                                                            onclick="sortTable('quantity','desc')"></i>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th class="text-center">น้ำหนัก (kg)</th>
-                                            <th class="text-center">
-                                                <div class="d-flex justify-content-center align-items-center">
-                                                    <span>ราคาสุทธิ</span>
-                                                    <div class="icon-vertical ms-2">
-                                                        <i class="fa fa-arrow-up increment"
-                                                            onclick="sortTable('net_total','asc')"></i>
-                                                        <i class="fa fa-arrow-down decrement"
-                                                            onclick="sortTable('net_total','desc')"></i>
-                                                    </div>
-                                                </div>
-                                            </th>
-                                            <th class="text-center">สถานะอนุมัติ</th>
-                                            <th class="text-center">สถานะชำระ</th>
-                                            <th class="text-center">บันทึกโดย</th>
-                                            <th class="text-center">จัดการ</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse ($pigSales as $sell)
-                                            <tr class="clickable-row" data-bs-toggle="modal"
-                                                data-bs-target="#viewModal{{ $sell->id }}">
-                                                <td class="text-center">
-                                                    <strong>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}</strong>
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ $sell->sell_date ? \Carbon\Carbon::parse($sell->sell_date)->format('d/m/Y') : '-' }}
-                                                </td>
-                                                <td class="text-center">
-                                                    {{ $sell->customer->customer_name ?? ($sell->buyer_name ?? '-') }}
-                                                </td>
-                                                <td class="text-center">{{ $sell->farm->farm_name ?? '-' }}</td>
-                                                <td class="text-center">{{ $sell->batch->batch_code ?? '-' }}</td>
-                                                <td class="text-center">
-                                                    <strong>{{ number_format($sell->quantity) }} ตัว</strong>
-                                                </td>
-                                                <td class="text-center">
-                                                    @if ($sell->actual_weight)
-                                                        {{ number_format($sell->actual_weight, 2) }}
-                                                        <small class="text-muted d-block">(ชั่งจริง)</small>
-                                                    @else
-                                                        {{ number_format($sell->total_weight, 2) }}
-                                                    @endif
-                                                </td>
-                                                <td class="text-center">
-                                                    <strong>{{ number_format($sell->net_total ?? $sell->total_price, 2) }}</strong>
-
-                                                    @if ($sell->shipping_cost > 0)
-                                                        <small class="text-info d-block">ค่าขนส่ง:
-                                                            {{ number_format($sell->shipping_cost, 2) }}</small>
-                                                    @endif
-                                                </td>
-                                                <td class="text-center">
-                                                    @if ($sell->payment_status == 'ชำระแล้ว')
-                                                        <span class="badge bg-success">ชำระแล้ว</span>
-                                                    @elseif ($sell->payment_status == 'ชำระบางส่วน')
-                                                        <span class="badge bg-warning">ชำระบางส่วน</span>
-                                                        <small class="d-block mt-1">คงเหลือ:
-                                                            {{ number_format($sell->balance, 2) }}</small>
-                                                    @elseif ($sell->payment_status == 'เกินกำหนด')
-                                                        <span class="badge bg-danger">เกินกำหนด</span>
-                                                    @else
-                                                        <span class="badge bg-secondary">รอชำระ</span>
-                                                        @if ($sell->due_date)
-                                                            <small
-                                                                class="d-block mt-1">{{ \Carbon\Carbon::parse($sell->due_date)->format('d/m/Y') }}</small>
-                                                        @endif
-                                                    @endif
-                                                </td>
-                                                <td class="text-center">
-                                                    @if ($sell->approved_at)
-                                                        <span class="badge bg-success">
-                                                            <i class="bi bi-check-circle"></i> อนุมัติแล้ว
-                                                        </span>
-                                                        <small class="text-muted d-block mt-1">
-                                                            โดย: {{ $sell->approvedBy->name ?? '-' }}
-                                                        </small>
-                                                    @else
-                                                        <span class="badge bg-warning">
-                                                            <i class="bi bi-clock"></i> รออนุมัติ
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                                <td class="text-center">
-                                                    <small class="text-muted">
-                                                        <i class="bi bi-person-fill"></i>
-                                                        {{ $sell->createdBy->name ?? '-' }}
-                                                    </small>
-                                                </td>
-                                                <td class="text-center">
-                                                    <button type="button" class="btn btn-sm btn-info"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#viewModal{{ $sell->id }}">
-                                                        <i class="bi bi-eye"></i>
-                                                    </button>
-
-                                                    @if (!$sell->approved_at && auth()->user()->hasPermission('approve_sales'))
-                                                        <button type="button" class="btn btn-sm btn-primary"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#approveModal{{ $sell->id }}"
-                                                            title="อนุมัติการขาย">
-                                                            <i class="bi bi-check-circle"></i>
-                                                        </button>
-                                                    @endif
-
-                                                    @if ($sell->payment_status != 'ชำระแล้ว')
-                                                        <button type="button" class="btn btn-sm btn-success"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#paymentModal{{ $sell->id }}">
-                                                            <i class="bi bi-cash"></i>
-                                                        </button>
-                                                    @endif
-
-                                                    <form action="{{ route('pig_sale.cancel', $sell->id) }}"
-                                                        method="POST" class="d-inline"
-                                                        onsubmit="return confirm('ต้องการยกเลิกการขายนี้หรือไม่?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger">
-                                                            <i class="bi bi-x-circle"></i>
-                                                        </button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="11" class="text-center text-danger">❌ ไม่มีข้อมูลการขาย
-                                                </td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        {{-- Pagination --}}
-                        <div class="d-flex justify-content-between mt-3">
-                            <div>
-                                แสดง {{ $pigSales->firstItem() ?? 0 }} ถึง {{ $pigSales->lastItem() ?? 0 }} จาก
-                                {{ $pigSales->total() ?? 0 }} แถว
-                            </div>
-                            <div>
-                                {{ $pigSales->withQueryString()->links() }}
-                            </div>
-                        </div>
+                    </ul>
                 </div>
+
+                <div class="ms-auto d-flex gap-2">
+                    <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
+                    </a>
+                    <a class="btn btn-outline-danger btn-sm" href="{{ route('pig_sale.export.pdf') }}">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                    </a>
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#createModal">
+                        <i class="bi bi-plus-circle me-1"></i> เพิ่มการขาย
+                    </button>
+                </div>
+            </form>
         </div>
+
+        {{-- Table --}}
+        <div class="card-custom-secondary mt-3">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-header-custom">
+                        <tr>
+                            <th class="text-center">เลขที่</th>
+                            <th class="text-center">
+
+            </div>
+            {{-- Table --}}
+            <div class="card-custom-secondary mt-3">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-header-custom">
+                            <tr>
+                                <th class="text-center">เลขที่</th>
+                                <th class="text-center">
+                                    <div class="d-flex justify-content-center align-items-center">
+                                        <span>วันที่ขาย</span>
+                                        <div class="icon-vertical ms-2">
+                                            <i class="fa fa-arrow-up increment" onclick="sortTable('sell_date','asc')"></i>
+                                            <i class="fa fa-arrow-down decrement"
+                                                onclick="sortTable('sell_date','desc')"></i>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="text-center">ลูกค้า</th>
+                                <th class="text-center">ฟาร์ม</th>
+                                <th class="text-center">รุ่น</th>
+                                <th class="text-center">
+                                    <div class="d-flex justify-content-center align-items-center">
+                                        <span>จำนวน</span>
+                                        <div class="icon-vertical ms-2">
+                                            <i class="fa fa-arrow-up increment" onclick="sortTable('quantity','asc')"></i>
+                                            <i class="fa fa-arrow-down decrement"
+                                                onclick="sortTable('quantity','desc')"></i>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="text-center">น้ำหนัก (kg)</th>
+                                <th class="text-center">
+                                    <div class="d-flex justify-content-center align-items-center">
+                                        <span>ราคาสุทธิ</span>
+                                        <div class="icon-vertical ms-2">
+                                            <i class="fa fa-arrow-up increment" onclick="sortTable('net_total','asc')"></i>
+                                            <i class="fa fa-arrow-down decrement"
+                                                onclick="sortTable('net_total','desc')"></i>
+                                        </div>
+                                    </div>
+                                </th>
+                                <th class="text-center">สถานะอนุมัติ</th>
+                                <th class="text-center">สถานะชำระ</th>
+                                <th class="text-center">บันทึกโดย</th>
+                                <th class="text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($pigSales as $sell)
+                                <tr class="clickable-row" data-bs-toggle="modal"
+                                    data-bs-target="#viewModal{{ $sell->id }}">
+                                    <td class="text-center">
+                                        <strong>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        {{ $sell->sell_date ? \Carbon\Carbon::parse($sell->sell_date)->format('d/m/Y') : '-' }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ $sell->customer->customer_name ?? ($sell->buyer_name ?? '-') }}
+                                    </td>
+                                    <td class="text-center">{{ $sell->farm->farm_name ?? '-' }}</td>
+                                    <td class="text-center">{{ $sell->batch->batch_code ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <strong>{{ number_format($sell->quantity) }} ตัว</strong>
+                                    </td>
+                                    <td class="text-center">
+                                        @if ($sell->actual_weight)
+                                            {{ number_format($sell->actual_weight, 2) }}
+                                            <small class="text-muted d-block">(ชั่งจริง)</small>
+                                        @else
+                                            {{ number_format($sell->total_weight, 2) }}
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <strong>{{ number_format($sell->net_total ?? $sell->total_price, 2) }}</strong>
+
+                                        @if ($sell->shipping_cost > 0)
+                                            <small class="text-info d-block">ค่าขนส่ง:
+                                                {{ number_format($sell->shipping_cost, 2) }}</small>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if ($sell->payment_status == 'ชำระแล้ว')
+                                            <span class="badge bg-success">ชำระแล้ว</span>
+                                        @elseif ($sell->payment_status == 'ชำระบางส่วน')
+                                            <span class="badge bg-warning">ชำระบางส่วน</span>
+                                            <small class="d-block mt-1">คงเหลือ:
+                                                {{ number_format($sell->balance, 2) }}</small>
+                                        @elseif ($sell->payment_status == 'เกินกำหนด')
+                                            <span class="badge bg-danger">เกินกำหนด</span>
+                                        @else
+                                            <span class="badge bg-secondary">รอชำระ</span>
+                                            @if ($sell->due_date)
+                                                <small
+                                                    class="d-block mt-1">{{ \Carbon\Carbon::parse($sell->due_date)->format('d/m/Y') }}</small>
+                                            @endif
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if ($sell->approved_at)
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> อนุมัติแล้ว
+                                            </span>
+                                            <small class="text-muted d-block mt-1">
+                                                โดย: {{ $sell->approvedBy->name ?? '-' }}
+                                            </small>
+                                        @else
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-clock"></i> รออนุมัติ
+                                            </span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <small class="text-muted">
+                                            <i class="bi bi-person-fill"></i>
+                                            {{ $sell->createdBy->name ?? '-' }}
+                                        </small>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                            data-bs-target="#viewModal{{ $sell->id }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+
+                                        @if (!$sell->approved_at && auth()->user()->hasPermission('approve_sales'))
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#approveModal{{ $sell->id }}" title="อนุมัติการขาย">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        @endif
+
+                                        @if ($sell->payment_status != 'ชำระแล้ว')
+                                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                                data-bs-target="#paymentModal{{ $sell->id }}">
+                                                <i class="bi bi-cash"></i>
+                                            </button>
+                                        @endif
+
+                                        <form action="{{ route('pig_sale.cancel', $sell->id) }}" method="POST"
+                                            class="d-inline" onsubmit="return confirm('ต้องการยกเลิกการขายนี้หรือไม่?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="11" class="text-center text-danger">❌ ไม่มีข้อมูลการขาย
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {{-- Pagination --}}
+            <div class="d-flex justify-content-between mt-3">
+                <div>
+                    แสดง {{ $pigSales->firstItem() ?? 0 }} ถึง {{ $pigSales->lastItem() ?? 0 }} จาก
+                    {{ $pigSales->total() ?? 0 }} แถว
+                </div>
+                <div>
+                    {{ $pigSales->withQueryString()->links() }}
+                </div>
+            </div>
+        </div>
+
 
         {{-- Modals (นอก loop เพื่อไม่ให้รบกวน layout) --}}
         @foreach ($pigSales as $sell)

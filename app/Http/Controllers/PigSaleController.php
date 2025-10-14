@@ -637,7 +637,7 @@ class PigSaleController extends Controller
     {
         $pigSales = PigSale::with(['farm', 'batch', 'pigLoss'])->get();
 
-        $pdf = Pdf::loadView('admin.pig_sale.export.pdf', compact('pigSales'))
+        $pdf = Pdf::loadView('admin.pig_sales.exports.pdf', compact('pigSales'))
             ->setPaper('a4', 'landscape')
             ->setOptions([
                 'isHtml5ParserEnabled' => true,
