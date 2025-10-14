@@ -1,426 +1,318 @@
-<!DOCTYPE html>
-<html lang="th">
+@extends('layouts.admin')
 
-<head>
+@section('title', 'จัดการคลังสินค้า')
 
-    @include('admin.css')
-    <style>
-        body {
-            background-color: #1e1b29;
-            color: #f0e6ff;
-        }
+@section('content')
+<div class="container my-5">
+    <div class="card-header">
+        <h1 class="text-center">จัดการคลังสินค้า (Storehouses)</h1>
+    </div>
+    <div class="py-2"></div>
 
-        h1 {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
+    {{-- Toolbar --}}
+    <div class="card-custom-secondary mb-3">
+        <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Search -->
+            <input type="search" name="search" class="form-control form-control-sm" style="width: 200px;" 
+                placeholder="ค้นหาสินค้า..." value="{{ request('search') }}">
 
-        .table-container {
-            margin: 20px auto;
-            max-width: 95%;
-        }
-
-        .table thead th {
-            background-color: #5a4e7c;
-            color: #fff;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-        }
-
-        .table tbody tr:hover {
-            background-color: #3a3361;
-        }
-
-        .badge-purple {
-            background-color: #7e6fc1;
-        }
-
-        .card-custom {
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            background-color: #2c2540;
-            padding: 15px;
-        }
-
-        td,
-        th {
-            vertical-align: middle !important;
-        }
-
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .toolbar .left-tools {
-            flex: 1;
-        }
-
-        .toolbar .right-tools {
-            display: flex;
-            gap: 10px;
-        }
-
-        .toolbar .form-select-sm,
-        .toolbar .btn-sm,
-        .toolbar input[type="search"] {
-            font-size: 0.85rem;
-            padding: 0.35rem 0.5rem;
-        }
-
-        input[type="search"] {
-            border-radius: 20px;
-            padding-left: 12px;
-            border: 1px solid #5a4e7c;
-            background: #1e1b29;
-            color: #f0e6ff;
-        }
-
-        .btn-action {
-            min-width: 90px;
-            text-align: center;
-        }
-
-    </style>
-
-
-</head>
-
-<body>
-
-    @include('admin.header')
-    @include('admin.sidebar')
-
-    <div class="page-content">
-        <div class="container my-5 table-container">
-
-            <!-- Title -->
-            <h1 class="text-center">จัดการคลัง (storehouses)</h1>
-
-            <!-- Toolbar -->
-            <div class="toolbar">
-                <div class="left-tools">
-                    <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex">
-                        <input type="search" name="search" class="form-control form-control-sm me-2"
-                            placeholder="ค้นหา..." value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-sm btn-outline-light">ค้นหา</button>
-                    </form>
-                </div>
-
-                <div class="right-tools">
-                    <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex">
-                        <select name="farm_id" class="form-select form-select-sm me-2">
-                            <option value="">เลือกฟาร์มทั้งหมด</option>
-                            @foreach ($farms as $farm)
-                                <option value="{{ $farm->id }}"
-                                    {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
-                                    {{ $farm->farm_name }}
-                                </option>
-                            @endforeach
-                        </select>
-
-                        <select name="sort_by" class="form-select form-select-sm me-2">
-                            <option value="">เรียงลำดับ...</option>
-                            <option value="date" {{ request('sort_by') == 'date' ? 'selected' : '' }}>
-                                วันที่ซื้อสินค้าเข้าคลัง</option>
-                            <option value="updated_at" {{ request('sort_by') == 'updated_at' ? 'selected' : '' }}>
-                                วันที่แก้ไขล่าสุด</option>
-                            <option value="stock" {{ request('sort_by') == 'stock' ? 'selected' : '' }}>จำนวนสต็อก
-                            </option>
-                            <option value="total_price" {{ request('sort_by') == 'total_price' ? 'selected' : '' }}>
-                                ราคารวม</option>
-                        </select>
-
-                        <select name="sort_order" class="form-select form-select-sm me-2">
-                            <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>น้อย → มาก
-                            </option>
-                            <option value="desc" {{ request('sort_order') == 'desc' ? 'selected' : '' }}>มาก → น้อย
-                            </option>
-                        </select>
-
-                        <select name="per_page" class="form-select form-select-sm me-2">
-                            @foreach ([10, 25, 50, 100] as $n)
-                                <option value="{{ $n }}"
-                                    {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                                    {{ $n }} แถว
-                                </option>
-                            @endforeach
-                        </select>
-
-                        <button type="submit" class="btn btn-sm btn-action btn-primary me-2">Apply</button>
-                    </form>
-
-                    <a href="{{ route('storehouses.export.csv') }}" class="btn btn-sm btn-outline-success">Export
-                        CSV</a>
-                    <a href="{{ route('storehouses.export.pdf') }}" class="btn btn-primary">Export PDF</a>
-
-                    <button class="btn btn-success" data-bs-toggle="modal"
-                        data-bs-target="#createModal">เพิ่มสินค้าเข้าคลัง
-                    </button>
-                </div>
+            <!-- Farm Card Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #1E3E62; color: white; border: none;">
+                    <i class="bi bi-building"></i> {{ request('farm_id') ? ($farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม') : 'ฟาร์มทั้งหมด' }}
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('storehouses.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a></li>
+                    @foreach ($farms as $farm)
+                        <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}" 
+                            href="{{ route('storehouses.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">
+                            {{ $farm->farm_name }}
+                        </a></li>
+                    @endforeach
+                </ul>
             </div>
 
-            {{-- Table --}}
-            <div class="card-custom">
-                <div class="table-responsive">
-                    <table class="table table-dark table-hover align-middle text-center">
-                        <thead>
-                            <tr>
-                                <th>วันที่เพิ่มเข้าคลัง</th>
-                                <th>ชื่อฟาร์ม</th>
-
-                                <th>ประเภทรายการ</th>
-                                <th>รหัสรายการ</th>
-                                <th>ชื่อรายการ</th>
-                                <th>จำนวนสต็อก</th>
-                                <th>ราคาต่อรายการ</th>
-                                <th>ค่าส่ง</th>
-                                <th>ราคารวม</th>
-                                <th>หน่วย</th>
-                                <th>สถานะ</th>
-                                <th>สลิป</th>
-                                <th>โน๊ต</th>
-                                <th>จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($storehouses as $storehouse)
-                                <tr>
-                                    <td>{{ $storehouse->latestCost->date ?? '-' }}</td>
-                                    <td>{{ $storehouse->farm->farm_name ?? '-' }}</td>
-
-                                    <td>{{ $storehouse->item_type }}</td>
-                                    <td>{{ $storehouse->item_code }}</td>
-                                    <td>{{ $storehouse->item_name }}</td>
-                                    <td>{{ number_format($storehouse->stock, 2) }}</td>
-                                    <td>{{ number_format($storehouse->latestCost->price_per_unit ?? 0, 2) }}</td>
-                                    <td>{{ number_format($storehouse->latestCost->transport_cost ?? 0, 2) }}</td>
-                                    <td>{{ number_format($storehouse->latestCost->total_price ?? 0, 2) }}</td>
-                                    <td>{{ $storehouse->unit }}</td>
-                                    <td>
-                                        @if ($storehouse->status == 'available')
-                                            <span class="badge bg-purple">available</span>
-                                        @elseif($storehouse->status == 'unavailable')
-                                            <span class="badge bg-secondary">unavailable</span>
-                                        @else
-                                            <span class="badge bg-dark">-</span>
-                                        @endif
-                                    </td>
-                                    {{-- ดึงภาพจาก cloudinary --}}
-                                    <td>
-                                        @if ($storehouse->latestCost && !empty($storehouse->latestCost->receipt_file))
-                                            @php
-                                                $file = $storehouse->latestCost->receipt_file;
-                                            @endphp
-
-                                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
-                                                <img src="{{ $file }}" alt="Receipt"
-                                                    style="max-width:100px; max-height:100px;">
-                                            @else
-                                                <a href="{{ $file }}" target="_blank">Download</a>
-                                            @endif
-                                        @else
-                                            <span class="text-muted">ไม่มีไฟล์</span>
-                                        @endif
-                                    </td>
-
-
-
-
-                                    <td>{{ $storehouse->note ?? '-' }}</td>
-                                    <td>
-                                        {{-- Edit Button --}}
-                                        <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
-                                            data-bs-target="#editModal{{ $storehouse->id }}">
-                                            แก้ไข
-                                        </button>
-                                        {{-- Delete Button --}}
-                                        <form action="{{ route('storehouses.delete', $storehouse->id) }}"
-                                            method="POST" style="display:inline-block;">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-action btn-danger"
-                                                onclick="return confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')">Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-
-                                {{-- Modal Edit --}}
-                                <div class="modal fade" id="editModal{{ $storehouse->id }}" tabindex="-1"
-                                    aria-hidden="true">
-                                    <div class="modal-dialog modal-lg">
-                                        <div class="modal-content bg-dark text-light">
-                                            <div class="modal-header">
-                                                <h5>แก้ไขสินค้า</h5>
-                                                <button type="button" class="btn-close"
-                                                    data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form action="{{ route('storehouses.update', $storehouse->id) }}"
-                                                method="POST" enctype="multipart/form-data">
-                                                @csrf
-                                                @method('PUT')
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label>ฟาร์ม</label>
-                                                        <select name="farm_id" class="form-select" required>
-                                                            @foreach ($farms as $farm)
-                                                                <option value="{{ $farm->id }}"
-                                                                    {{ $storehouse->farm_id == $farm->id ? 'selected' : '' }}>
-                                                                    {{ $farm->farm_name }}
-                                                                </option>
-                                                            @endforeach
-                                                        </select>
-                                                    </div>
-
-                                                    <div class="mb-3">
-                                                        <label>ชื่อรายการ</label>
-                                                        <input type="text" name="item_name" class="form-control"
-                                                            value="{{ $storehouse->item_name }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>รหัสรายการ</label>
-                                                        <input type="text" name="item_code" class="form-control"
-                                                            value="{{ $storehouse->item_code }}" required>
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label>หน่วย</label>
-                                                        <input type="text" name="unit" class="form-control"
-                                                            value="{{ $storehouse->unit }}">
-                                                    </div>
-
-                                                    <div class="mb-3">
-                                                        <label>โน๊ต</label>
-                                                        <textarea name="note" class="form-control">{{ $storehouse->note }}</textarea>
-                                                    </div>
-
-                                                    <div class="mb-3"> <label>แนบไฟล์ใบเสร็จ (ถ้ามี)</label> <input
-                                                            type="file" name="receipt_file" class="form-control">
-                                                        {{-- delete file --}}
-                                                        @if ($storehouse->latestCost && $storehouse->latestCost->receipt_file)
-                                                            @php$file = $storehouse->latestCost->receipt_file;
-                                                                                                                        @endphp ?>
-                                                            <small class="text-muted">ไฟล์ปัจจุบัน:</small>
-                                                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
-                                                                <div><img src="{{ $file }}" alt="Receipt"
-                                                                        style="max-width:100px;"></div>
-                                                            @else
-                                                                <div><a href="{{ $file }}"
-                                                                        target="_blank">Download</div>
-                                                            @endif
-
-                                                            {{-- hidden input กันเคสไม่ได้ติ๊ก checkbox --}}
-                                                            <input type="hidden" name="delete_receipt_file"
-                                                                value="0">
-
-                                                            <div class="form-check mt-1">
-                                                                <input type="checkbox" name="delete_receipt_file"
-                                                                    value="1" class="form-check-input"
-                                                                    id="deleteReceipt{{ $storehouse->id }}">
-                                                                <label class="form-check-label"
-                                                                    for="deleteReceipt{{ $storehouse->id }}">
-                                                                    ลบไฟล์ปัจจุบัน
-                                                                </label>
-                                                            </div>
-                                                        @endif
-                                                    </div>
-
-                                                    <div class="modal-footer">
-                                                        <button type="submit" class="btn btn-primary">บันทึก</button>
-                                                        <button type="button" class="btn btn-secondary"
-                                                            data-bs-dismiss="modal">ยกเลิก</button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                {{-- Modal Edit Form --}}
-
-                            @empty
-                                <tr>
-                                    <td colspan="15" class="text-danger">❌ ไม่มีข้อมูล storehouse</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                {{-- Pagination --}}
-                <div class="d-flex justify-content-between mt-3">
-                    <div>
-                        แสดง {{ $storehouses->firstItem() ?? 0 }} ถึง {{ $storehouses->lastItem() ?? 0 }} จาก
-                        {{ $storehouses->total() ?? 0 }} แถว
-                    </div>
-                    <div>
-                        {{ $storehouses->withQueryString()->links() }}
-                    </div>
-                </div>
+            <!-- Category Dropdown (Orange) -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #FF6500; color: white; border: none;">
+                    <i class="bi bi-tag"></i> 
+                    @if(request('category') == 'อาหาร') อาหาร
+                    @elseif(request('category') == 'ยา') ยา
+                    @elseif(request('category') == 'วัคซีน') วัคซีน
+                    @elseif(request('category') == 'อุปกรณ์') อุปกรณ์
+                    @else ประเภททั้งหมด
+                    @endif
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('storehouses.index', array_merge(request()->except('category'), [])) }}">ประเภททั้งหมด</a></li>
+                    <li><a class="dropdown-item {{ request('category') == 'อาหาร' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'อาหาร'])) }}">อาหาร</a></li>
+                    <li><a class="dropdown-item {{ request('category') == 'ยา' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'ยา'])) }}">ยา</a></li>
+                    <li><a class="dropdown-item {{ request('category') == 'วัคซีน' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'วัคซีน'])) }}">วัคซีน</a></li>
+                    <li><a class="dropdown-item {{ request('category') == 'อุปกรณ์' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'อุปกรณ์'])) }}">อุปกรณ์</a></li>
+                </ul>
             </div>
+
+            <!-- Stock Status Dropdown (Orange) -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #FF6500; color: white; border: none;">
+                    <i class="bi bi-box-seam"></i> 
+                    @if(request('stock_status') == 'in_stock') มีสินค้า
+                    @elseif(request('stock_status') == 'low_stock') สินค้าใกล้หมด
+                    @elseif(request('stock_status') == 'out_of_stock') สินค้าหมด
+                    @else สถานะทั้งหมด
+                    @endif
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('storehouses.index', array_merge(request()->except('stock_status'), [])) }}">สถานะทั้งหมด</a></li>
+                    <li><a class="dropdown-item {{ request('stock_status') == 'in_stock' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['stock_status' => 'in_stock'])) }}">มีสินค้า</a></li>
+                    <li><a class="dropdown-item {{ request('stock_status') == 'low_stock' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['stock_status' => 'low_stock'])) }}">สินค้าใกล้หมด</a></li>
+                    <li><a class="dropdown-item {{ request('stock_status') == 'out_of_stock' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['stock_status' => 'out_of_stock'])) }}">สินค้าหมด</a></li>
+                </ul>
+            </div>
+
+            <!-- Sort Dropdown (Orange) -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #FF6500; color: white; border: none;">
+                    <i class="bi bi-sort-down"></i> 
+                    @if(request('sort') == 'name_asc') ชื่อ (ก-ฮ)
+                    @elseif(request('sort') == 'name_desc') ชื่อ (ฮ-ก)
+                    @elseif(request('sort') == 'quantity_asc') จำนวนน้อย
+                    @elseif(request('sort') == 'quantity_desc') จำนวนมาก
+                    @else เรียงตาม
+                    @endif
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item {{ request('sort') == 'name_asc' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}">ชื่อ (ก-ฮ)</a></li>
+                    <li><a class="dropdown-item {{ request('sort') == 'name_desc' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}">ชื่อ (ฮ-ก)</a></li>
+                    <li><a class="dropdown-item {{ request('sort') == 'quantity_asc' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'quantity_asc'])) }}">จำนวนน้อย → มาก</a></li>
+                    <li><a class="dropdown-item {{ request('sort') == 'quantity_desc' ? 'active' : '' }}" 
+                        href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'quantity_desc'])) }}">จำนวนมาก → น้อย</a></li>
+                </ul>
+            </div>
+
+            <!-- Right side buttons -->
+            <div class="ms-auto d-flex gap-2">
+                <a class="btn btn-outline-success btn-sm" href="{{ route('storehouses.export.csv') }}">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
+                </a>
+                <a class="btn btn-outline-danger btn-sm" href="{{ route('storehouses.export.pdf') }}">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                </a>
+                <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">
+                    <i class="bi bi-plus-circle me-1"></i> เพิ่มสินค้า
+                </button>
+            </div>
+        </form>
+    </div>
+
+    {{-- Table --}}
+    <div class="card-custom-secondary mt-3">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-header-custom">
+                    <tr>
+                        <th class="text-center">รหัส</th>
+                        <th class="text-center">ชื่อสินค้า</th>
+                        <th class="text-center">ประเภท</th>
+                        <th class="text-center">ฟาร์ม</th>
+                        <th class="text-center">จำนวน</th>
+                        <th class="text-center">หน่วย</th>
+                        <th class="text-center">สถานะ</th>
+                        <th class="text-center">วันหมดอายุ</th>
+                        <th class="text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($storehouses as $item)
+                        <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $item->id }}">
+                            <td class="text-center"><strong>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</strong></td>
+                            <td>{{ $item->item_name }}</td>
+                            <td class="text-center">
+                                @if($item->category == 'อาหาร')
+                                    <span class="badge bg-success">อาหาร</span>
+                                @elseif($item->category == 'ยา')
+                                    <span class="badge bg-warning">ยา</span>
+                                @elseif($item->category == 'วัคซีน')
+                                    <span class="badge bg-info">วัคซีน</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ $item->category }}</span>
+                                @endif
+                            </td>
+                            <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
+                            <td class="text-center"><strong>{{ number_format($item->quantity, 2) }}</strong></td>
+                            <td class="text-center">{{ $item->unit }}</td>
+                            <td class="text-center">
+                                @if($item->quantity <= 0)
+                                    <span class="badge bg-danger">หมด</span>
+                                @elseif($item->quantity < $item->min_quantity)
+                                    <span class="badge bg-warning">ใกล้หมด</span>
+                                @else
+                                    <span class="badge bg-success">พร้อมใช้</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if($item->expire_date)
+                                    {{ \Carbon\Carbon::parse($item->expire_date)->format('d/m/Y') }}
+                                    @if(\Carbon\Carbon::parse($item->expire_date)->isPast())
+                                        <small class="text-danger d-block">หมดอายุแล้ว!</small>
+                                    @elseif(\Carbon\Carbon::parse($item->expire_date)->diffInDays() < 30)
+                                        <small class="text-warning d-block">ใกล้หมดอายุ</small>
+                                    @endif
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                    data-bs-target="#viewModal{{ $item->id }}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <a href="{{ route('storehouses.edit', $item->id) }}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-pencil-square"></i>
+                                </a>
+                                <form action="{{ route('storehouses.delete', $item->id) }}" method="POST" class="d-inline"
+                                    onsubmit="return confirm('ต้องการลบสินค้านี้หรือไม่?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="text-center text-danger">❌ ไม่มีข้อมูลสินค้าในคลัง</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     </div>
 
-    {{-- Modal Create --}}
-    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    {{-- Pagination --}}
+    <div class="d-flex justify-content-between mt-3">
+        <div>
+            แสดง {{ $storehouses->firstItem() ?? 0 }} ถึง {{ $storehouses->lastItem() ?? 0 }} จาก
+            {{ $storehouses->total() ?? 0 }} รายการ
+        </div>
+        <div>
+            {{ $storehouses->withQueryString()->links() }}
+        </div>
+    </div>
+</div>
+
+{{-- View Modals --}}
+@foreach ($storehouses as $item)
+    <div class="modal fade" id="viewModal{{ $item->id }}" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark text-light">
+            <div class="modal-content">
                 <div class="modal-header">
-                    <h5>เพิ่มสินค้าใหม่เข้าคลัง</h5>
+                    <h5 class="modal-title">รายละเอียดสินค้า - {{ $item->item_name }}</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('storehouses.create') }}" method="POST" enctype="multipart/form-data">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label>ฟาร์ม</label>
-                            <select name="farm_id" class="form-select">
-                                @foreach ($farms as $farm)
-                                    <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                @endforeach
-                            </select>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td width="40%"><strong>รหัสสินค้า:</strong></td>
+                                    <td>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ชื่อสินค้า:</strong></td>
+                                    <td>{{ $item->item_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ประเภท:</strong></td>
+                                    <td>{{ $item->category }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ฟาร์ม:</strong></td>
+                                    <td>{{ $item->farm->farm_name ?? '-' }}</td>
+                                </tr>
+                            </table>
                         </div>
-                        <div class="mb-3">
-                            <label>ประเภทรายการ</label>
-                            <select name="item_type" class="form-select" required>
-                                <option value="">-- ประเภทรายการ --</option>
-                                <option value="feed">อาหาร</option>
-                                <option value="medicine">ยา</option>
-                                <option value="vaccine">วัคซีน</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label>ชื่อรายการ</label>
-                            <input type="text" name="item_name" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>รหัสรายการ</label>
-                            <input type="text" name="item_code" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>หน่วย</label>
-                            <input type="text" name="unit" class="form-control">
-                        </div>
-                        <div class="mb-3">
-                            <label>โน๊ต</label>
-                            <textarea name="note" class="form-control"></textarea>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">บันทึก</button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <div class="col-md-6">
+                            <table class="table table-sm">
+                                <tr>
+                                    <td width="40%"><strong>จำนวน:</strong></td>
+                                    <td><strong>{{ number_format($item->quantity, 2) }} {{ $item->unit }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>จำนวนขั้นต่ำ:</strong></td>
+                                    <td>{{ number_format($item->min_quantity ?? 0, 2) }} {{ $item->unit }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>วันหมดอายุ:</strong></td>
+                                    <td>
+                                        @if($item->expire_date)
+                                            {{ \Carbon\Carbon::parse($item->expire_date)->format('d/m/Y') }}
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>หมายเหตุ:</strong></td>
+                                    <td>{{ $item->note ?? '-' }}</td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
-                </form>
+                </div>
+                <div class="modal-footer">
+                    <a href="{{ route('storehouses.edit', $item->id) }}" class="btn btn-warning">
+                        <i class="bi bi-pencil-square"></i> แก้ไข
+                    </a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                </div>
             </div>
         </div>
     </div>
-    {{-- End Modal Create --}}
+@endforeach
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    @include('admin.js')
-</body>
+<style>
+    .clickable-row {
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
 
-</html>
+    .clickable-row:hover {
+        background-color: #FFF5E6 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
+    }
+
+    .clickable-row:active {
+        transform: translateY(0);
+    }
+
+    .clickable-row td:last-child {
+        pointer-events: none;
+    }
+
+    .clickable-row td:last-child > * {
+        pointer-events: auto;
+    }
+
+    .dropdown-menu .dropdown-item.active {
+        background-color: #FF6500;
+        color: white;
+    }
+</style>
+@endsection
