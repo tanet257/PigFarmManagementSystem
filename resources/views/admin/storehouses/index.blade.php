@@ -358,6 +358,6 @@
     </style>
 
     @push('scripts')
-        <script src="{{ asset('admin/js/pages/storehouses.js') }}"></script>
+        <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
     @endpush
 @endsection

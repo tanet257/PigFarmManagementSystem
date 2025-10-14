@@ -315,6 +315,6 @@
     </style>
 
     @push('scripts')
-        <script src="{{ asset('admin/js/pages/dairy_records.js') }}"></script>
+        <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
     @endpush
 @endsection
