@@ -9,9 +9,9 @@
                 <div class="mb-4">
                     <i class="fas fa-check-circle text-success" style="font-size: 80px;"></i>
                 </div>
-                
+
                 <h2 class="mb-3" style="color: #FF5B22;">ลงทะเบียนสำเร็จ!</h2>
-                
+
                 <div class="alert alert-info mb-4">
                     <i class="fas fa-info-circle me-2"></i>
                     <strong>บัญชีของคุณรอการอนุมัติจาก Admin</strong>
@@ -41,7 +41,8 @@
                 </p>
 
                 <div class="d-grid gap-2">
-                    <a href="{{ route('home') }}" class="btn btn-lg" style="background-color: #FF5B22; border-color: #FF5B22; color: white;">
+                    <a href="{{ route('home') }}" class="btn btn-lg"
+                        style="background-color: #FF5B22; border-color: #FF5B22; color: white;">
                         <i class="fas fa-home me-2"></i>กลับสู่หน้าหลัก
                     </a>
                 </div>

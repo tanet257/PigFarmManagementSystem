@@ -20,8 +20,8 @@ Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/admin_index', [AdminController::class, 'admin_index'])->name('admin.index');
 
 //------------------- route registration pending ---------------//
-Route::get('/registration-pending', function () {
-    return view('auth.registration-pending');
+Route::get('/registration_pending', function () {
+    return view('auth.registration_pending');
 })->name('registration.pending');
 
 //------------------- route batch ------------------------------//
@@ -178,20 +178,18 @@ Route::prefix('pig_sale')->middleware(['auth'])->group(function () {
     Route::get('/{id}', [PigSaleController::class, 'show'])->name('pig_sale.show');
     Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sale.edit');
     Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sale.update');
-    Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sale.destroy');
+    Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sale.cancel');
     //------------------- route export batch ---------------------//
     Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sale.export.csv');
     Route::get('/export/pdf', [PigSaleController::class, 'exportPdf'])->name('pig_sale.export.pdf');
-
-
 });
 
 //------------------- route notifications --------------------//
 Route::prefix('notifications')->middleware(['auth'])->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
-    Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
-    Route::post('/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
-    Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_read');
+    Route::get('/unread_count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
+    Route::post('/{id}/mark_as_read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
+    Route::post('/mark_all_read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_read');
     Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
@@ -201,17 +199,18 @@ Route::prefix('user_management')->middleware(['auth', 'permission:manage_users']
     Route::get('/pending', [UserManagementController::class, 'pending'])->name('users.pending');
     Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
     Route::post('/{id}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
-    Route::post('/{id}/assign-role', [UserManagementController::class, 'assignRole'])->name('users.assign_role');
+    Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('users.assign_role');
     Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 });
 
 //------------------- route user approval --------------------//
 use App\Http\Controllers\UserApprovalController;
-Route::prefix('admin/user-approval')->middleware(['auth', 'permission:manage_users'])->group(function () {
+
+Route::prefix('admin/user_approval')->middleware(['auth', 'permission:manage_users'])->group(function () {
     Route::get('/', [UserApprovalController::class, 'index'])->name('admin.user_approval.index');
     Route::post('/{user}/approve', [UserApprovalController::class, 'approve'])->name('admin.user_approval.approve');
     Route::post('/{user}/reject', [UserApprovalController::class, 'reject'])->name('admin.user_approval.reject');
-    Route::post('/{user}/update-roles', [UserApprovalController::class, 'updateRoles'])->name('admin.user_approval.update_roles');
+    Route::post('/{user}/update_roles', [UserApprovalController::class, 'updateRoles'])->name('admin.user_approval.update_roles');
     Route::post('/{user}/reopen', [UserApprovalController::class, 'reopen'])->name('admin.user_approval.reopen');
     Route::post('/{user}/suspend', [UserApprovalController::class, 'suspend'])->name('admin.user_approval.suspend');
 });
