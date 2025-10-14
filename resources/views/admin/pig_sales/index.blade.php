@@ -11,82 +11,38 @@
 
         {{-- Toolbar --}}
         <div class="card-custom-secondary mb-3">
-            <form method="GET" action="{{ route('pig_sale.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Date Filter Dropdown (Orange) -->
-                <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #FF6500; color: white; border: none;">
-                        <i class="bi bi-calendar"></i>
-                        @if (request('selected_date') == 'today')
-                            วันนี้
-                        @elseif(request('selected_date') == 'this_week')
-                            สัปดาห์นี้
-                        @elseif(request('selected_date') == 'this_month')
-                            เดือนนี้
-                        @elseif(request('selected_date') == 'this_year')
-                            ปีนี้
-                        @else
-                            วันที่ทั้งหมด
-                        @endif
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item"
-                                href="{{ route('pig_sale.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
-                        </li>
-                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
-                                href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
-                        </li>
-                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
-                                href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
-                        </li>
-                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
-                                href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
-                        </li>
-                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
-                                href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
-                        </li>
-                    </ul>
-                </div>
+            <form method="GET" action="{{ route('pig_sale.index') }}" class="d-flex align-items-center gap-2 flex-wrap"
+                id="filterForm">
+                <!-- Date Filter (Orange) -->
+                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange">
+                    <option value="">วันที่ทั้งหมด</option>
+                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
+                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
+                    </option>
+                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
+                    </option>
+                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
+                </select>
 
-                <!-- Farm Filter Dropdown (Dark Blue) -->
-                <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #1E3E62; color: white; border: none;">
-                        <i class="bi bi-building"></i>
-                        {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item"
-                                href="{{ route('pig_sale.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a>
-                        </li>
-                        @foreach ($farms as $farm)
-                            <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
-                                    href="{{ route('pig_sale.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">
-                                    {{ $farm->farm_name }}
-                                </a></li>
-                        @endforeach
-                    </ul>
-                </div>
+                <!-- Farm Filter (Dark Blue) -->
+                <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-blue">
+                    <option value="">ฟาร์มทั้งหมด</option>
+                    @foreach ($farms as $farm)
+                        <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
+                            {{ $farm->farm_name }}
+                        </option>
+                    @endforeach
+                </select>
 
-                <!-- Batch Filter Dropdown (Dark Blue) -->
-                <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #1E3E62; color: white; border: none;">
-                        <i class="bi bi-layers"></i>
-                        {{ request('batch_id') ? $batches->find(request('batch_id'))->batch_code ?? 'รุ่น' : 'รุ่นทั้งหมด' }}
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item"
-                                href="{{ route('pig_sale.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a>
-                        </li>
-                        @foreach ($batches as $batch)
-                            <li><a class="dropdown-item {{ request('batch_id') == $batch->id ? 'active' : '' }}"
-                                    href="{{ route('pig_sale.index', array_merge(request()->all(), ['batch_id' => $batch->id])) }}">
-                                    {{ $batch->batch_code }}
-                                </a></li>
-                        @endforeach
-                    </ul>
-                </div>
+                <!-- Batch Filter (Dark Blue) -->
+                <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-blue">
+                    <option value="">รุ่นทั้งหมด</option>
+                    @foreach ($batches as $batch)
+                        <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
+                            {{ $batch->batch_code }}
+                        </option>
+                    @endforeach
+                </select>
 
                 <div class="ms-auto d-flex gap-2">
                     <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
@@ -1262,17 +1218,12 @@
         <style>
             .clickable-row {
                 cursor: pointer;
-                transition: all 0.2s ease;
+                transition: background-color 0.2s ease, box-shadow 0.2s ease;
             }
 
             .clickable-row:hover {
                 background-color: #FFF5E6 !important;
-                transform: translateY(-2px);
                 box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
-            }
-
-            .clickable-row:active {
-                transform: translateY(0);
             }
 
             /* ป้องกันปุ่มใน column จัดการไม่ให้ trigger modal */
@@ -1288,9 +1239,74 @@
                 background-color: #FF6500;
                 color: white;
             }
+
+            /* Custom Select Styling - Pure CSS (No JS lag) */
+            .filter-select-orange,
+            .filter-select-blue {
+                min-width: 180px;
+                cursor: pointer;
+                font-weight: 500;
+                transition: all 0.3s ease;
+            }
+
+            .filter-select-orange {
+                background-color: #FF6500;
+                border: none;
+                color: white;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            }
+
+            .filter-select-orange:hover {
+                background-color: #ff7a3d;
+                box-shadow: 0 4px 12px rgba(255, 91, 34, 0.3);
+            }
+
+            .filter-select-orange:focus {
+                background-color: #FF6500;
+                border-color: #FF6500;
+                box-shadow: 0 0 0 0.25rem rgba(255, 91, 34, 0.25);
+            }
+
+            .filter-select-blue {
+                background-color: #1E3E62;
+                border: none;
+                color: white;
+                background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            }
+
+            .filter-select-blue:hover {
+                background-color: #2d5a8a;
+                box-shadow: 0 4px 12px rgba(30, 62, 98, 0.3);
+            }
+
+            .filter-select-blue:focus {
+                background-color: #1E3E62;
+                border-color: #1E3E62;
+                box-shadow: 0 0 0 0.25rem rgba(30, 62, 98, 0.25);
+            }
+
+            /* Style select dropdown options */
+            .filter-select-orange option,
+            .filter-select-blue option {
+                background-color: white;
+                color: #333;
+                padding: 8px 12px;
+            }
         </style>
     @endsection
 
     @push('scripts')
-        <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Auto-submit form on filter change
+                const filterForm = document.getElementById('filterForm');
+                const filterSelects = filterForm.querySelectorAll('select');
+
+                filterSelects.forEach(function(select) {
+                    select.addEventListener('change', function() {
+                        filterForm.submit();
+                    });
+                });
+            });
+        </script>
     @endpush

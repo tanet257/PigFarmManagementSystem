@@ -95,12 +95,11 @@
         border: 1px solid var(--border-color);
         border-radius: 8px;
         box-shadow: var(--shadow-sm);
-        transition: all 0.3s ease;
+        transition: box-shadow 0.3s ease;
     }
 
     .card:hover {
         box-shadow: var(--shadow-md);
-        transform: translateY(-2px);
     }
 
     .card-header {
@@ -115,12 +114,10 @@
         background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
         border: none;
         color: white;
-        transition: all 0.3s ease;
     }
 
     .btn-primary:hover {
         background: linear-gradient(135deg, var(--secondary-orange), var(--primary-orange));
-        transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(255, 91, 34, 0.3);
     }
 
@@ -141,7 +138,6 @@
 
     .sidebar .sidebar-link {
         color: var(--text-light);
-        transition: all 0.3s ease;
     }
 
     .sidebar .sidebar-link:hover {
@@ -230,7 +226,6 @@
     }
 
     .card-custom:hover {
-
         box-shadow: 0 8px 20px rgba(255, 91, 34, 0.3);
     }
 
@@ -244,7 +239,6 @@
     }
 
     .card-custom-secondary:hover {
-
         box-shadow: 0 8px 20px rgba(30, 62, 98, 0.3);
     }
 
