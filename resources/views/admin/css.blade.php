@@ -216,6 +216,27 @@
         border-radius: 0.375rem;
     }
 
+    /* แก้ไขขนาด dropdown-menu ให้ติดกับ parent ที่มี dropdown class */
+    .dropdown {
+        position: relative;
+    }
+
+    .dropdown .dropdown-menu {
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+    }
+
+    /* สำหรับ barn และ pen dropdown ที่ไม่ได้อยู่ใน .dropdown wrapper */
+    .barn-dropdown,
+    .pen-dropdown {
+        position: absolute !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
     .dropdown-item {
         padding: 0.5rem 1rem;
         transition: all 0.2s ease;

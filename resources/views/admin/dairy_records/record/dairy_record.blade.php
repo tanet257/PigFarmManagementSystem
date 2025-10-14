@@ -95,13 +95,15 @@
                                                     class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
                                             </div>
                                             <div class="col-md-4">
-                                                <button
-                                                    class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown"
-                                                    aria-expanded="false"><span>เลือกเล้า</span></button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="feed_use[0][barn_id]"
-                                                    value="">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown"
+                                                        aria-expanded="false"><span>เลือกเล้า</span></button>
+                                                    <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                    <input type="hidden" class="barn-id" name="feed_use[0][barn_id]"
+                                                        value="">
+                                                </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="dropdown">
@@ -171,24 +173,28 @@
                                                     class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
                                             </div>
                                             <div class="col-md-2">
-                                                <button
-                                                    class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกเล้า</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="medicine_use[0][barn_id]"
-                                                    value="">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกเล้า</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                    <input type="hidden" class="barn-id" name="medicine_use[0][barn_id]"
+                                                        value="">
+                                                </div>
                                             </div>
                                             <div class="col-md-2">
-                                                <button
-                                                    class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกคอก</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                <input type="hidden" class="barn-pen-json"
-                                                    name="medicine_use[0][barn_pen]" value="">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกคอก</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 pen-dropdown"></ul>
+                                                    <input type="hidden" class="barn-pen-json"
+                                                        name="medicine_use[0][barn_pen]" value="">
+                                                </div>
                                             </div>
                                             <div class="col-md-5">
                                                 <div class="dropdown">
@@ -284,24 +290,28 @@
                                                     class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
                                             </div>
                                             <div class="col-md-3">
-                                                <button
-                                                    class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกเล้า</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="dead_pig[0][barn_id]"
-                                                    value="">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกเล้า</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                    <input type="hidden" class="barn-id" name="dead_pig[0][barn_id]"
+                                                        value="">
+                                                </div>
                                             </div>
                                             <div class="col-md-3">
-                                                <button
-                                                    class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกคอก</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                <input type="hidden" class="barn-pen-json" name="dead_pig[0][barn_pen]"
-                                                    value="">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกคอก</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 pen-dropdown"></ul>
+                                                    <input type="hidden" class="barn-pen-json" name="dead_pig[0][barn_pen]"
+                                                        value="">
+                                                </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <input type="number" name="dead_pig[0][quantity]" class="form-control"
