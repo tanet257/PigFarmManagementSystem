@@ -83,21 +83,30 @@
                                                 placeholder="ว/ด/ป ชม.นาที" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <select name="feed[0][item_type]" class="form-select item-type-select" required>
-                                                <option value="">-- เลือกประเภท --</option>
-                                                <option value="feed">ค่าอาหาร</option>
-                                            </select>
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-type-dropdown-btn"
+                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false"><span>--
+                                                        เลือกประเภท --</span></button>
+                                                <ul class="dropdown-menu w-100">
+                                                    <li><a class="dropdown-item" href="#"
+                                                            data-value="feed">ค่าอาหาร</a></li>
+                                                </ul>
+                                                <input type="hidden" name="feed[0][item_type]" class="item-type-hidden"
+                                                    required>
+                                            </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="dropdown">
                                                 <button
                                                     class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-dropdown-btn"
-                                                    type="button" data-bs-toggle="dropdown"
-                                                    aria-expanded="false"><span>-- เลือกชื่อประเภทอาหารหมู --</span></button>
+                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false"><span>--
+                                                        เลือกชื่อประเภทอาหารหมู --</span></button>
                                                 <ul class="dropdown-menu w-100 item-dropdown-menu">
                                                     <!-- ตัวเลือกจะ populate หลังจากเลือก batch และ item type -->
                                                 </ul>
-                                                <input type="hidden" name="feed[0][item_code]" class="item-code-hidden" required>
+                                                <input type="hidden" name="feed[0][item_code]" class="item-code-hidden"
+                                                    required>
                                                 <input type="hidden" name="feed[0][item_name]" class="item-name-hidden">
                                             </div>
                                         </div>
@@ -112,9 +121,16 @@
                                                 placeholder="ราคาต่อชิ้น">
                                         </div>
                                         <div class="col-md-3">
-                                            <select name="feed[0][unit]" class="form-select unit-select">
-                                                <option value="">- เลือกหน่วย -</option>
-                                            </select>
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center unit-dropdown-btn"
+                                                    type="button" data-bs-toggle="dropdown"
+                                                    aria-expanded="false"><span>- เลือกหน่วย -</span></button>
+                                                <ul class="dropdown-menu w-100 unit-dropdown-menu">
+                                                    <!-- ตัวเลือกจะ populate ตาม item type -->
+                                                </ul>
+                                                <input type="hidden" name="feed[0][unit]" class="unit-hidden">
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
                                             <input type="number" name="feed[0][transport_cost]" class="form-control"
@@ -172,11 +188,18 @@
                                                 class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
                                         </div>
                                         <div class="col-md-4">
-                                            <select name="medicine[0][item_type]" class="form-select item-type-select"
-                                                required>
-                                                <option value="">-- เลือกประเภท --</option>
-                                                <option value="medicine">ค่ายา/วัคซีน</option>
-                                            </select>
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-type-dropdown-btn"
+                                                    type="button" data-bs-toggle="dropdown"
+                                                    aria-expanded="false"><span>-- เลือกประเภท --</span></button>
+                                                <ul class="dropdown-menu w-100">
+                                                    <li><a class="dropdown-item" href="#"
+                                                            data-value="medicine">ค่ายา/วัคซีน</a></li>
+                                                </ul>
+                                                <input type="hidden" name="medicine[0][item_type]"
+                                                    class="item-type-hidden" required>
+                                            </div>
                                         </div>
                                         <div class="col-md-4">
                                             <div class="dropdown">
@@ -187,8 +210,10 @@
                                                 <ul class="dropdown-menu w-100 item-dropdown-menu">
                                                     <!-- ตัวเลือกจะ populate หลังจากเลือก batch และ item type -->
                                                 </ul>
-                                                <input type="hidden" name="medicine[0][item_code]" class="item-code-hidden" required>
-                                                <input type="hidden" name="medicine[0][item_name]" class="item-name-hidden">
+                                                <input type="hidden" name="medicine[0][item_code]"
+                                                    class="item-code-hidden" required>
+                                                <input type="hidden" name="medicine[0][item_name]"
+                                                    class="item-name-hidden">
                                             </div>
                                         </div>
 
@@ -202,9 +227,16 @@
                                                 placeholder="ราคาต่อหน่วย">
                                         </div>
                                         <div class="col-md-4">
-                                            <select name="medicine[0][unit]" class="form-select unit-select">
-                                                <option value="">- เลือกหน่วย -</option>
-                                            </select>
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center unit-dropdown-btn"
+                                                    type="button" data-bs-toggle="dropdown"
+                                                    aria-expanded="false"><span>- เลือกหน่วย -</span></button>
+                                                <ul class="dropdown-menu w-100 unit-dropdown-menu">
+                                                    <!-- ตัวเลือกจะ populate ตาม item type -->
+                                                </ul>
+                                                <input type="hidden" name="medicine[0][unit]" class="unit-hidden">
+                                            </div>
                                         </div>
 
                                         <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
@@ -258,10 +290,18 @@
                                                 class="form-control monthly-date-input" placeholder="เดือน/ปี" required>
                                         </div>
                                         <div class="col-md-5">
-                                            <select name="monthly[0][item_type]" class="form-select" required>
-                                                <option value="">-- เลือกประเภทค่าใช้จ่าย --</option>
-                                                <option value="monthly">ค่าใช้จ่ายประจำเดือน</option>
-                                            </select>
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                                    type="button" data-bs-toggle="dropdown"
+                                                    aria-expanded="false"><span>-- เลือกประเภทค่าใช้จ่าย --</span></button>
+                                                <ul class="dropdown-menu w-100">
+                                                    <li><a class="dropdown-item monthly-type-item" href="#"
+                                                            data-value="monthly">ค่าใช้จ่ายประจำเดือน</a></li>
+                                                </ul>
+                                                <input type="hidden" name="monthly[0][item_type]"
+                                                    class="monthly-type-hidden" required>
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
                                             <input type="number" name="monthly[0][price]" class="form-control"
@@ -455,7 +495,8 @@
 
                     // Clear dropdown menu
                     itemDropdownMenu.innerHTML = '';
-                    itemDropdownBtn.querySelector('span').textContent = type === 'feed' ? '-- เลือกชื่อประเภทอาหารหมู --' : '-- เลือกชื่อยา/วัคซีน --';
+                    itemDropdownBtn.querySelector('span').textContent = type === 'feed' ?
+                        '-- เลือกชื่อประเภทอาหารหมู --' : '-- เลือกชื่อยา/วัคซีน --';
 
                     if (type && batchId && storehousesByTypeAndBatch[type]?.[batchId]) {
                         Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
@@ -479,21 +520,34 @@
                 }
 
                 function updateUnitOptions(row) {
-                    const type = row.querySelector('.item-type-select')?.value;
-                    const unitSelect = row.querySelector('.unit-select');
-                    if (!unitSelect) return;
+                    const typeHidden = row.querySelector('.item-type-hidden');
+                    const type = typeHidden?.value;
+                    const unitDropdownMenu = row.querySelector('.unit-dropdown-menu');
+                    const unitDropdownBtn = row.querySelector('.unit-dropdown-btn');
+                    if (!unitDropdownMenu || !unitDropdownBtn) return;
 
                     let units = [];
                     if (row.classList.contains('monthly-row')) units = ['บาท'];
                     else units = unitsByType[type] || [];
 
-                    unitSelect.innerHTML = '<option value="">- เลือกหน่วย -</option>';
+                    // Clear dropdown menu
+                    unitDropdownMenu.innerHTML = '';
+                    unitDropdownBtn.querySelector('span').textContent = '- เลือกหน่วย -';
+
                     units.forEach(u => {
-                        const o = document.createElement('option');
-                        o.value = u;
-                        o.textContent = u;
-                        unitSelect.appendChild(o);
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href = '#';
+                        a.setAttribute('data-value', u);
+                        a.textContent = u;
+                        li.appendChild(a);
+                        unitDropdownMenu.appendChild(li);
                     });
+
+                    // Clear hidden input
+                    const unitHidden = row.querySelector('.unit-hidden');
+                    if (unitHidden) unitHidden.value = '';
                 }
 
                 function updateRowOptions(row) {
@@ -588,7 +642,9 @@
                 // ITEM DROPDOWN CLICK HANDLER
                 // ---------------------
                 document.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('dropdown-item') && e.target.closest('.item-dropdown-menu')) {
+                    // Handle item dropdown clicks
+                    if (e.target.classList.contains('dropdown-item') && e.target.closest(
+                        '.item-dropdown-menu')) {
                         e.preventDefault();
                         const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
                         if (!row) return;
@@ -599,11 +655,58 @@
                         const codeHidden = row.querySelector('.item-code-hidden');
                         const nameHidden = row.querySelector('.item-name-hidden');
 
-                        if (itemDropdownBtn) {
-                            itemDropdownBtn.querySelector('span').textContent = itemName;
-                        }
+                        if (itemDropdownBtn) itemDropdownBtn.querySelector('span').textContent = itemName;
                         if (codeHidden) codeHidden.value = itemCode;
                         if (nameHidden) nameHidden.value = itemName;
+                    }
+
+                    // Handle item type dropdown clicks
+                    if (e.target.classList.contains('dropdown-item') && e.target.closest(
+                            '.item-type-dropdown-btn')?.nextElementSibling.contains(e.target)) {
+                        e.preventDefault();
+                        const row = e.target.closest('.feed-row, .medicine-row');
+                        if (!row) return;
+
+                        const value = e.target.getAttribute('data-value');
+                        const text = e.target.textContent;
+                        const btn = row.querySelector('.item-type-dropdown-btn');
+                        const hidden = row.querySelector('.item-type-hidden');
+
+                        if (btn) btn.querySelector('span').textContent = text;
+                        if (hidden) hidden.value = value;
+
+                        // Update item and unit dropdowns
+                        updateRowOptions(row);
+                    }
+
+                    // Handle unit dropdown clicks
+                    if (e.target.classList.contains('dropdown-item') && e.target.closest(
+                        '.unit-dropdown-menu')) {
+                        e.preventDefault();
+                        const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
+                        if (!row) return;
+
+                        const value = e.target.getAttribute('data-value');
+                        const btn = row.querySelector('.unit-dropdown-btn');
+                        const hidden = row.querySelector('.unit-hidden');
+
+                        if (btn) btn.querySelector('span').textContent = value;
+                        if (hidden) hidden.value = value;
+                    }
+
+                    // Handle monthly type dropdown clicks
+                    if (e.target.classList.contains('monthly-type-item')) {
+                        e.preventDefault();
+                        const row = e.target.closest('.monthly-row');
+                        if (!row) return;
+
+                        const value = e.target.getAttribute('data-value');
+                        const text = e.target.textContent;
+                        const btn = e.target.closest('.dropdown').querySelector('button');
+                        const hidden = row.querySelector('.monthly-type-hidden');
+
+                        if (btn) btn.querySelector('span').textContent = text;
+                        if (hidden) hidden.value = value;
                     }
                 });
 
@@ -615,15 +718,6 @@
                         const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
                         if (row) row.remove();
                     }
-                });
-
-                // ---------------------
-                // ITEM TYPE SELECT CHANGE
-                // ---------------------
-                document.addEventListener('change', function(e) {
-                    const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
-                    if (!row) return;
-                    if (e.target.classList.contains('item-type-select')) updateRowOptions(row);
                 });
 
                 // ---------------------
