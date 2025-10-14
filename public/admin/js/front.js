@@ -28,10 +28,28 @@ $(function () {
         element.setAttribute('data-bs-toggle', 'tooltip');
     });
 
-    // Handle dropdown conversion
+    // Handle dropdown conversion and initialization
     document.querySelectorAll('[data-toggle="dropdown"]').forEach(function(element) {
         element.setAttribute('data-bs-toggle', 'dropdown');
     });
+
+    // Initialize all Bootstrap 5 dropdowns with a small delay
+    setTimeout(function() {
+        if (typeof bootstrap !== 'undefined') {
+            var dropdownElementList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                // Only initialize if not already initialized
+                if (!bootstrap.Dropdown.getInstance(dropdownToggleEl)) {
+                    return new bootstrap.Dropdown(dropdownToggleEl, {
+                        autoClose: true
+                    });
+                }
+            });
+            console.log('Bootstrap dropdowns initialized:', dropdownList.length);
+        } else {
+            console.error('Bootstrap is not loaded!');
+        }
+    }, 100);
 
     // ------------------------------------------------------- //
     // Tooltips init (Bootstrap 5)
