@@ -309,8 +309,8 @@
                                                         <span>เลือกคอก</span>
                                                     </button>
                                                     <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                    <input type="hidden" class="barn-pen-json" name="dead_pig[0][barn_pen]"
-                                                        value="">
+                                                    <input type="hidden" class="barn-pen-json"
+                                                        name="dead_pig[0][barn_pen]" value="">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
