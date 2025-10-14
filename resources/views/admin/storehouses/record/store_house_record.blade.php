@@ -12,22 +12,44 @@
                 <form action="{{ route('store_house_record.upload') }}" method="post" enctype="multipart/form-data">
                     @csrf
 
-                    <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3"
-                        >
-                        <div class="col-md-5">
-                            <label>ฟาร์ม</label>
-                            <select name="farm_id" id="farmSelect" class="form-select" title="เลือกฟาร์ม" required>
-                                <option value="">-- เลือกฟาร์ม --</option>
-                                @foreach ($farms as $farm)
-                                    <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <label>รุ่น / Batch</label>
-                            <select name="batch_id" class="form-select" id="batchSelect" title="เลือกรุ่น" required>
-                                <option value="">-- เลือกรุ่น --</option>
-                            </select>
+                    <div class="card card-custom-secondary">
+                        <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3">
+
+                            <div class="col-md-5">
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="farmDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span>เลือกฟาร์ม</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100" aria-labelledby="farmDropdownBtn" id="farmDropdownMenu">
+                                        @foreach ($farms as $farm)
+                                            <li>
+                                                <a class="dropdown-item" href="#"
+                                                    data-farm-id="{{ $farm->id }}">{{ $farm->farm_name }}</a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                    <input type="hidden" name="farm_id" id="farmSelect" value="">
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="batchDropdownBtn" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <span>เลือกรุ่น</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100" aria-labelledby="batchDropdownBtn"
+                                        id="batchDropdownMenu">
+                                        <!-- ตัวเลือกจะ populate หลังจากเลือกฟาร์ม -->
+                                    </ul>
+                                    <input type="hidden" name="batch_id" id="batchSelect" value="">
+                                </div>
+                            </div>
+
                         </div>
                     </div>
 
@@ -232,8 +254,7 @@
                                         <!-- แถวบน: เดือน/ปี + ประเภทค่าใช้จ่าย -->
                                         <div class="col-md-4">
                                             <input type="text" name="monthly[0][date]"
-                                                class="form-control monthly-date-input" placeholder="เดือน/ปี"
-                                                 required>
+                                                class="form-control monthly-date-input" placeholder="เดือน/ปี" required>
                                         </div>
                                         <div class="col-md-5">
                                             <select name="monthly[0][item_type]" class="form-select" required>
@@ -280,8 +301,83 @@
                 const batches = @json($batches);
                 const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
                 const unitsByType = @json($unitsByType->map(fn($c) => $c->values())->toArray());
-                const farmSelect = document.getElementById('farmSelect');
-                const batchSelect = document.getElementById('batchSelect');
+
+                // Farm and Batch Dropdown Elements
+                const farmDropdownBtn = document.getElementById('farmDropdownBtn');
+                const farmDropdownMenu = document.getElementById('farmDropdownMenu');
+                const farmSelect = document.getElementById('farmSelect'); // hidden input
+
+                const batchDropdownBtn = document.getElementById('batchDropdownBtn');
+                const batchDropdownMenu = document.getElementById('batchDropdownMenu');
+                const batchSelect = document.getElementById('batchSelect'); // hidden input
+
+                // ---------------------
+                // FARM DROPDOWN HANDLER
+                // ---------------------
+                farmDropdownMenu.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('dropdown-item')) {
+                        e.preventDefault();
+                        const farmId = e.target.getAttribute('data-farm-id');
+                        const farmName = e.target.textContent;
+
+                        // Update button text
+                        farmDropdownBtn.querySelector('span').textContent = farmName;
+
+                        // Update hidden input
+                        farmSelect.value = farmId;
+
+                        // Populate batch dropdown
+                        populateBatchDropdown(parseInt(farmId));
+
+                        // Update hidden inputs in all rows
+                        ['feedRowsContainer', 'medicineRowsContainer', 'monthlyRowsContainer'].forEach(
+                            updateHiddenInputs);
+                    }
+                });
+
+                // ---------------------
+                // BATCH DROPDOWN HANDLER
+                // ---------------------
+                batchDropdownMenu.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('dropdown-item')) {
+                        e.preventDefault();
+                        const batchId = e.target.getAttribute('data-batch-id');
+                        const batchCode = e.target.textContent;
+
+                        // Update button text
+                        batchDropdownBtn.querySelector('span').textContent = batchCode;
+
+                        // Update hidden input
+                        batchSelect.value = batchId;
+
+                        // Update hidden inputs and refresh item options
+                        ['feedRowsContainer', 'medicineRowsContainer', 'monthlyRowsContainer'].forEach(
+                            updateHiddenInputs);
+                        document.querySelectorAll('.feed-row, .medicine-row, .monthly-row').forEach(
+                            updateRowOptions);
+                    }
+                });
+
+                // ---------------------
+                // POPULATE BATCH DROPDOWN
+                // ---------------------
+                function populateBatchDropdown(farmId) {
+                    batchDropdownMenu.innerHTML = '';
+                    batchDropdownBtn.querySelector('span').textContent = 'เลือกรุ่น';
+                    batchSelect.value = '';
+
+                    const filteredBatches = batches.filter(b => b.farm_id === farmId);
+                    filteredBatches.forEach(batch => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href = '#';
+                        a.setAttribute('data-batch-id', batch.id);
+                        a.textContent = batch.batch_code;
+                        li.appendChild(a);
+                        batchDropdownMenu.appendChild(li);
+                    });
+                }
 
                 // ---------------------
                 // DATE INPUT CUSTOM
@@ -408,13 +504,6 @@
                     });
                     ['feedRowsContainer', 'medicineRowsContainer', 'monthlyRowsContainer'].forEach(
                         updateHiddenInputs);
-                });
-
-                batchSelect.addEventListener('change', function() {
-                    ['feedRowsContainer', 'medicineRowsContainer', 'monthlyRowsContainer'].forEach(
-                        updateHiddenInputs);
-                    document.querySelectorAll('.feed-row, .medicine-row, .monthly-row').forEach(
-                        updateRowOptions);
                 });
 
                 // ---------------------

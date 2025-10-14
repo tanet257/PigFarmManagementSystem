@@ -119,12 +119,14 @@
                         <li>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class=" dropdown-item  text-danger">
+                                <button type="submit" class="dropdown-item text-white"
+                                    style="background-color: #273F4F; border-radius: 8px;">
                                     <i class="bi bi-box-arrow-right me-1"></i> ออกจากระบบ
                                 </button>
                             </form>
                         </li>
                     </ul>
+
                 </div>
 
             </div>
