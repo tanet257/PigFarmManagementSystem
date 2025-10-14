@@ -643,6 +643,73 @@
                 // ITEM DROPDOWN CLICK HANDLER
                 // ---------------------
                 document.addEventListener('click', function(e) {
+                    // Handle item type dropdown button clicks - validate farm and batch selection
+                    if (e.target.closest('.item-type-dropdown-btn')) {
+                        const farmId = farmSelect.value;
+                        const batchId = batchSelect.value;
+
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert('กรุณาเลือกฟาร์มก่อน');
+                            return false;
+                        }
+                        if (!batchId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert('กรุณาเลือกรุ่นก่อน');
+                            return false;
+                        }
+                    }
+
+                    // Handle item dropdown button clicks - validate prerequisites
+                    if (e.target.closest('.item-dropdown-btn')) {
+                        const row = e.target.closest('.feed-row, .medicine-row');
+                        if (!row) return;
+
+                        const farmId = farmSelect.value;
+                        const batchId = batchSelect.value;
+                        const typeHidden = row.querySelector('.item-type-hidden');
+                        const itemType = typeHidden?.value;
+
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert('กรุณาเลือกฟาร์มก่อน');
+                            return false;
+                        }
+                        if (!batchId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert('กรุณาเลือกรุ่นก่อน');
+                            return false;
+                        }
+                        if (!itemType) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            alert('กรุณาเลือกประเภทก่อน');
+                            return false;
+                        }
+                    }
+
+                    // Handle unit dropdown button clicks - validate prerequisites
+                    if (e.target.closest('.unit-dropdown-btn')) {
+                        const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
+                        if (!row) return;
+
+                        if (!row.classList.contains('monthly-row')) {
+                            const typeHidden = row.querySelector('.item-type-hidden');
+                            const itemType = typeHidden?.value;
+
+                            if (!itemType) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                alert('กรุณาเลือกประเภทก่อน');
+                                return false;
+                            }
+                        }
+                    }
+
                     // Handle item dropdown clicks
                     if (e.target.classList.contains('dropdown-item') && e.target.closest(
                             '.item-dropdown-menu')) {
