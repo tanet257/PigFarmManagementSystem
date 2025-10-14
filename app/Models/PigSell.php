@@ -5,11 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class PigSell extends Model
+class PigSale extends Model
 {
     use HasFactory;
 
-    protected $table = 'pig_sells'; // ชื่อตาราง
+    protected $table = 'pig_sells'; // ชื่อตาราง (ยังใช้ pig_sells ในฐานข้อมูล)
 
     protected $fillable = [
         'farm_id',

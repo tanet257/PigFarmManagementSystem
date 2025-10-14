@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use App\Models\PigSell;
+use App\Models\PigSale;
 use App\Models\User;
 
 return new class extends Migration
@@ -17,7 +17,7 @@ return new class extends Migration
             $table->id();
 
             // อ้างอิงใบขาย
-            $table->foreignIdFor(PigSell::class)->constrained()->onDelete('cascade');
+            $table->foreignIdFor(PigSale::class)->constrained()->onDelete('cascade');
 
             // ข้อมูลการชำระเงิน
             $table->string('payment_number')->unique(); // เลขที่การชำระ (PAY-2025-001)

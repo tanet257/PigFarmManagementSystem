@@ -15,7 +15,7 @@ use App\Models\Farm;
 use App\Models\Batch;
 use App\Models\BatchTreatment;
 use App\Models\Cost;
-use App\Models\PigSell;
+use App\Models\PigSale;
 use App\Models\Feeding;
 use App\Models\PigDeath;
 use App\Models\PigEntryRecord;
@@ -31,7 +31,7 @@ public function dashboard()
     {
         $totalPigs = PigEntryRecord::count();
         $totalCosts = Cost::sum('total_price');
-        $totalSales = PigSell::sum('total_price');
+        $totalSales = PigSale::sum('total_price');
 
         return view('admin.view.dashboard', compact('totalPigs', 'totalCosts', 'totalSales'));
     }

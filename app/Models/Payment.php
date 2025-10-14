@@ -29,9 +29,9 @@ class Payment extends Model
 
     // ------------ Relationships ------------ //
 
-    public function pigSell()
+    public function pigSale()
     {
-        return $this->belongsTo(PigSell::class);
+        return $this->belongsTo(PigSale::class);
     }
 
     public function recordedBy()

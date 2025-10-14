@@ -40,9 +40,9 @@ class Customer extends Model
 
     // ------------ Relationships ------------ //
 
-    public function pigSells()
+    public function pigSales()
     {
-        return $this->hasMany(PigSell::class);
+        return $this->hasMany(PigSale::class);
     }
 
     // ------------ Scopes ------------ //
