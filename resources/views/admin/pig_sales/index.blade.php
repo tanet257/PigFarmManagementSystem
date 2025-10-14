@@ -9,56 +9,73 @@
         </div>
         <div class="py-2"></div>
 
-        {{-- Toolbar --}}
-        <div class="card-custom-secondary mb-3">
-            <form method="GET" action="{{ route('pig_sale.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-                <select name="selected_date" class="form-select form-select-sm" style="width: auto;"
-                    onchange="this.form.submit()">
-                    <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
-                    </option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
-                    </option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
-                </select>
+    {{-- Toolbar --}}
+    <div class="card-custom-secondary mb-3">
+        <form method="GET" action="{{ route('pig_sale.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
+            <!-- Date Filter Dropdown (Orange) -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #FF6500; color: white; border: none;">
+                    <i class="bi bi-calendar"></i> 
+                    @if(request('selected_date') == 'today') วันนี้
+                    @elseif(request('selected_date') == 'this_week') สัปดาห์นี้
+                    @elseif(request('selected_date') == 'this_month') เดือนนี้
+                    @elseif(request('selected_date') == 'this_year') ปีนี้
+                    @else วันที่ทั้งหมด
+                    @endif
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('pig_sale.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a></li>
+                    <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}" 
+                        href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a></li>
+                    <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}" 
+                        href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a></li>
+                    <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}" 
+                        href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a></li>
+                    <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}" 
+                        href="{{ route('pig_sale.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a></li>
+                </ul>
+            </div>
 
-                <select name="farm_id" class="form-select form-select-sm" style="width: auto;"
-                    onchange="this.form.submit()">
-                    <option value="">ฟาร์มทั้งหมด</option>
+            <!-- Farm Filter Dropdown (Dark Blue) -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #1E3E62; color: white; border: none;">
+                    <i class="bi bi-building"></i> {{ request('farm_id') ? ($farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม') : 'ฟาร์มทั้งหมด' }}
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('pig_sale.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a></li>
                     @foreach ($farms as $farm)
-                        <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
+                        <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}" 
+                            href="{{ route('pig_sale.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">
                             {{ $farm->farm_name }}
-                        </option>
+                        </a></li>
                     @endforeach
-                </select>
+                </ul>
+            </div>
 
-                <select name="batch_id" class="form-select form-select-sm" style="width: auto;"
-                    onchange="this.form.submit()">
-                    <option value="">รุ่นทั้งหมด</option>
+            <!-- Batch Filter Dropdown (Dark Blue) -->
+            <div class="dropdown">
+                <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" 
+                    style="background-color: #1E3E62; color: white; border: none;">
+                    <i class="bi bi-layers"></i> {{ request('batch_id') ? ($batches->find(request('batch_id'))->batch_code ?? 'รุ่น') : 'รุ่นทั้งหมด' }}
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="{{ route('pig_sale.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a></li>
                     @foreach ($batches as $batch)
-                        <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
+                        <li><a class="dropdown-item {{ request('batch_id') == $batch->id ? 'active' : '' }}" 
+                            href="{{ route('pig_sale.index', array_merge(request()->all(), ['batch_id' => $batch->id])) }}">
                             {{ $batch->batch_code }}
-                        </option>
+                        </a></li>
                     @endforeach
-                </select>
+                </ul>
+            </div>
 
-                <div class="ms-auto d-flex gap-2">
-                    <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
-                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
-                    </a>
-                    <a class="btn btn-outline-danger btn-sm" href="{{ route('pig_sale.export.pdf') }}">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-                    </a>
-                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#createModal">
-                        <i class="bi bi-plus-circle me-1"></i> บันทึกการขายใหม่
-                    </button>
-                </div>
-            </form>
-        </div>
-
-        {{-- Table --}}
+            <div class="ms-auto d-flex gap-2">
+                <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
+                </a>
+                <a class="btn btn-outline-danger btn-sm" href="{{ route('pig_sale.export.pdf') }}">        {{-- Table --}}
         <div class="card-custom-secondary mt-3">
             <div class="table-responsive">
                 <table class="table table-hover mb-0">
@@ -1200,21 +1217,30 @@
 
         .clickable-row:hover {
             background-color: #FFF5E6 !important;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
-        }
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
+    }
 
-        .clickable-row:active {
-            transform: translateY(0);
-        }
+    .clickable-row:active {
+        transform: translateY(0);
+    }
 
-        /* ป้องกันปุ่มใน column จัดการไม่ให้ trigger modal */
-        .clickable-row td:last-child {
-            pointer-events: none;
-        }
+    /* ป้องกันปุ่มใน column จัดการไม่ให้ trigger modal */
+    .clickable-row td:last-child {
+        pointer-events: none;
+    }
 
-        .clickable-row td:last-child>* {
-            pointer-events: auto;
-        }
-    </style>
+    .clickable-row td:last-child>* {
+        pointer-events: auto;
+    }
+
+    .dropdown-menu .dropdown-item.active {
+        background-color: #FF6500;
+        color: white;
+    }
+</style>
+
+@push('scripts')
+<script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
+@endpush
 @endsection
