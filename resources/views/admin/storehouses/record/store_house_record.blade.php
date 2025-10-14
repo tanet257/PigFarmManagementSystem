@@ -89,16 +89,17 @@
                                             </select>
                                         </div>
                                         <div class="col-md-4">
-                                            <select name="feed[0][item_code]" class="form-select item-code-select" required>
-                                                <option value="">-- เลือกชื่อประเภทอาหารหมู --</option>
-                                                @foreach ($storehouses as $storehouse)
-                                                    <option value="{{ $storehouse->item_code }}"
-                                                        data-name="{{ $storehouse->item_name }}">
-                                                        {{ $storehouse->item_name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <input type="hidden" name="feed[0][item_name]" class="item-name-hidden">
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-dropdown-btn"
+                                                    type="button" data-bs-toggle="dropdown"
+                                                    aria-expanded="false"><span>-- เลือกชื่อประเภทอาหารหมู --</span></button>
+                                                <ul class="dropdown-menu w-100 item-dropdown-menu">
+                                                    <!-- ตัวเลือกจะ populate หลังจากเลือก batch และ item type -->
+                                                </ul>
+                                                <input type="hidden" name="feed[0][item_code]" class="item-code-hidden" required>
+                                                <input type="hidden" name="feed[0][item_name]" class="item-name-hidden">
+                                            </div>
                                         </div>
 
                                         <!-- แถวกลาง: จำนวน + ราคาต่อชิ้น + หน่วย + ค่าขนส่ง -->
@@ -178,17 +179,17 @@
                                             </select>
                                         </div>
                                         <div class="col-md-4">
-                                            <select name="medicine[0][item_code]" class="form-select item-code-select"
-                                                required>
-                                                <option value="">-- เลือกชื่อยา/วัคซีน --</option>
-                                                @foreach ($storehouses as $storehouse)
-                                                    <option value="{{ $storehouse->item_code }}"
-                                                        data-name="{{ $storehouse->item_name }}">
-                                                        {{ $storehouse->item_name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            <input type="hidden" name="medicine[0][item_name]" class="item-name-hidden">
+                                            <div class="dropdown">
+                                                <button
+                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-dropdown-btn"
+                                                    type="button" data-bs-toggle="dropdown"
+                                                    aria-expanded="false"><span>-- เลือกชื่อยา/วัคซีน --</span></button>
+                                                <ul class="dropdown-menu w-100 item-dropdown-menu">
+                                                    <!-- ตัวเลือกจะ populate หลังจากเลือก batch และ item type -->
+                                                </ul>
+                                                <input type="hidden" name="medicine[0][item_code]" class="item-code-hidden" required>
+                                                <input type="hidden" name="medicine[0][item_name]" class="item-name-hidden">
+                                            </div>
                                         </div>
 
                                         <!-- แถวกลาง: จำนวน + ราคาต่อหน่วย + หน่วย -->
@@ -448,23 +449,33 @@
                 function updateItemCodeOptions(row) {
                     const type = row.querySelector('.item-type-select')?.value;
                     const batchId = parseInt(batchSelect.value);
-                    const itemCodeSelect = row.querySelector('.item-code-select');
-                    if (!itemCodeSelect) return;
+                    const itemDropdownMenu = row.querySelector('.item-dropdown-menu');
+                    const itemDropdownBtn = row.querySelector('.item-dropdown-btn');
+                    if (!itemDropdownMenu || !itemDropdownBtn) return;
 
-                    itemCodeSelect.innerHTML = '<option value="">-- เลือกชื่อสินค้า --</option>';
+                    // Clear dropdown menu
+                    itemDropdownMenu.innerHTML = '';
+                    itemDropdownBtn.querySelector('span').textContent = type === 'feed' ? '-- เลือกชื่อประเภทอาหารหมู --' : '-- เลือกชื่อยา/วัคซีน --';
 
                     if (type && batchId && storehousesByTypeAndBatch[type]?.[batchId]) {
                         Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
-                            const opt = document.createElement('option');
-                            opt.value = item.item_code;
-                            opt.textContent = item.item_name;
-                            opt.dataset.name = item.item_name;
-                            itemCodeSelect.appendChild(opt);
+                            const li = document.createElement('li');
+                            const a = document.createElement('a');
+                            a.className = 'dropdown-item';
+                            a.href = '#';
+                            a.setAttribute('data-item-code', item.item_code);
+                            a.setAttribute('data-item-name', item.item_name);
+                            a.textContent = item.item_name;
+                            li.appendChild(a);
+                            itemDropdownMenu.appendChild(li);
                         });
                     }
 
-                    const hidden = row.querySelector('.item-name-hidden');
-                    if (hidden) hidden.value = '';
+                    // Clear hidden inputs
+                    const codeHidden = row.querySelector('.item-code-hidden');
+                    const nameHidden = row.querySelector('.item-name-hidden');
+                    if (codeHidden) codeHidden.value = '';
+                    if (nameHidden) nameHidden.value = '';
                 }
 
                 function updateUnitOptions(row) {
@@ -574,6 +585,29 @@
                     'monthlyRowsContainer'));
 
                 // ---------------------
+                // ITEM DROPDOWN CLICK HANDLER
+                // ---------------------
+                document.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('dropdown-item') && e.target.closest('.item-dropdown-menu')) {
+                        e.preventDefault();
+                        const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
+                        if (!row) return;
+
+                        const itemCode = e.target.getAttribute('data-item-code');
+                        const itemName = e.target.getAttribute('data-item-name');
+                        const itemDropdownBtn = row.querySelector('.item-dropdown-btn');
+                        const codeHidden = row.querySelector('.item-code-hidden');
+                        const nameHidden = row.querySelector('.item-name-hidden');
+
+                        if (itemDropdownBtn) {
+                            itemDropdownBtn.querySelector('span').textContent = itemName;
+                        }
+                        if (codeHidden) codeHidden.value = itemCode;
+                        if (nameHidden) nameHidden.value = itemName;
+                    }
+                });
+
+                // ---------------------
                 // REMOVE ROW
                 // ---------------------
                 document.addEventListener('click', function(e) {
@@ -584,16 +618,12 @@
                 });
 
                 // ---------------------
-                // ITEM_NAME HIDDEN UPDATE
+                // ITEM TYPE SELECT CHANGE
                 // ---------------------
                 document.addEventListener('change', function(e) {
                     const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
                     if (!row) return;
                     if (e.target.classList.contains('item-type-select')) updateRowOptions(row);
-                    if (e.target.classList.contains('item-code-select')) {
-                        const hidden = row.querySelector('.item-name-hidden');
-                        if (hidden) hidden.value = e.target.selectedOptions[0]?.dataset.name || '';
-                    }
                 });
 
                 // ---------------------
