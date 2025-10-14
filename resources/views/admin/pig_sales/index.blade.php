@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin_index')
 
 @section('title', 'บันทึกการขายหมู')
 
@@ -378,11 +378,6 @@
                         @endif
                     </div>
                     <div class="modal-footer">
-                        @if (!$sell->approved_at)
-                            <a href="{{ route('pig_sale.edit', $sell->id) }}" class="btn btn-warning">
-                                <i class="bi bi-pencil-square"></i> แก้ไข
-                            </a>
-                        @endif
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                     </div>
                 </div>

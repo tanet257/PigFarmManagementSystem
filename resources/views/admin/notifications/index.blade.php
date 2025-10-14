@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin_index')
 
 @section('content')
     <div class="container-fluid py-4">

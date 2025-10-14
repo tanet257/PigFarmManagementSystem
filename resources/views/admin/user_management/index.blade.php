@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin_index')
 
 @section('title', 'จัดการผู้ใช้งาน')
 
