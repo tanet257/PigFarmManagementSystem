@@ -10,21 +10,21 @@
         <div class="py-2"></div>
 
         {{-- Toolbar --}}
-        <form method="GET" action="{{ route('pig_sale.index') }}">
-            <div class="toolbar-card">
-                <select name="selected_date" onchange="this.form.submit()">
+        <div class="card-custom-secondary mb-3">
+            <form method="GET" action="{{ route('pig_sale.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
+                <select name="selected_date" class="form-select form-select-sm" style="width: auto;"
+                    onchange="this.form.submit()">
                     <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้
+                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
+                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
                     </option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>
-                        สัปดาห์นี้</option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>
-                        เดือนนี้</option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้
+                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
                     </option>
+                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
                 </select>
 
-                <select name="farm_id" onchange="this.form.submit()">
+                <select name="farm_id" class="form-select form-select-sm" style="width: auto;"
+                    onchange="this.form.submit()">
                     <option value="">ฟาร์มทั้งหมด</option>
                     @foreach ($farms as $farm)
                         <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
@@ -33,7 +33,8 @@
                     @endforeach
                 </select>
 
-                <select name="batch_id" onchange="this.form.submit()">
+                <select name="batch_id" class="form-select form-select-sm" style="width: auto;"
+                    onchange="this.form.submit()">
                     <option value="">รุ่นทั้งหมด</option>
                     @foreach ($batches as $batch)
                         <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
@@ -42,31 +43,27 @@
                     @endforeach
                 </select>
 
-                <div class="toolbar-right-group">
-                    <div class="export-btn">
-                        <a class="btn btn-outline-success" href="{{ route('pig_sale.export.csv') }}">
-                            <i class="bi bi-upload me-1"></i> CSV
-                        </a>
-                        <a class="btn btn-outline-danger" href="{{ route('pig_sale.export.pdf') }}">
-                            <i class="bi bi-upload me-1"></i> PDF
-                        </a>
-                    </div>
-
-                    <div class="create-btn">
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
-                            <i class="bi bi-plus"></i> บันทึกการขายใหม่
-                        </button>
-                    </div>
+                <div class="ms-auto d-flex gap-2">
+                    <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
+                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
+                    </a>
+                    <a class="btn btn-outline-danger btn-sm" href="{{ route('pig_sale.export.pdf') }}">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                    </a>
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#createModal">
+                        <i class="bi bi-plus-circle me-1"></i> บันทึกการขายใหม่
+                    </button>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
 
         {{-- Table --}}
-        <div class="table-card mt-3 table-responsive">
-            <div class="table-wrapper">
-                <table class="table table-primary">
-                    <thead>
-                        <tr class="text-white">
+        <div class="card-custom-secondary mt-3">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-header-custom">
+                        <tr>
                             <th class="text-center">เลขที่</th>
                             <th class="text-center">
                                 <div class="d-flex justify-content-center align-items-center">
@@ -107,8 +104,8 @@
                     </thead>
                     <tbody>
                         @forelse ($pigSales as $sell)
-                            <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $sell->id }}"
-                                style="cursor: pointer;" title="คลิกเพื่อดูรายละเอียด">
+                            <tr class="clickable-row" data-bs-toggle="modal"
+                                data-bs-target="#viewModal{{ $sell->id }}">
                                 <td class="text-center">
                                     <strong>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}</strong>
                                 </td>
@@ -175,7 +172,7 @@
                                         <i class="bi bi-person-fill"></i> {{ $sell->createdBy->name ?? '-' }}
                                     </small>
                                 </td>
-                                <td class="text-center" onclick="event.stopPropagation();">
+                                <td class="text-center">
                                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
                                         data-bs-target="#viewModal{{ $sell->id }}">
                                         <i class="bi bi-eye"></i>
@@ -381,6 +378,11 @@
                         @endif
                     </div>
                     <div class="modal-footer">
+                        @if (!$sell->approved_at)
+                            <a href="{{ route('pig_sale.edit', $sell->id) }}" class="btn btn-warning">
+                                <i class="bi bi-pencil-square"></i> แก้ไข
+                            </a>
+                        @endif
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                     </div>
                 </div>
@@ -1194,20 +1196,30 @@
         }
     </script>
 
-    {{-- Custom CSS for clickable rows --}}
+    {{-- Custom CSS --}}
     <style>
         .clickable-row {
-            transition: all 0.3s ease;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .clickable-row:hover {
-            background-color: #f0f8ff !important;
-            transform: scale(1.01);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            background-color: #FFF5E6 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
         }
 
         .clickable-row:active {
-            transform: scale(0.99);
+            transform: translateY(0);
+        }
+
+        /* ป้องกันปุ่มใน column จัดการไม่ให้ trigger modal */
+        .clickable-row td:last-child {
+            pointer-events: none;
+        }
+
+        .clickable-row td:last-child>* {
+            pointer-events: auto;
         }
     </style>
 @endsection
