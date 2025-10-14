@@ -3,252 +3,6 @@
 
 <head>
     @include('admin.css')
-
-
-    <style>
-        /* พื้นหลังของ dropdown */
-        .choices__list--dropdown,
-        .choices__list[aria-expanded] {
-            background-color: #2c2540;
-            /* ม่วงเข้มตามธีม */
-            color: #f0e6ff;
-            /* สีตัวอักษร */
-        }
-
-        /* พื้นหลังตอน hover */
-        .choices__list--dropdown .choices__item--selectable.is-highlighted {
-            background-color: #5a4e7c !important;
-            /* ม่วงอ่อน */
-            color: #ffffff;
-        }
-
-        /* ตัวเลือกปกติ */
-        .choices__list--dropdown .choices__item--selectable {
-            color: #f0e6ff;
-        }
-
-        /* กล่องที่เลือกแล้ว */
-        .choices__inner {
-            background-color: #1e1b29;
-            color: #f0e6ff;
-            border: 1px solid #5a4e7c;
-        }
-
-        /* search input ด้านบนของ dropdown */
-        .choices__list--dropdown .choices__input {
-            background-color: #2c2540;
-            /* พื้นหลังเหมือนกัน */
-            color: #f0e6ff;
-            /* ตัวอักษรเหมือนกัน */
-            border: 1px solid #5a4e7c;
-        }
-
-        /* ตอน focus กล่อง search */
-        .choices__list--dropdown .choices__input:focus {
-            outline: none;
-            border-color: #7e6fc1;
-            background-color: #2c2540;
-            color: #f0e6ff;
-        }
-
-
-        body {
-            background-color: #1e1b29;
-            color: #f0e6ff;
-        }
-
-        h1 {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .table-container {
-            margin: 20px auto;
-            max-width: 95%;
-        }
-
-        .table thead th {
-            background-color: #5a4e7c;
-            color: #fff;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-        }
-
-        .table tbody tr:hover {
-            background-color: #3a3361;
-        }
-
-        .badge-purple {
-            background-color: #7e6fc1;
-        }
-
-        .card-custom {
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            background-color: #2c2540;
-            padding: 15px;
-        }
-
-        td,
-        th {
-            vertical-align: middle !important;
-        }
-
-        .toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .toolbar .left-tools {
-            flex: 1;
-        }
-
-        .toolbar .right-tools {
-            display: flex;
-            gap: 10px;
-        }
-
-        .toolbar .form-select-sm,
-        .toolbar .btn-sm,
-        .toolbar input[type="search"] {
-            font-size: 0.85rem;
-            padding: 0.35rem 0.5rem;
-        }
-
-        input[type="search"] {
-            border-radius: 20px;
-            padding-left: 12px;
-            border: 1px solid #5a4e7c;
-            background: #1e1b29;
-            color: #f0e6ff;
-        }
-
-        .btn-action {
-            min-width: 90px;
-            text-align: center;
-        }
-
-        .snackbar {
-            visibility: hidden;
-            min-width: 250px;
-            margin-left: -125px;
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            border-radius: 8px;
-            padding: 16px;
-            position: fixed;
-            z-index: 9999;
-            right: 20px;
-            bottom: 30px;
-            font-size: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .snackbar.show {
-            visibility: visible;
-            animation: fadein 0.5s, fadeout 0.5s 10s;
-        }
-
-        .snackbar button {
-            background: none;
-            border: none;
-            color: #fff;
-            font-weight: bold;
-            margin-left: 10px;
-            cursor: pointer;
-        }
-
-        @keyframes fadein {
-            from {
-                bottom: 0;
-                opacity: 0;
-            }
-
-            to {
-                bottom: 30px;
-                opacity: 1;
-            }
-        }
-
-        @keyframes fadeout {
-            from {
-                bottom: 30px;
-                opacity: 1;
-            }
-
-            to {
-                bottom: 0;
-                opacity: 0;
-            }
-        }
-    </style>
-
-    <script>
-        window.onload = function() {
-            const sb = document.getElementById("snackbar");
-            const sbMsg = document.getElementById("snackbarMessage");
-
-            @if (session('success'))
-                sbMsg.innerText = "{{ session('success') }}";
-                sb.style.backgroundColor = "#28a745";
-                sb.style.display = "flex";
-                sb.classList.add("show");
-                setTimeout(() => {
-                    sb.classList.remove("show");
-                    sb.style.display = "none";
-                }, 10500);
-            @elseif (session('error'))
-                sbMsg.innerText = "{{ session('error') }}";
-                sb.style.backgroundColor = "#dc3545";
-                sb.style.display = "flex";
-                sb.classList.add("show");
-                setTimeout(() => {
-                    sb.classList.remove("show");
-                    sb.style.display = "none";
-                }, 10500);
-            @endif
-        };
-
-        function showSnackbar(message, bgColor = "#dc3545") {
-            const sb = document.getElementById("snackbar");
-            const sbMsg = document.getElementById("snackbarMessage");
-            sbMsg.innerText = message;
-            sb.style.backgroundColor = bgColor;
-            sb.style.display = "flex";
-            sb.classList.add("show");
-            setTimeout(() => {
-                sb.classList.remove("show");
-                sb.style.display = "none";
-            }, 5000);
-        }
-
-        function copySnackbar() {
-            let text = document.getElementById("snackbarMessage").innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                let btn = document.getElementById("copyBtn");
-                btn.innerHTML = '<i class="bi bi-check2"></i> Copied';
-                btn.disabled = true;
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="bi bi-copy"></i>';
-                    btn.disabled = false;
-                }, 2000);
-            });
-        }
-
-        function closeSnackbar() {
-            let sb = document.getElementById("snackbar");
-            sb.classList.remove("show");
-            sb.style.display = "none";
-        }
-    </script>
 </head>
 
 <body>
@@ -262,44 +16,78 @@
     @include('admin.sidebar')
 
     <div class="page-content">
-        <div class="container my-5 table-container">
+        <div class="container my-5">
+            <div class="card-header">
+                <h1 class="text-center">บันทึกหมูเข้า (Pig Entry Records)</h1>
+            </div>
+            <div class="py-2"></div>
 
-            <h1 class="text-center">บันทึกหมูเข้า (Pig Entry Records)</h1>
+            {{-- Toolbar --}}
+            <div class="card-custom-secondary mb-3">
+                <form method="GET" action="{{ route('pig_entry_records.index') }}"
+                    class="d-flex align-items-center gap-2 flex-wrap" id="filterForm">
+                    <!-- Date Filter (Orange) -->
+                    <select name="selected_date" id="dateFilter"
+                        class="form-select form-select-sm filter-select-orange">
+                        <option value="">วันที่ทั้งหมด</option>
+                        <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้
+                        </option>
+                        <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>
+                            สัปดาห์นี้</option>
+                        <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>
+                            เดือนนี้</option>
+                        <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้
+                        </option>
+                    </select>
 
-            <div class="toolbar">
-                <div class="left-tools">
-                    <form method="GET" action="{{ route('pig_entry_records.index') }}" class="d-flex">
-                        <input type="search" name="search" class="form-control form-control-sm me-2"
-                            placeholder="ค้นหา..." value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-sm btn-outline-light">ค้นหา</button>
-                    </form>
-                </div>
+                    <!-- Farm Filter (Dark Blue) -->
+                    <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-blue">
+                        <option value="">ฟาร์มทั้งหมด</option>
+                        @foreach ($farms as $farm)
+                            <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
+                                {{ $farm->farm_name }}
+                            </option>
+                        @endforeach
+                    </select>
 
-                <div class="right-tools">
-                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
-                        เพิ่มหมูเข้า
-                    </button>
-                </div>
+                    <!-- Batch Filter (Dark Blue) -->
+                    <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-blue">
+                        <option value="">รุ่นทั้งหมด</option>
+                        @foreach ($batches as $batch)
+                            <option value="{{ $batch->id }}"
+                                {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
+                                {{ $batch->batch_code }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <div class="ms-auto d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#createModal">
+                            <i class="bi bi-plus-circle me-1"></i> เพิ่มหมูเข้า
+                        </button>
+                    </div>
+                </form>
             </div>
 
             {{-- Table --}}
-            <div class="card-custom">
+            <div class="card-custom-secondary mt-3">
                 <div class="table-responsive">
-                    <table class="table table-dark table-hover align-middle text-center">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="table-header-custom">
                             <tr>
-                                <th>วันที่</th>
-                                <th>ฟาร์ม</th>
-                                <th>รุ่น (Batch)</th>
-                                <th>จำนวนหมู</th>
-                                <th>น้ำหนักรวม</th>
-                                <th>ราคาลูกหมู</th>
-                                <th>ค่าน้ำหนักเกิน</th>
-                                <th>ค่าขนส่ง</th>
-                                <th>ราคารวม</th>
-                                <th>โน๊ต</th>
-                                <th>ใบเสร็จ</th>
-                                <th>จัดการ</th>
+                                <th class="text-center">วันที่</th>
+                                <th class="text-center">ฟาร์ม</th>
+                                <th class="text-center">รุ่น (Batch)</th>
+                                <th class="text-center">จำนวนหมู</th>
+                                <th class="text-center">น้ำหนักรวม</th>
+                                <th class="text-center">ราคาลูกหมู</th>
+                                <th class="text-center">ค่าน้ำหนักเกิน</th>
+                                <th class="text-center">ค่าขนส่ง</th>
+                                <th class="text-center">ราคารวม</th>
+                                <th class="text-center">โน๊ต</th>
+                                <th class="text-center">ใบเสร็จ</th>
+                                <th class="text-center">จัดการ</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -401,7 +189,8 @@
 
                                                     <div class="mb-3">
                                                         <label>วันที่หมูเข้า</label>
-                                                        <input type="text" name="pig_entry_date" class="form-control dateWrapper"
+                                                        <input type="text" name="pig_entry_date"
+                                                            class="form-control dateWrapper"
                                                             value="{{ $record->pig_entry_date }}" required>
                                                     </div>
 
@@ -450,7 +239,7 @@
                                                         {{-- delete file --}}
                                                         @if ($record->latestCost && $record->latestCost->receipt_file)
                                                             @php$file = $record->latestCost->receipt_file;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @endphp ?> ?> ?> ?> ?> ?> ?>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @endphp ?> ?> ?> ?> ?> ?> ?> ?>
                                                             <small class="text-muted">ไฟล์ปัจจุบัน:</small>
                                                             @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
                                                                 <div><img src="{{ $file }}" alt="Receipt"
@@ -541,14 +330,16 @@
                         </div>
                         <div class="mb-3">
                             <label>เล้า (Barn)</label>
-                            <select name="barn_id[]" id="createBarnSelect" class="barnSelect form-select" multiple required>
+                            <select name="barn_id[]" id="createBarnSelect" class="barnSelect form-select" multiple
+                                required>
                                 <option value="">-- เลือกเล้า --</option>
                             </select>
                         </div>
 
                         <div class="mb-3">
                             <label>วันที่เข้า</label>
-                            <input type="text" name="pig_entry_date" placeholer="ว/ด/ป ชม. นาที" class="form-control dateWrapper" required>
+                            <input type="text" name="pig_entry_date" placeholer="ว/ด/ป ชม. นาที"
+                                class="form-control dateWrapper" required>
                         </div>
 
                         <div class="mb-3">
@@ -607,17 +398,16 @@
     <script>
         // ใช้ class dateWrapper
         document.addEventListener('shown.bs.modal', function(event) {
-    event.target.querySelectorAll('.dateWrapper').forEach(el => {
-        if (!el._flatpickr) {
-            flatpickr(el, {
-                enableTime: true,
-                dateFormat: "d/m/Y H:i",
-                maxDate: "today",
+            event.target.querySelectorAll('.dateWrapper').forEach(el => {
+                if (!el._flatpickr) {
+                    flatpickr(el, {
+                        enableTime: true,
+                        dateFormat: "d/m/Y H:i",
+                        maxDate: "today",
+                    });
+                }
             });
-        }
-    });
-});
-
+        });
     </script>
 
     {{-- JS สำหรับ fetch barns + batches --}}
@@ -678,16 +468,17 @@
 
         // Create modal
         document.addEventListener('shown.bs.modal', function(event) {
-            if (event.target.id === 'createModal') {
-                const farm = document.getElementById('createFarmSelect');
-                const batch = document.getElementById('createBatchSelect');
-                const barn = document.getElementById('createBarnSelect');
-                if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
-            }
+        if (event.target.id === 'createModal') {
+            const farm = document.getElementById('createFarmSelect');
+            const batch = document.getElementById('createBatchSelect');
+            const barn = document.getElementById('createBarnSelect');
+            if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
+        }
         });
 
-       /* // Edit modal
-        @foreach ($pigEntryRecords as $record)
+        /* // Edit modal
+         if ( /*___directives_script_0___*/
+        ) {
             document.addEventListener('shown.bs.modal', function(event) {
                 if (event.target.id === 'editModal{{ $record->id }}') {
                     const farm = document.getElementById('editFarmSelect{{ $record->id }}');
@@ -696,7 +487,21 @@
                     if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
                 }
             });
-        @endforeach*/
+        @endforeach */
+    </script>
+
+    {{-- Auto-submit filters --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterForm = document.getElementById('filterForm');
+            const filters = filterForm.querySelectorAll('select');
+
+            filters.forEach(filter => {
+                filter.addEventListener('change', function() {
+                    filterForm.submit();
+                });
+            });
+        });
     </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

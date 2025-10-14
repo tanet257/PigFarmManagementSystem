@@ -3,157 +3,6 @@
 @section('title', 'บันทึกประจำวัน')
 
 @push('styles')
-    <style>
-        /* ทำให้ dropdown-container เป็น reference point (เพื่อ width:100% ของเมนูอ้างอิงได้) */
-        .dropdown {
-            position: relative;
-        }
-
-        /* บังคับเมนูให้มีความกว้างเท่าปุ่มและไม่ขยายตามเนื้อหา */
-        .dropdown .dropdown-menu.w-100 {
-            width: 100% !important;
-            min-width: 0 !important;
-            /* ป้องกัน min-width ของ bootstrap ขยาย */
-            max-width: 100% !important;
-            box-sizing: border-box;
-            left: 0 !important;
-        }
-
-        /* ปุ่มที่แสดงผลการเลือก ให้ตัดข้อความยาวเป็น ... */
-        .dropdown-toggle {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* รายการในเมนูให้ตัดข้อความยาวเป็น ... */
-        .dropdown-item.text-truncate,
-        .dropdown-menu .dropdown-item.d-block.text-truncate {
-            display: block;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            max-width: 100%;
-        }
-
-        /* ถ้าคุณใช้ปุ่มแบบ item-dropdown-btn (ปุ่มแสดงรายการ item) */
-        .item-dropdown-btn {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            display: block;
-        }
-
-        /* Card Row */
-        .cardTemplateRow {
-            background: #a3a3a3;
-            /* สีพื้นอ่อน */
-            border-radius: 10px;
-            padding: 12px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .cardTemplateRow:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
-        }
-
-        /* Label */
-        label {
-            display: inline-block;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #333333;
-        }
-
-        /* Input / Textarea / Select */
-        input.form-control,
-        select.form-select,
-        textarea.form-control {
-            border-radius: 8px;
-            background: #fafafa;
-            border: 1px solid #d1d1d1;
-            color: #333333;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-            padding: 8px 12px;
-            transition: all 0.2s;
-        }
-
-        input.form-control:focus,
-        select.form-select:focus,
-        textarea.form-control:focus {
-            outline: none;
-            border-color: #4a90e2;
-            background-color: #fafafa;
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
-        }
-
-        /* Number input hide spin buttons */
-        input[type=number]::-webkit-outer-spin-button,
-        input[type=number]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-
-        /* Dropdown button */
-        .dropdown-toggle {
-            background-color: #fafafa;
-            border: 1px solid #d1d1d1;
-            border-radius: 8px;
-            color: #333333;
-            padding: 8px 12px;
-            text-align: left;
-            transition: all 0.2s;
-        }
-
-        .dropdown-toggle:hover {
-            background-color: rgba(0, 0, 0, 0.03);
-            /* สีดำจาง 3% เหมือนเงาจางๆ */
-        }
-
-        .dropdown-menu {
-            border-radius: 8px;
-            border: 1px solid #CBCBCB;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        }
-
-        .dropdown-item {
-            transition: background-color 0.15s;
-        }
-
-        .dropdown-item:hover {
-            background-color: #CBCBCB;
-            color: #333333;
-        }
-
-        /* File input */
-        input[type="file"].form-control {
-            border: 1px solid #d1d1d1;
-            border-radius: 8px;
-            background-color: #ffffff;
-            padding: 8px;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        input[type="file"].form-control::file-selector-button {
-            background-color: #4a90e2;
-            color: #ffffff;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        input[type="file"].form-control::file-selector-button:hover {
-            background-color: #357ab8;
-        }
-    </style>
 @endpush
 
 @section('content')
@@ -167,301 +16,312 @@
                     <form action="{{ route('dairy_records.upload') }}" method="post" enctype="multipart/form-data">
                         @csrf
 
-                        <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3"
-                            style="background: #CBCBCB">
-                            <div class="col-md-5">
-                                <label>ฟาร์ม</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-white dropdown-toggle w-100 text-start" type="button"
-                                        id="farmDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                        เลือกฟาร์ม
-                                    </button>
-                                    <ul class="dropdown-menu w-100" aria-labelledby="farmDropdownBtn" id="farmDropdownMenu">
-                                        @foreach ($farms as $farm)
-                                            <li>
-                                                <a class="dropdown-item" href="#"
-                                                    data-farm-id="{{ $farm->id }}">{{ $farm->farm_name }}</a>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                    <input type="hidden" name="farm_id" id="farmSelect" value="">
-                                </div>
-                            </div>
+                        <div class="card card-custom-secondary">
+                            <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3">
 
-                            <div class="col-md-5">
-                                <label>รุ่น / Batch</label>
-                                <div class="dropdown">
-                                    <button class="btn btn-white dropdown-toggle w-100 text-start" type="button"
-                                        id="batchDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
-                                        เลือกรุ่น
-                                    </button>
-                                    <ul class="dropdown-menu w-100" aria-labelledby="batchDropdownBtn"
-                                        id="batchDropdownMenu">
-                                        <!-- ตัวเลือกจะ populate หลังจากเลือกฟาร์ม -->
-                                    </ul>
-                                    <input type="hidden" name="batch_id" id="batchSelect" value="">
+                                <div class="col-md-5">
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                            type="button" id="farmDropdownBtn" data-bs-toggle="dropdown"
+                                            aria-expanded="false">
+                                            <span>เลือกฟาร์ม</span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100" aria-labelledby="farmDropdownBtn"
+                                            id="farmDropdownMenu">
+                                            @foreach ($farms as $farm)
+                                                <li>
+                                                    <a class="dropdown-item" href="#"
+                                                        data-farm-id="{{ $farm->id }}">{{ $farm->farm_name }}</a>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                        <input type="hidden" name="farm_id" id="farmSelect" value="">
+                                    </div>
                                 </div>
-                            </div>
 
+                                <div class="col-md-5">
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                            type="button" id="batchDropdownBtn" data-bs-toggle="dropdown"
+                                            aria-expanded="false">
+                                            <span>เลือกรุ่น</span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100" aria-labelledby="batchDropdownBtn"
+                                            id="batchDropdownMenu">
+                                            <!-- ตัวเลือกจะ populate หลังจากเลือกฟาร์ม -->
+                                        </ul>
+                                        <input type="hidden" name="batch_id" id="batchSelect" value="">
+                                    </div>
+                                </div>
+
+                            </div>
                         </div>
 
                         <!--Feed Section-->
-                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">อาหารสุกรที่ใช้</h4>
-                            <div>
-                                <button type="button" class="btn btn-danger btn-sm" id="clearFeedUseBtn">ล้างแถว</button>
-                                <button type="button" class="btn btn-success btn-sm" id="addFeedUseBtn">เพิ่มแถว</button>
+                        <div card class="card card-custom-secondary">
+                            <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">อาหารสุกรที่ใช้</h4>
+                                <div>
+                                    <button type="button" class="btn btn-danger btn-sm"
+                                        id="clearFeedUseBtn">ล้างแถว</button>
+                                    <button type="button" class="btn btn-success btn-sm"
+                                        id="addFeedUseBtn">เพิ่มแถว</button>
+                                </div>
                             </div>
-                        </div>
-                        <div id="feedUseContainer"></div>
-                        <template id="feedUseTemplate">
-                            <div class="feed-use-row card shadow-lg border-0 rounded-3 mb-3 p3" data-template
-                                style="display:none">
-                                <input type="hidden" name="feed_use[0][farm_id]" class="farm-id">
-                                <input type="hidden" name="feed_use[0][batch_id]" class="batch-id">
-                                <input type="hidden" name="feed_use[0][item_type]" class="item-type" value="feed">
+                            <div id="feedUseContainer"></div>
+                            <template id="feedUseTemplate">
+                                <div class="feed-use-row shadow-lg border-0 rounded-3 mb-3 p3" data-template
+                                    style="display:none">
+                                    <input type="hidden" name="feed_use[0][farm_id]" class="farm-id">
+                                    <input type="hidden" name="feed_use[0][batch_id]" class="batch-id">
+                                    <input type="hidden" name="feed_use[0][item_type]" class="item-type" value="feed">
 
-                                <div class="card-body cardTemplateRow">
-                                    <div class="row g-2">
-                                        <!-- แถว 1: วันที่ + เล้า + อาหาร -->
-                                        <div class="col-md-4">
-                                            <input type="text" name="feed_use[0][date]" class="form-control date-input"
-                                                placeholder="ว/ด/ป ชม.นาที" required>
-                                        </div>
-                                        <div data-cloned="1">
+                                    <div class=" card-custom-tertiary cardTemplateRow">
+                                        <div class="row g-2">
+                                            <!-- แถว 1: วันที่ + เล้า + อาหาร -->
                                             <div class="col-md-4">
-                                                <button
-                                                    class="barn-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
-                                                    type="button" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">เลือกเล้า</button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="feed_use[0][barn_id]"
-                                                    value="">
+                                                <input type="text" name="feed_use[0][date]"
+                                                    class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
+                                            </div>
+                                            <div data-cloned="1">
+                                                <div class="col-md-4">
+                                                    <button
+                                                        class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown"
+                                                        aria-expanded="false"><span>เลือกเล้า</span></button>
+                                                    <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                    <input type="hidden" class="barn-id" name="feed_use[0][barn_id]"
+                                                        value="">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-dropdown-btn"
+                                                        type="button" id="feedItemDropdownBtn0" data-bs-toggle="dropdown"
+                                                        aria-expanded="false"><span>เลือกอาหาร</span></button>
+                                                    <ul class="dropdown-menu w-100 item-dropdown-menu"
+                                                        aria-labelledby="feedItemDropdownBtn0" id="feedItemDropdownMenu0">
+                                                        <!-- ตัวเลือกจะ populate หลังจากเลือก batch -->
+                                                    </ul>
+                                                    <input type="hidden" name="feed_use[0][item_code]" class="item-code"
+                                                        value="">
+                                                    <input type="hidden" name="feed_use[0][item_name]" class="item-name"
+                                                        value="">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="btn btn-white dropdown-toggle w-100 text-start item-dropdown-btn"
-                                                    type="button" id="feedItemDropdownBtn0" data-bs-toggle="dropdown"
-                                                    aria-expanded="false">เลือกอาหาร</button>
-                                                <ul class="dropdown-menu w-100 item-dropdown-menu"
-                                                    aria-labelledby="feedItemDropdownBtn0" id="feedItemDropdownMenu0">
-                                                    <!-- ตัวเลือกจะ populate หลังจากเลือก batch -->
-                                                </ul>
-                                                <input type="hidden" name="feed_use[0][item_code]" class="item-code"
-                                                    value="">
-                                                <input type="hidden" name="feed_use[0][item_name]" class="item-name"
-                                                    value="">
-                                            </div>
-                                        </div>
-                                    </div>
 
-                                    <div class="row g-2 mt-2">
-                                        <!-- แถว 2: จำนวน + หมายเหตุ + ปุ่มลบ -->
-                                        <div class="col-md-4">
-                                            <input type="number" name="feed_use[0][quantity]" class="form-control"
-                                                placeholder="จำนวน" required>
-                                        </div>
-                                        <div class="col-md-7">
-                                            <textarea name="feed_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
-                                        </div>
-                                        <div class="col-md-1 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
+                                        <div class="row g-2 mt-2">
+                                            <!-- แถว 2: จำนวน + หมายเหตุ + ปุ่มลบ -->
+                                            <div class="col-md-4">
+                                                <input type="number" name="feed_use[0][quantity]" class="form-control"
+                                                    placeholder="จำนวน" required>
+                                            </div>
+                                            <div class="col-md-7">
+                                                <textarea name="feed_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                        </template>
+                            </template>
+                        </div>
                         <!-- END FEED -->
 
                         <!-- MEDICINE SECTION -->
-                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">ยา/วัคซีนที่ใช้</h4>
-                            <div>
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    id="clearMedicineUseBtn">ล้างแถว</button>
-                                <button type="button" class="btn btn-success btn-sm"
-                                    id="addMedicineUseBtn">เพิ่มแถว</button>
+                        <div card class="card card-custom-secondary">
+                            <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">ยา/วัคซีนที่ใช้</h4>
+                                <div>
+                                    <button type="button" class="btn btn-danger btn-sm"
+                                        id="clearMedicineUseBtn">ล้างแถว</button>
+                                    <button type="button" class="btn btn-success btn-sm"
+                                        id="addMedicineUseBtn">เพิ่มแถว</button>
+                                </div>
                             </div>
-                        </div>
 
-                        <div id="medicineUseContainer"></div>
-                        <template id="medicineUseTemplate">
-                            <div class="medicine-use-row card shadow-lg border-0 rounded-3 mb-3 p3" data-template
-                                style="display:none">
-                                <input type="hidden" name="medicine_use[0][farm_id]" class="farm-id">
-                                <input type="hidden" name="medicine_use[0][batch_id]" class="batch-id">
-                                <input type="hidden" name="medicine_use[0][item_type]" class="item-type"
-                                    value="medicine">
-                                <input type="hidden" name="medicine_use[0][barn_pen]" class="barn-pen-json">
+                            <div id="medicineUseContainer"></div>
+                            <template id="medicineUseTemplate">
+                                <div class="medicine-use-row shadow-lg border-0 rounded-3 mb-3 p3" data-template
+                                    style="display:none">
+                                    <input type="hidden" name="medicine_use[0][farm_id]" class="farm-id">
+                                    <input type="hidden" name="medicine_use[0][batch_id]" class="batch-id">
+                                    <input type="hidden" name="medicine_use[0][item_type]" class="item-type"
+                                        value="medicine">
+                                    <input type="hidden" name="medicine_use[0][barn_pen]" class="barn-pen-json">
 
-                                <div class="card-body cardTemplateRow">
-                                    <!-- แถว 1: วันที่ + เล้า + คอก + ยา/วัคซีน -->
-                                    <div class="row g-2">
-                                        <div class="col-md-3">
-                                            <input type="text" name="medicine_use[0][date]"
-                                                class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
+                                    <div class="card-custom-tertiary cardTemplateRow">
+                                        <!-- แถว 1: วันที่ + เล้า + คอก + ยา/วัคซีน -->
+                                        <div class="row g-2">
+                                            <div class="col-md-3">
+                                                <input type="text" name="medicine_use[0][date]"
+                                                    class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
+                                            </div>
+                                            <div data-cloned="1">
+                                                <div class="col-md-2">
+                                                    <button
+                                                        class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกเล้า</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                    <input type="hidden" class="barn-id" name="medicine_use[0][barn_id]"
+                                                        value="">
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <button
+                                                        class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกคอก</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 pen-dropdown"></ul>
+                                                    <input type="hidden" class="barn-pen-json"
+                                                        name="medicine_use[0][barn_pen]" value="">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-dropdown-btn"
+                                                        type="button" id="medicineItemDropdownBtn0"
+                                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกยา/วัคซีน</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 item-dropdown-menu"
+                                                        aria-labelledby="medicineItemDropdownBtn0"
+                                                        id="medicineItemDropdownMenu0">
+                                                        <!-- ตัวเลือก populate หลังเลือก batch -->
+                                                    </ul>
+                                                    <input type="hidden" name="medicine_use[0][item_code]"
+                                                        class="item-code" value="">
+                                                    <input type="hidden" name="medicine_use[0][item_name]"
+                                                        class="item-name" value="">
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div data-cloned="1">
+
+                                        <!-- แถว 2: จำนวน + สถานะ + หมายเหตุ + ปุ่มลบ -->
+                                        <div class="row g-2 mt-2">
                                             <div class="col-md-2">
-                                                <button
-                                                    class="barn-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    เลือกเล้า
-                                                </button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="medicine_use[0][barn_id]"
-                                                    value="">
+                                                <input type="number" name="medicine_use[0][quantity]"
+                                                    class="form-control" placeholder="จำนวน" required>
                                             </div>
-                                            <div class="col-md-2">
-                                                <button
-                                                    class="pen-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    เลือกคอก
-                                                </button>
-                                                <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                <input type="hidden" class="barn-pen-json"
-                                                    name="medicine_use[0][barn_pen]" value="">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-5">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="btn btn-white dropdown-toggle w-100 text-start item-dropdown-btn"
-                                                    type="button" id="medicineItemDropdownBtn0"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                    เลือกยา/วัคซีน
-                                                </button>
-                                                <ul class="dropdown-menu w-100 item-dropdown-menu"
-                                                    aria-labelledby="medicineItemDropdownBtn0"
-                                                    id="medicineItemDropdownMenu0">
-                                                    <!-- ตัวเลือก populate หลังเลือก batch -->
-                                                </ul>
-                                                <input type="hidden" name="medicine_use[0][item_code]" class="item-code"
-                                                    value="">
-                                                <input type="hidden" name="medicine_use[0][item_name]" class="item-name"
-                                                    value="">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- แถว 2: จำนวน + สถานะ + หมายเหตุ + ปุ่มลบ -->
-                                    <div class="row g-2 mt-2">
-                                        <div class="col-md-2">
-                                            <input type="number" name="medicine_use[0][quantity]" class="form-control"
-                                                placeholder="จำนวน" required>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="btn btn-white dropdown-toggle w-100 text-start
+                                            <div class="col-md-3">
+                                                <div class="dropdown">
+                                                    <button
+                                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center
                                                         medicine-status-dropdown-btn"
-                                                    type="button" id="medicineStatusDropdownBtn0"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                    เลือกสถานะ
-                                                </button>
-                                                <ul class="dropdown-menu w-100 medicine-status-dropdown-menu"
-                                                    aria-labelledby="medicineStatusDropdownBtn0">
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="วางแผนว่าจะให้ยา">วางแผนว่าจะให้ยา</a>
-                                                    </li>
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="กำลังดำเนินการ (กำลังฉีด/กำลังให้ยาอยู่)">กำลังดำเนินการ</a>
-                                                    </li>
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="ให้ยาเสร็จแล้ว">ให้ยาเสร็จแล้ว</a></li>
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="ยกเลิก">ยกเลิก</a></li>
-                                                </ul>
-                                                <input type="hidden" name="medicine_use[0][status]" class="status-value"
-                                                    value="">
+                                                        type="button" id="medicineStatusDropdownBtn0"
+                                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกสถานะ</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 medicine-status-dropdown-menu"
+                                                        aria-labelledby="medicineStatusDropdownBtn0">
+                                                        <li><a class="dropdown-item" href="#"
+                                                                data-value="วางแผนว่าจะให้ยา">วางแผนว่าจะให้ยา</a>
+                                                        </li>
+                                                        <li><a class="dropdown-item" href="#"
+                                                                data-value="กำลังดำเนินการ (กำลังฉีด/กำลังให้ยาอยู่)">กำลังดำเนินการ</a>
+                                                        </li>
+                                                        <li><a class="dropdown-item" href#"
+                                                                data-value="ให้ยาเสร็จแล้ว">ให้ยาเสร็จแล้ว</a></li>
+                                                        <li><a class="dropdown-item" href="#"
+                                                                data-value="ยกเลิก">ยกเลิก</a></li>
+                                                    </ul>
+                                                    <input type="hidden" name="medicine_use[0][status]"
+                                                        class="status-value" value="">
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <textarea name="medicine_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
-                                        </div>
-                                        <div class="col-md-1 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
+                                            <div class="col-md-6">
+                                                <textarea name="medicine_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </template>
-
+                            </template>
+                        </div>
 
                         <!-- END MEDICINE -->
 
                         <!-- PIGDEATH SECTION -->
-                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">สุกรตาย</h4>
-                            <div>
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    id="clearDeadPigBtn">ล้างแถว</button>
-                                <button type="button" class="btn btn-success btn-sm"
-                                    id="addDeadPigBtn">เพิ่มแถว</button>
+                        <div card class="card card-custom-secondary">
+                            <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                                <h4 class="mb-0">สุกรตาย</h4>
+                                <div>
+                                    <button type="button" class="btn btn-danger btn-sm"
+                                        id="clearDeadPigBtn">ล้างแถว</button>
+                                    <button type="button" class="btn btn-success btn-sm"
+                                        id="addDeadPigBtn">เพิ่มแถว</button>
+                                </div>
                             </div>
-                        </div>
-                        <div id="deadPigContainer"></div>
-                        <template id="deadPigTemplate">
-                            <div class="dead-pig-row card shadow-lg border-0 rounded-3 mb-3 p3" data-template
-                                style="display:none">
-                                <input type="hidden" name="dead_pig[0][farm_id]" class="farm-id">
-                                <input type="hidden" name="dead_pig[0][batch_id]" class="batch-id">
-                                <input type="hidden" name="dead_pig[0][barn_pen]" class="barn-pen-json">
+                            <div id="deadPigContainer"></div>
+                            <template id="deadPigTemplate">
+                                <div class="dead-pig-row shadow-lg border-0 rounded-3 mb-3 p3" data-template
+                                    style="display:none">
+                                    <input type="hidden" name="dead_pig[0][farm_id]" class="farm-id">
+                                    <input type="hidden" name="dead_pig[0][batch_id]" class="batch-id">
+                                    <input type="hidden" name="dead_pig[0][barn_pen]" class="barn-pen-json">
 
-                                <div class="card-body cardTemplateRow">
-                                    <!-- แถว 1: วันที่ + เล้า + คอก + จำนวน -->
-                                    <div class="row g-2">
-                                        <div class="col-md-3">
-                                            <input type="text" name="dead_pig[0][date]"
-                                                class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
-                                        </div>
-                                        <div data-cloned="1">
+                                    <div class="card-custom-tertiary cardTemplateRow">
+                                        <!-- แถว 1: วันที่ + เล้า + คอก + จำนวน -->
+                                        <div class="row g-2">
                                             <div class="col-md-3">
-                                                <button
-                                                    class="barn-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    เลือกเล้า
-                                                </button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="dead_pig[0][barn_id]"
-                                                    value="">
+                                                <input type="text" name="dead_pig[0][date]"
+                                                    class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
+                                            </div>
+                                            <div data-cloned="1">
+                                                <div class="col-md-3">
+                                                    <button
+                                                        class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกเล้า</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 barn-dropdown"></ul>
+                                                    <input type="hidden" class="barn-id" name="dead_pig[0][barn_id]"
+                                                        value="">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <button
+                                                        class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
+                                                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <span>เลือกคอก</span>
+                                                    </button>
+                                                    <ul class="dropdown-menu w-100 pen-dropdown"></ul>
+                                                    <input type="hidden" class="barn-pen-json"
+                                                        name="dead_pig[0][barn_pen]" value="">
+                                                </div>
                                             </div>
                                             <div class="col-md-3">
-                                                <button
-                                                    class="pen-select btn btn-white dropdown-toggle shadow-sm border w-100 text-start"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    เลือกคอก
-                                                </button>
-                                                <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                <input type="hidden" class="barn-pen-json" name="dead_pig[0][barn_pen]"
-                                                    value="">
+                                                <input type="number" name="dead_pig[0][quantity]" class="form-control"
+                                                    placeholder="จำนวนสุกรตาย" required>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
-                                            <input type="number" name="dead_pig[0][quantity]" class="form-control"
-                                                placeholder="จำนวนสุกรตาย" required>
-                                        </div>
-                                    </div>
 
-                                    <!-- แถว 2: สาเหตุ + หมายเหตุ + ปุ่มลบ -->
-                                    <div class="row g-2 mt-2">
-                                        <div class="col-md-5">
-                                            <textarea name="dead_pig[0][cause]" class="form-control" rows="1" placeholder="สาเหตุการตาย"></textarea>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <textarea name="dead_pig[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
-                                        </div>
-                                        <div class="col-md-1 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
+                                        <!-- แถว 2: สาเหตุ + หมายเหตุ + ปุ่มลบ -->
+                                        <div class="row g-2 mt-2">
+                                            <div class="col-md-5">
+                                                <textarea name="dead_pig[0][cause]" class="form-control" rows="1" placeholder="สาเหตุการตาย"></textarea>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <textarea name="dead_pig[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
+                                            </div>
+                                            <div class="col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </template>
-
+                            </template>
+                        </div>
 
                         <!-- END PIGDEATH -->
 
@@ -492,7 +352,7 @@
 
                 const farmSelect = document.getElementById('farmSelect');
                 const batchSelect = document.getElementById(
-                'batchSelect'); // ---------------------- ฟังก์ชันช่วย ----------------------
+                    'batchSelect'); // ---------------------- ฟังก์ชันช่วย ----------------------
                 function attachDateInputEvents(root) {
                     (root.querySelectorAll ? root : document).querySelectorAll('.date-input').forEach(input => {
                         if (input._attached) return;

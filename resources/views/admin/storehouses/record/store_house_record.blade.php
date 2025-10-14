@@ -13,7 +13,7 @@
                     @csrf
 
                     <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3"
-                        style="background: #CBCBCB">
+                        >
                         <div class="col-md-5">
                             <label>ฟาร์ม</label>
                             <select name="farm_id" id="farmSelect" class="form-select" title="เลือกฟาร์ม" required>
@@ -31,233 +31,240 @@
                         </div>
                     </div>
 
-                    <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">อาหารสุกรขาเข้า</h4>
-                        <div>
-                            <button type="button" class="btn btn-danger btn-sm" id="clearAddFeedRowBtn"
-                                data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
-                                <i class="bi bi-dash-lg"></i> ล้างแถว
-                            </button>
-                            <button type="button" class="btn btn-success btn-sm" id="addFeedRowBtn"
-                                data-bs-toggle="tooltip" title="เพิ่มแถว">
-                                <i class="bi bi-plus-lg"></i> เพิ่มแถว
-                            </button>
+                    <div card class="card card-custom-secondary">
+                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">อาหารสุกรขาเข้า</h4>
+                            <div>
+                                <button type="button" class="btn btn-danger btn-sm" id="clearAddFeedRowBtn"
+                                    data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
+                                    <i class="bi bi-dash-lg"></i> ล้างแถว
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" id="addFeedRowBtn"
+                                    data-bs-toggle="tooltip" title="เพิ่มแถว">
+                                    <i class="bi bi-plus-lg"></i> เพิ่มแถว
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- FEED ROWS -->
-                    <div id="feedRowsContainer"></div>
-                    <template id="feedRowTemplate">
-                        <div class="feed-row  card shadow-lg border-0 rounded-3 mb-3 p3" data-template style="display:none">
-                            <input type="hidden" name="feed[0][farm_id]" class="farm-id" value="">
-                            <input type="hidden" name="feed[0][batch_id]" class="batch-id" value="">
+                        <!-- FEED ROWS -->
+                        <div id="feedRowsContainer"></div>
+                        <template id="feedRowTemplate">
+                            <div class="feed-row shadow-lg border-0 rounded-3 mb-3 p3" data-template style="display:none">
+                                <input type="hidden" name="feed[0][farm_id]" class="farm-id" value="">
+                                <input type="hidden" name="feed[0][batch_id]" class="batch-id" value="">
 
-                            <div class="card-body cardTemplateRow">
-                                <div class="row g-3">
-                                    <!-- แถวบน: วันที่ + ประเภท + ชื่อสินค้า -->
-                                    <div class="col-md-4">
-                                        <input type="text" name="feed[0][date]" class="form-control date-input"
-                                            placeholder="ว/ด/ป ชม.นาที" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="feed[0][item_type]" class="form-select item-type-select" required>
-                                            <option value="">-- เลือกประเภท --</option>
-                                            <option value="feed">ค่าอาหาร</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="feed[0][item_code]" class="form-select item-code-select" required>
-                                            <option value="">-- เลือกชื่อประเภทอาหารหมู --</option>
-                                            @foreach ($storehouses as $storehouse)
-                                                <option value="{{ $storehouse->item_code }}"
-                                                    data-name="{{ $storehouse->item_name }}">
-                                                    {{ $storehouse->item_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <input type="hidden" name="feed[0][item_name]" class="item-name-hidden">
-                                    </div>
+                                <div class="card-custom-tertiary cardTemplateRow">
+                                    <div class="row g-3">
+                                        <!-- แถวบน: วันที่ + ประเภท + ชื่อสินค้า -->
+                                        <div class="col-md-4">
+                                            <input type="text" name="feed[0][date]" class="form-control date-input"
+                                                placeholder="ว/ด/ป ชม.นาที" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select name="feed[0][item_type]" class="form-select item-type-select" required>
+                                                <option value="">-- เลือกประเภท --</option>
+                                                <option value="feed">ค่าอาหาร</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select name="feed[0][item_code]" class="form-select item-code-select" required>
+                                                <option value="">-- เลือกชื่อประเภทอาหารหมู --</option>
+                                                @foreach ($storehouses as $storehouse)
+                                                    <option value="{{ $storehouse->item_code }}"
+                                                        data-name="{{ $storehouse->item_name }}">
+                                                        {{ $storehouse->item_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <input type="hidden" name="feed[0][item_name]" class="item-name-hidden">
+                                        </div>
 
-                                    <!-- แถวกลาง: จำนวน + ราคาต่อชิ้น + หน่วย + ค่าขนส่ง -->
-                                    <div class="col-md-3">
-                                        <input type="number" name="feed[0][stock]" class="form-control" placeholder="จำนวน"
-                                            required>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <input type="number" name="feed[0][price_per_unit]" class="form-control"
-                                            placeholder="ราคาต่อชิ้น">
-                                    </div>
-                                    <div class="col-md-3">
-                                        <select name="feed[0][unit]" class="form-select unit-select">
-                                            <option value="">- เลือกหน่วย -</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <input type="number" name="feed[0][transport_cost]" class="form-control"
-                                            placeholder="ค่าขนส่ง">
-                                    </div>
+                                        <!-- แถวกลาง: จำนวน + ราคาต่อชิ้น + หน่วย + ค่าขนส่ง -->
+                                        <div class="col-md-3">
+                                            <input type="number" name="feed[0][stock]" class="form-control"
+                                                placeholder="จำนวน" required>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="number" name="feed[0][price_per_unit]" class="form-control"
+                                                placeholder="ราคาต่อชิ้น">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <select name="feed[0][unit]" class="form-select unit-select">
+                                                <option value="">- เลือกหน่วย -</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="number" name="feed[0][transport_cost]" class="form-control"
+                                                placeholder="ค่าขนส่ง">
+                                        </div>
 
-                                    <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
-                                    <div class="col-md-5">
-                                        <input type="file" name="feed[0][receipt_file]" class="form-control">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <textarea name="feed[0][note]" rows="2" class="form-control" placeholder="หมายเหตุ"></textarea>
-                                    </div>
-                                    <div class="col-md-1 d-flex align-items-end">
-                                        <button type="button" class="btn btn-danger remove-row">ลบแถว</button>
+                                        <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
+                                        <div class="col-md-5">
+                                            <input type="file" name="feed[0][receipt_file]" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <textarea name="feed[0][note]" rows="2" class="form-control" placeholder="หมายเหตุ"></textarea>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-danger remove-row">ลบแถว</button>
+                                        </div>
                                     </div>
                                 </div>
+
+
                             </div>
-
-
-                        </div>
-                    </template>
+                        </template>
+                    </div>
                     <!-- END FEED -->
 
                     <!-- MEDICINE SECTION -->
-                    <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">ยา/วัคซีนสุกรขาเข้า</h4>
-                        <div>
-                            <button type="button" class="btn btn-danger btn-sm" id="clearAddMedicineRowBtn"
-                                data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
-                                <i class="bi bi-dash-lg"></i> ล้างแถว
-                            </button>
-                            <button type="button" class="btn btn-success btn-sm" id="addMedicineRowBtn"
-                                data-bs-toggle="tooltip" title="เพิ่มแถว">
-                                <i class="bi bi-plus-lg"></i> เพิ่มแถว
-                            </button>
+                    <div card class="card card-custom-secondary">
+                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">ยา/วัคซีนสุกรขาเข้า</h4>
+                            <div>
+                                <button type="button" class="btn btn-danger btn-sm" id="clearAddMedicineRowBtn"
+                                    data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
+                                    <i class="bi bi-dash-lg"></i> ล้างแถว
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" id="addMedicineRowBtn"
+                                    data-bs-toggle="tooltip" title="เพิ่มแถว">
+                                    <i class="bi bi-plus-lg"></i> เพิ่มแถว
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- MEDICINE ROWS -->
-                    <div id="medicineRowsContainer"></div>
-                    <template id="medicineRowTemplate">
-                        <div class="medicine-row card shadow-lg border-0 rounded-3 mb-3 p3" data-template
-                            style="display:none">
-                            <input type="hidden" name="medicine[0][farm_id]" class="farm-id" value="">
-                            <input type="hidden" name="medicine[0][batch_id]" class="batch-id" value="">
+                        <!-- MEDICINE ROWS -->
+                        <div id="medicineRowsContainer"></div>
+                        <template id="medicineRowTemplate">
+                            <div class="medicine-row shadow-lg border-0 rounded-3 mb-3 p3" data-template
+                                style="display:none">
+                                <input type="hidden" name="medicine[0][farm_id]" class="farm-id" value="">
+                                <input type="hidden" name="medicine[0][batch_id]" class="batch-id" value="">
 
-                            <div class="card-body cardTemplateRow">
-                                <div class="row g-3">
-                                    <!-- แถวบน: วันที่ + ประเภท + ชื่อสินค้า -->
-                                    <div class="col-md-4">
-                                        <input type="text" name="medicine[0][date]" class="form-control date-input"
-                                            placeholder="ว/ด/ป ชม.นาที" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="medicine[0][item_type]" class="form-select item-type-select"
-                                            required>
-                                            <option value="">-- เลือกประเภท --</option>
-                                            <option value="medicine">ค่ายา/วัคซีน</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="medicine[0][item_code]" class="form-select item-code-select"
-                                            required>
-                                            <option value="">-- เลือกชื่อยา/วัคซีน --</option>
-                                            @foreach ($storehouses as $storehouse)
-                                                <option value="{{ $storehouse->item_code }}"
-                                                    data-name="{{ $storehouse->item_name }}">
-                                                    {{ $storehouse->item_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        <input type="hidden" name="medicine[0][item_name]" class="item-name-hidden">
-                                    </div>
+                                <div class="card-custom-tertiary cardTemplateRow">
+                                    <div class="row g-3">
+                                        <!-- แถวบน: วันที่ + ประเภท + ชื่อสินค้า -->
+                                        <div class="col-md-4">
+                                            <input type="text" name="medicine[0][date]"
+                                                class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select name="medicine[0][item_type]" class="form-select item-type-select"
+                                                required>
+                                                <option value="">-- เลือกประเภท --</option>
+                                                <option value="medicine">ค่ายา/วัคซีน</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select name="medicine[0][item_code]" class="form-select item-code-select"
+                                                required>
+                                                <option value="">-- เลือกชื่อยา/วัคซีน --</option>
+                                                @foreach ($storehouses as $storehouse)
+                                                    <option value="{{ $storehouse->item_code }}"
+                                                        data-name="{{ $storehouse->item_name }}">
+                                                        {{ $storehouse->item_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <input type="hidden" name="medicine[0][item_name]" class="item-name-hidden">
+                                        </div>
 
-                                    <!-- แถวกลาง: จำนวน + ราคาต่อหน่วย + หน่วย -->
-                                    <div class="col-md-4">
-                                        <input type="number" name="medicine[0][stock]" class="form-control"
-                                            placeholder="จำนวน" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <input type="number" name="medicine[0][price_per_unit]" class="form-control"
-                                            placeholder="ราคาต่อหน่วย">
-                                    </div>
-                                    <div class="col-md-4">
-                                        <select name="medicine[0][unit]" class="form-select unit-select">
-                                            <option value="">- เลือกหน่วย -</option>
-                                        </select>
-                                    </div>
+                                        <!-- แถวกลาง: จำนวน + ราคาต่อหน่วย + หน่วย -->
+                                        <div class="col-md-4">
+                                            <input type="number" name="medicine[0][stock]" class="form-control"
+                                                placeholder="จำนวน" required>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="number" name="medicine[0][price_per_unit]" class="form-control"
+                                                placeholder="ราคาต่อหน่วย">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select name="medicine[0][unit]" class="form-select unit-select">
+                                                <option value="">- เลือกหน่วย -</option>
+                                            </select>
+                                        </div>
 
-                                    <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
-                                    <div class="col-md-5">
-                                        <input type="file" name="medicine[0][receipt_file]" class="form-control">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <textarea name="medicine[0][note]" rows="2" class="form-control" placeholder="หมายเหตุ"></textarea>
-                                    </div>
-                                    <div class="col-md-1 d-flex align-items-end">
-                                        <button type="button" class="btn btn-danger remove-row">ลบแถว</button>
+                                        <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
+                                        <div class="col-md-5">
+                                            <input type="file" name="medicine[0][receipt_file]" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <textarea name="medicine[0][note]" rows="2" class="form-control" placeholder="หมายเหตุ"></textarea>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-danger remove-row">ลบแถว</button>
+                                        </div>
                                     </div>
                                 </div>
+
+
                             </div>
-
-
-                        </div>
-                    </template>
+                        </template>
+                    </div>
                     <!-- END MEDICINE -->
 
                     <!-- MONTHLY SECTION -->
-                    <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                        <h4 class="mb-0">ต้นทุนรายเดือน(ค่าแรง/ค่าน้ำค่าไฟ)</h4>
-                        <div>
-                            <button type="button" class="btn btn-danger btn-sm" id="clearAddMonthlyRowBtn"
-                                data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
-                                <i class="bi bi-dash-lg"></i> ล้างแถว
-                            </button>
-                            <button type="button" class="btn btn-success btn-sm" id="addMonthlyRowBtn"
-                                data-bs-toggle="tooltip" title="เพิ่มแถว">
-                                <i class="bi bi-plus-lg"></i> เพิ่มแถว
-                            </button>
+                    <div card class="card card-custom-secondary">
+                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                            <h4 class="mb-0">ต้นทุนรายเดือน(ค่าแรง/ค่าน้ำค่าไฟ)</h4>
+                            <div>
+                                <button type="button" class="btn btn-danger btn-sm" id="clearAddMonthlyRowBtn"
+                                    data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
+                                    <i class="bi bi-dash-lg"></i> ล้างแถว
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" id="addMonthlyRowBtn"
+                                    data-bs-toggle="tooltip" title="เพิ่มแถว">
+                                    <i class="bi bi-plus-lg"></i> เพิ่มแถว
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- MONTHLY ROWS -->
-                    <div id="monthlyRowsContainer"></div>
-                    <template id="monthlyRowTemplate">
-                        <div class="monthly-row card shadow-lg border-0 rounded-3 mb-3 p3" data-template
-                            style="display:none">
-                            <input type="hidden" name="monthly[0][farm_id]" class="farm-id" value="">
-                            <input type="hidden" name="monthly[0][batch_id]" class="batch-id" value="">
+                        <!-- MONTHLY ROWS -->
+                        <div id="monthlyRowsContainer"></div>
+                        <template id="monthlyRowTemplate">
+                            <div class="monthly-row shadow-lg border-0 rounded-3 mb-3 p3" data-template
+                                style="display:none">
+                                <input type="hidden" name="monthly[0][farm_id]" class="farm-id" value="">
+                                <input type="hidden" name="monthly[0][batch_id]" class="batch-id" value="">
 
-                            <div class="card-body cardTemplateRow">
-                                <div class="row g-3">
-                                    <!-- แถวบน: เดือน/ปี + ประเภทค่าใช้จ่าย -->
-                                    <div class="col-md-4">
-                                        <input type="text" name="monthly[0][date]"
-                                            class="form-control monthly-date-input" placeholder="เดือน/ปี"
-                                            style="background:#f5f5f5" required>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <select name="monthly[0][item_type]" class="form-select" required>
-                                            <option value="">-- เลือกประเภทค่าใช้จ่าย --</option>
-                                            <option value="monthly">ค่าใช้จ่ายประจำเดือน</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <input type="number" name="monthly[0][price]" class="form-control"
-                                            placeholder="จำนวนเงิน" required>
-                                    </div>
+                                <div class="card-custom-tertiary cardTemplateRow">
+                                    <div class="row g-3">
+                                        <!-- แถวบน: เดือน/ปี + ประเภทค่าใช้จ่าย -->
+                                        <div class="col-md-4">
+                                            <input type="text" name="monthly[0][date]"
+                                                class="form-control monthly-date-input" placeholder="เดือน/ปี"
+                                                 required>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <select name="monthly[0][item_type]" class="form-select" required>
+                                                <option value="">-- เลือกประเภทค่าใช้จ่าย --</option>
+                                                <option value="monthly">ค่าใช้จ่ายประจำเดือน</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <input type="number" name="monthly[0][price]" class="form-control"
+                                                placeholder="จำนวนเงิน" required>
+                                        </div>
 
-                                    <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
-                                    <div class="col-md-5">
-                                        <input type="file" name="monthly[0][receipt_file]" class="form-control">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <textarea name="monthly[0][note]" rows="2" class="form-control" placeholder="หมายเหตุ"></textarea>
-                                    </div>
-                                    <div class="col-md-1 d-flex align-items-end">
-                                        <button type="button" class="btn btn-danger remove-row">ลบแถว</button>
+                                        <!-- แถวล่าง: ใบเสร็จ + หมายเหตุ + ปุ่มลบ -->
+                                        <div class="col-md-5">
+                                            <input type="file" name="monthly[0][receipt_file]" class="form-control">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <textarea name="monthly[0][note]" rows="2" class="form-control" placeholder="หมายเหตุ"></textarea>
+                                        </div>
+                                        <div class="col-md-1 d-flex align-items-end">
+                                            <button type="button" class="btn btn-danger remove-row">ลบแถว</button>
+                                        </div>
                                     </div>
                                 </div>
+
+
                             </div>
-
-
-                        </div>
-                    </template>
+                        </template>
+                    </div>
                     <!-- END MONTHLY -->
+
                     <!-- ปุ่มติดขวาล่าง -->
                     <div class="position-sticky bottom-0 d-flex justify-content-end" style="z-index:10;">
                         <button type="submit" class="btn btn-primary">บันทึก</button>

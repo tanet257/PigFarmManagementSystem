@@ -231,10 +231,9 @@
 
     .card-custom-secondary {
         background: linear-gradient(135deg, #1E3E62, #2d5a8a);
+        border-radius: 1rem;
+        padding: 1rem 1.5rem;
         color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 20px;
         box-shadow: 0 4px 12px rgba(30, 62, 98, 0.2);
     }
 
@@ -253,6 +252,16 @@
 
     .card-custom-tertiary:hover {
         box-shadow: 0 8px 20px rgba(254, 205, 166, 0.3);
+    }
+
+    .cardTemplateRow {
+        background-color: #fff;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        margin: 0.5rem auto;
+        width: 95%;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.2s ease;
     }
 
     /* ========== Toolbar ========== */
