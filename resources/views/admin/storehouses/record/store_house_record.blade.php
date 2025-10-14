@@ -374,8 +374,44 @@
                         // Update hidden input
                         farmSelect.value = farmId;
 
+                        // Reset batch selection when farm changes
+                        batchDropdownBtn.querySelector('span').textContent = 'เลือกรุ่น';
+                        batchSelect.value = '';
+
                         // Populate batch dropdown
                         populateBatchDropdown(parseInt(farmId));
+
+                        // Clear all item dropdowns in existing rows
+                        document.querySelectorAll('.feed-row, .medicine-row, .monthly-row').forEach(row => {
+                            // Reset item type
+                            const itemTypeBtn = row.querySelector('.item-type-dropdown-btn');
+                            const itemTypeHidden = row.querySelector('.item-type-hidden');
+                            if (itemTypeBtn) itemTypeBtn.querySelector('span').textContent =
+                                '-- เลือกประเภท --';
+                            if (itemTypeHidden) itemTypeHidden.value = '';
+
+                            // Reset item
+                            const itemBtn = row.querySelector('.item-dropdown-btn');
+                            const itemCodeHidden = row.querySelector('.item-code-hidden');
+                            const itemNameHidden = row.querySelector('.item-name-hidden');
+                            if (itemBtn) {
+                                if (row.classList.contains('feed-row')) {
+                                    itemBtn.querySelector('span').textContent =
+                                        '-- เลือกชื่อประเภทอาหารหมู --';
+                                } else if (row.classList.contains('medicine-row')) {
+                                    itemBtn.querySelector('span').textContent =
+                                        '-- เลือกชื่อยา/วัคซีน --';
+                                }
+                            }
+                            if (itemCodeHidden) itemCodeHidden.value = '';
+                            if (itemNameHidden) itemNameHidden.value = '';
+
+                            // Reset unit
+                            const unitBtn = row.querySelector('.unit-dropdown-btn');
+                            const unitHidden = row.querySelector('.unit-hidden');
+                            if (unitBtn) unitBtn.querySelector('span').textContent = '- เลือกหน่วย -';
+                            if (unitHidden) unitHidden.value = '';
+                        });
 
                         // Update hidden inputs in all rows
                         ['feedRowsContainer', 'medicineRowsContainer', 'monthlyRowsContainer'].forEach(
@@ -503,7 +539,7 @@
 
                     // Clear dropdown menu
                     itemDropdownMenu.innerHTML = '';
-                    
+
                     // Determine placeholder text based on row type or item type value
                     let placeholderText;
                     if (type === 'feed' || row.classList.contains('feed-row')) {
