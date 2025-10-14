@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Get all dropdown toggles
     const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
-
+    
     if (dropdownElementList.length === 0) {
         console.log('Common Dropdowns: No dropdown elements found');
         return;
@@ -26,6 +26,28 @@ document.addEventListener('DOMContentLoaded', function() {
             popperConfig: null
         });
     });
-
+    
     console.log('Common Dropdowns: Initialized ' + dropdownList.length + ' dropdowns');
+
+    // Prevent dropdown items from closing when clicked (for navigation dropdowns)
+    // This handles the case where dropdown items are links that navigate
+    document.querySelectorAll('.dropdown-menu a.dropdown-item').forEach(item => {
+        // Only prevent default for items with href="#"
+        if (item.getAttribute('href') === '#') {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                // Close the dropdown after selection
+                const dropdown = this.closest('.dropdown');
+                if (dropdown) {
+                    const toggle = dropdown.querySelector('.dropdown-toggle');
+                    if (toggle) {
+                        const bsDropdown = bootstrap.Dropdown.getInstance(toggle);
+                        if (bsDropdown) {
+                            bsDropdown.hide();
+                        }
+                    }
+                }
+            });
+        }
+    });
 });
