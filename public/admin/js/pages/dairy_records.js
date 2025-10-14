@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Get all dropdown toggles in this page only
     const dropdownElementList = document.querySelectorAll('.dropdown-toggle');
-    
+
     // Initialize Bootstrap dropdowns
     const dropdownList = [...dropdownElementList].map(dropdownToggleEl => {
         return new bootstrap.Dropdown(dropdownToggleEl, {
@@ -20,6 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
             popperConfig: null
         });
     });
-    
+
     console.log('Dairy Records: Initialized ' + dropdownList.length + ' dropdowns');
 });

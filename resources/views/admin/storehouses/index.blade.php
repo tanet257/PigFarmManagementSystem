@@ -347,17 +347,17 @@
             pointer-events: auto;
         }
 
-    .dropdown-menu .dropdown-item.active {
-        background-color: #FF6500;
-        color: white;
-    }
+        .dropdown-menu .dropdown-item.active {
+            background-color: #FF6500;
+            color: white;
+        }
 
-    .dropdown-menu {
-        z-index: 1050 !important;
-    }
-</style>
+        .dropdown-menu {
+            z-index: 1050 !important;
+        }
+    </style>
 
-@push('scripts')
-<script src="{{ asset('admin/js/pages/storehouses.js') }}"></script>
-@endpush
+    @push('scripts')
+        <script src="{{ asset('admin/js/pages/storehouses.js') }}"></script>
+    @endpush
 @endsection

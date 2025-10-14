@@ -1,127 +1,44 @@
-<!DOCTYPE html>
-<html>
+@extends('layouts.admin')
 
-<head>
-    @include('admin.css')
+@section('title', 'บันทึกสินค้าเข้าคลัง')
 
-    <style>
-        .cardTemplateRow {
-            background: #CBCBCB;
-            border-radius: 10px;
-        }
+@section('content')
+<div class="container my-5">
+    <div class="card shadow-lg border-0 rounded-3">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">บันทึกสินค้าเข้าคลัง (Store House Record)</h4>
+        </div>
+        <div class="card-body">
+            <form action="{{ route('store_house_record.upload') }}" method="post"
+                enctype="multipart/form-data">
+                @csrf
 
-        /* กล่องที่เลือกแล้ว */
-        label {
-            display: inline-block;
-            font-weight: bold;
-            margin-bottom: 6px;
-        }
-
-        /* ปิด spin button ของ number */
-        input[type=number]::-webkit-outer-spin-button,
-        input[type=number]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
-        input[type=number],
-        .no-scroll {
-            -moz-appearance: textfield;
-        }
-
-        /* กล่อง input / select ธรรมดา */
-        input.form-control,
-        select.form-select,
-        textarea.form-control {
-            border-radius: 8px;
-            /* มุมโค้งเหมือน dropdown */
-            background: #ffffff;
-            border: 1px solid #e0e0e0;
-            color: #000000;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
-            padding: 6px 10px;
-        }
-
-        /* effect ตอน focus */
-        input.form-control:focus,
-        select.form-select:focus,
-        textarea.form-control:focus {
-            outline: none;
-            border-color: #999999;
-            background-color: #f9f9f9;
-            /* เทาอ่อน */
-            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
-        }
-
-        /* input type file */
-        input[type="file"].form-control {
-            border: 1px solid #cccccc;
-            border-radius: 8px;
-            background-color: #ffffff;
-            padding: 6px;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
-        }
-
-        input[type="file"].form-control::file-selector-button {
-            background-color: #717171;
-            color: #ffffff;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        input[type="file"].form-control::file-selector-button:hover {
-            background-color: #555555;
-        }
-    </style>
-</head>
-
-<body>
-    @include('admin.header')
-    @include('admin.sidebar')
-
-
-    <div class="page-content">
-        <div class="page-header">
-            <div class="container-fluid">
-                <div class="card shadow-lg border-0 rounded-3">
-                    <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">บันทึกสินค้าเข้าคลัง (Store House Record)</h4>
+                <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3"
+                    style="background: #CBCBCB">
+                    <div class="col-md-5">
+                        <label>ฟาร์ม</label>
+                        <select name="farm_id" id="farmSelect" class="form-select" title="เลือกฟาร์ม"
+                            required>
+                            <option value="">-- เลือกฟาร์ม --</option>
+                            @foreach ($farms as $farm)
+                                <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
+                            @endforeach
+                        </select>
                     </div>
-                    <div class="card-body">
-                        <form action="{{ route('store_house_record.upload') }}" method="post"
-                            enctype="multipart/form-data">
-                            @csrf
+                    <div class="col-md-5">
+                        <label>รุ่น / Batch</label>
+                        <select name="batch_id" class="form-select" id="batchSelect" title="เลือกรุ่น"
+                            required>
+                            <option value="">-- เลือกรุ่น --</option>
+                        </select>
+                    </div>
+                </div>
 
-                            <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3"
-                                style="background: #CBCBCB">
-                                <div class="col-md-5">
-                                    <label>ฟาร์ม</label>
-                                    <select name="farm_id" id="farmSelect" class="form-select" title="เลือกฟาร์ม"
-                                        required>
-                                        <option value="">-- เลือกฟาร์ม --</option>
-                                        @foreach ($farms as $farm)
-                                            <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-5">
-                                    <label>รุ่น / Batch</label>
-                                    <select name="batch_id" class="form-select" id="batchSelect" title="เลือกรุ่น"
-                                        required>
-                                        <option value="">-- เลือกรุ่น --</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                                <h4 class="mb-0">อาหารสุกรขาเข้า</h4>
-                                <div>
-                                    <button type="button" class="btn btn-danger btn-sm" id="clearAddFeedRowBtn"
-                                        data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
+                <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">อาหารสุกรขาเข้า</h4>
+                    <div>
+                        <button type="button" class="btn btn-danger btn-sm" id="clearAddFeedRowBtn"
+                            data-bs-toggle="tooltip" title="ล้างแถวที่ถูกเพิ่ม">
                                         <i class="bi bi-dash-lg"></i> ล้างแถว
                                     </button>
                                     <button type="button" class="btn btn-success btn-sm" id="addFeedRowBtn"
@@ -352,31 +269,28 @@
                                                 <button type="button"
                                                     class="btn btn-danger remove-row">ลบแถว</button>
                                             </div>
-                                        </div>
-                                    </div>
-
-
-                                </div>
-                            </template>
-                            <!-- END MONTHLY -->
-                            <!-- ปุ่มติดขวาล่าง -->
-                            <div class="position-sticky bottom-0 d-flex justify-content-end" style="z-index:10;">
-                                <button type="submit" class="btn btn-primary">บันทึก</button>
-                            </div>
-                        </form>
+                        </div>
                     </div>
+
+
                 </div>
+            </template>
+            <!-- END MONTHLY -->
+            <!-- ปุ่มติดขวาล่าง -->
+            <div class="position-sticky bottom-0 d-flex justify-content-end" style="z-index:10;">
+                <button type="submit" class="btn btn-primary">บันทึก</button>
             </div>
-        </div>
+        </form>
     </div>
+</div>
+</div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const batches = @json($batches);
-            const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
-            const unitsByType = @json($unitsByType->map(fn($c) => $c->values())->toArray());
-
-            const farmSelect = document.getElementById('farmSelect');
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const batches = @json($batches);
+        const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
+        const unitsByType = @json($unitsByType->map(fn($c) => $c->values())->toArray());            const farmSelect = document.getElementById('farmSelect');
             const batchSelect = document.getElementById('batchSelect');
 
             // ---------------------
@@ -612,8 +526,5 @@
             document.querySelectorAll('.feed-row, .medicine-row, .monthly-row').forEach(updateRowOptions);
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    @include('admin.js')
-</body>
-
-</html>
+@endpush
+@endsection
