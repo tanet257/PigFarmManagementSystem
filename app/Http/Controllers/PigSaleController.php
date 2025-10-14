@@ -250,7 +250,10 @@ class PigSaleController extends Controller
             'pen' => function ($query) {
                 $query->with('barn'); // Load barn ผ่าน pen
             },
-            'pigLoss'
+            'pigLoss',
+            'customer',
+            'createdBy',
+            'approvedBy'
         ]);
 
         // Filter by farm

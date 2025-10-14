@@ -162,7 +162,7 @@
                                             <i class="bi bi-check-circle"></i> อนุมัติแล้ว
                                         </span>
                                         <small class="text-muted d-block mt-1">
-                                            โดย: {{ $sell->approved_by }}
+                                            โดย: {{ $sell->approvedBy->name ?? '-' }}
                                         </small>
                                     @else
                                         <span class="badge bg-warning">
@@ -172,7 +172,7 @@
                                 </td>
                                 <td class="text-center">
                                     <small class="text-muted">
-                                        <i class="bi bi-person-fill"></i> {{ $sell->created_by ?? '-' }}
+                                        <i class="bi bi-person-fill"></i> {{ $sell->createdBy->name ?? '-' }}
                                     </small>
                                 </td>
                                 <td class="text-center" onclick="event.stopPropagation();">
@@ -282,7 +282,7 @@
                                         <td><strong>บันทึกโดย:</strong></td>
                                         <td>
                                             <i class="bi bi-person-fill text-primary"></i>
-                                            {{ $sell->created_by ?? '-' }}
+                                            {{ $sell->createdBy->name ?? '-' }}
                                         </td>
                                     </tr>
                                     <tr>
@@ -295,7 +295,7 @@
                                                 <div class="mt-2">
                                                     <small class="text-muted">
                                                         <i class="bi bi-person-check-fill"></i>
-                                                        โดย: {{ $sell->approved_by }}
+                                                        โดย: {{ $sell->approvedBy->name ?? '-' }}
                                                     </small>
                                                     <br>
                                                     <small class="text-muted">
