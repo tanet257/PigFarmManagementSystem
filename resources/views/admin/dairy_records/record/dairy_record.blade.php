@@ -6,6 +6,15 @@
 @endpush
 
 @section('content')
+    <!-- Snackbar -->
+    <div id="snackbar" class="snackbar">
+        <span id="snackbarMessage"></span>
+        <button onclick="copySnackbar()" id="copyBtn" style="margin-left:10px;">
+            <i class="bi bi-copy"></i>
+        </button>
+        <button onclick="closeSnackbar()" style="margin-left:5px;">✕</button>
+    </div>
+
     <div class="container my-5">
         <div class="card shadow-lg border-0 rounded-3">
             <div class="card-header bg-primary text-white">
@@ -351,8 +360,91 @@
                 const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
 
                 const farmSelect = document.getElementById('farmSelect');
-                const batchSelect = document.getElementById(
-                    'batchSelect'); // ---------------------- ฟังก์ชันช่วย ----------------------
+                const batchSelect = document.getElementById('batchSelect');
+                const batchDropdownBtn = document.getElementById('batchDropdownBtn');
+
+                // ---------------------- Validation for Batch dropdown ----------------------
+                document.addEventListener('click', function(e) {
+                    if (e.target.closest('#batchDropdownBtn')) {
+                        const farmId = farmSelect.value;
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            return false;
+                        }
+                    }
+
+                    // Validation for Barn dropdown
+                    if (e.target.closest('.barn-select')) {
+                        const farmId = farmSelect.value;
+                        const batchId = batchSelect.value;
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            return false;
+                        }
+                        if (!batchId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
+                            return false;
+                        }
+                    }
+
+                    // Validation for Pen dropdown
+                    if (e.target.closest('.pen-select')) {
+                        const row = e.target.closest('[data-cloned]');
+                        if (row) {
+                            const barnId = row.querySelector('.barn-id')?.value;
+                            if (!barnId) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                showSnackbar('กรุณาเลือกเล้าก่อน', '#dc3545');
+                                return false;
+                            }
+                        }
+                    }
+
+                    // Validation for Item dropdown
+                    if (e.target.closest('.item-dropdown-btn')) {
+                        const farmId = farmSelect.value;
+                        const batchId = batchSelect.value;
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            return false;
+                        }
+                        if (!batchId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
+                            return false;
+                        }
+                    }
+
+                    // Validation for Status dropdown (medicine)
+                    if (e.target.closest('.medicine-status-dropdown-btn')) {
+                        const farmId = farmSelect.value;
+                        const batchId = batchSelect.value;
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            return false;
+                        }
+                        if (!batchId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
+                            return false;
+                        }
+                    }
+                }, true);
+
+                // ---------------------- ฟังก์ชันช่วย ----------------------
                 function attachDateInputEvents(root) {
                     (root.querySelectorAll ? root : document).querySelectorAll('.date-input').forEach(input => {
                         if (input._attached) return;
@@ -380,20 +472,64 @@
                             e.preventDefault();
                             const farmId = this.dataset.farmId;
                             farmSelect.value = farmId;
-                            document.getElementById('farmDropdownBtn').textContent = this.textContent;
+                            document.getElementById('farmDropdownBtn').querySelector('span')
+                                .textContent = this.textContent;
 
+                            // Reset Batch dropdown
+                            batchDropdownBtn.querySelector('span').textContent = 'เลือกรุ่น';
+                            batchSelect.value = '';
+
+                            // Populate batch options
                             populateBatchDropdown(farmId);
 
-                            batchSelect.value = '';
-                            document.getElementById('batchDropdownBtn').textContent = 'เลือกรุ่น';
-
-                            // ---------------------- reset barn/pen ของทุก row ----------------------
+                            // ---------------------- Reset all rows: barn, pen, item dropdowns ----------------------
                             document.querySelectorAll('[data-cloned]').forEach(row => {
-                                const hiddenBarn = row.querySelector('.barn-id');
-                                if (hiddenBarn) hiddenBarn.value = '';
-                                const hiddenPen = row.querySelector('.barn-pen-json');
-                                if (hiddenPen) hiddenPen.value = JSON.stringify([]);
-                                attachBarnPenDropdowns(row);
+                                // Reset Barn dropdown
+                                const barnBtn = row.querySelector('.barn-select');
+                                if (barnBtn) {
+                                    barnBtn.querySelector('span').textContent = 'เลือกเล้า';
+                                }
+                                const barnId = row.querySelector('.barn-id');
+                                if (barnId) barnId.value = '';
+
+                                // Reset Pen dropdown
+                                const penBtn = row.querySelector('.pen-select');
+                                if (penBtn) {
+                                    penBtn.querySelector('span').textContent = 'เลือกคอก';
+                                }
+                                const penJson = row.querySelector('.barn-pen-json');
+                                if (penJson) penJson.value = '';
+
+                                // Reset Item dropdown
+                                const itemBtn = row.querySelector('.item-dropdown-btn');
+                                if (itemBtn) {
+                                    const isFeed = row.closest('.feed-use-row') !== null;
+                                    const isMedicine = row.closest('.medicine-use-row') !==
+                                        null;
+                                    if (isFeed) {
+                                        itemBtn.querySelector('span').textContent =
+                                            'เลือกอาหาร';
+                                    } else if (isMedicine) {
+                                        itemBtn.querySelector('span').textContent =
+                                            'เลือกยา/วัคซีน';
+                                    } else {
+                                        itemBtn.querySelector('span').textContent =
+                                            'เลือกรายการ';
+                                    }
+                                }
+                                const itemCode = row.querySelector('.item-code');
+                                if (itemCode) itemCode.value = '';
+                                const itemName = row.querySelector('.item-name');
+                                if (itemName) itemName.value = '';
+
+                                // Reset Status dropdown (for medicine)
+                                const statusBtn = row.querySelector(
+                                    '.medicine-status-dropdown-btn');
+                                if (statusBtn) {
+                                    statusBtn.querySelector('span').textContent = 'เลือกสถานะ';
+                                }
+                                const statusValue = row.querySelector('.status-value');
+                                if (statusValue) statusValue.value = '';
                             });
                         });
                     });
@@ -448,10 +584,7 @@
                             const selectedBatchId = parseInt(batchSelect.value) || parseInt(rowContainer
                                 .querySelector('.batch-id')?.value) || null;
                             if (!selectedFarmId || !selectedBatchId) {
-                                barnBtn.classList.add('disabled');
                                 return;
-                            } else {
-                                barnBtn.classList.remove('disabled');
                             }
 
                             const filteredBarns = barns.filter(b => b.farm_id === selectedFarmId);
