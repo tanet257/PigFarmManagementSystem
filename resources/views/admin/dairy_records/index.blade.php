@@ -282,5 +282,54 @@
         background-color: #FF6500;
         color: white;
     }
+
+    .dropdown-menu {
+        z-index: 1050 !important;
+    }
 </style>
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize all dropdowns
+        var dropdowns = document.querySelectorAll('.dropdown-toggle');
+        dropdowns.forEach(function(dropdown) {
+            dropdown.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Close all other dropdowns
+                var allDropdowns = document.querySelectorAll('.dropdown-menu.show');
+                allDropdowns.forEach(function(menu) {
+                    if (menu !== dropdown.nextElementSibling) {
+                        menu.classList.remove('show');
+                    }
+                });
+                
+                // Toggle current dropdown
+                var menu = dropdown.nextElementSibling;
+                menu.classList.toggle('show');
+            });
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.dropdown')) {
+                var allDropdowns = document.querySelectorAll('.dropdown-menu.show');
+                allDropdowns.forEach(function(menu) {
+                    menu.classList.remove('show');
+                });
+            }
+        });
+        
+        // Prevent dropdown from closing when clicking inside
+        var dropdownMenus = document.querySelectorAll('.dropdown-menu');
+        dropdownMenus.forEach(function(menu) {
+            menu.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
+    });
+</script>
+@endpush
 @endsection
