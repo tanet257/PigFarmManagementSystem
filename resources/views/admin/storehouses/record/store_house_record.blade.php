@@ -3,6 +3,13 @@
 @section('title', 'บันทึกสินค้าเข้าคลัง')
 
 @section('content')
+    {{-- SnackBar --}}
+    <div id="snackbar" class="snackbar">
+        <span id="snackbarMessage"></span>
+        <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
+        <button onclick="closeSnackbar()">✕</button>
+    </div>
+
     <div class="container my-5">
         <div class="card shadow-lg border-0 rounded-3">
             <div class="card-header bg-primary text-white">
@@ -496,8 +503,17 @@
 
                     // Clear dropdown menu
                     itemDropdownMenu.innerHTML = '';
-                    itemDropdownBtn.querySelector('span').textContent = type === 'feed' ?
-                        '-- เลือกชื่อประเภทอาหารหมู --' : '-- เลือกชื่อยา/วัคซีน --';
+                    
+                    // Determine placeholder text based on row type or item type value
+                    let placeholderText;
+                    if (type === 'feed' || row.classList.contains('feed-row')) {
+                        placeholderText = '-- เลือกชื่อประเภทอาหารหมู --';
+                    } else if (type === 'medicine' || row.classList.contains('medicine-row')) {
+                        placeholderText = '-- เลือกชื่อยา/วัคซีน --';
+                    } else {
+                        placeholderText = '-- เลือกสินค้า --';
+                    }
+                    itemDropdownBtn.querySelector('span').textContent = placeholderText;
 
                     if (type && batchId && storehousesByTypeAndBatch[type]?.[batchId]) {
                         Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
@@ -643,6 +659,17 @@
                 // ITEM DROPDOWN CLICK HANDLER
                 // ---------------------
                 document.addEventListener('click', function(e) {
+                    // Handle batch dropdown button clicks - validate farm selection
+                    if (e.target.closest('#batchDropdownBtn')) {
+                        const farmId = farmSelect.value;
+                        if (!farmId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            return false;
+                        }
+                    }
+
                     // Handle item type dropdown button clicks - validate farm and batch selection
                     if (e.target.closest('.item-type-dropdown-btn')) {
                         const farmId = farmSelect.value;
@@ -651,13 +678,13 @@
                         if (!farmId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            alert('กรุณาเลือกฟาร์มก่อน');
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
                             return false;
                         }
                         if (!batchId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            alert('กรุณาเลือกรุ่นก่อน');
+                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
                             return false;
                         }
                     }
@@ -675,19 +702,19 @@
                         if (!farmId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            alert('กรุณาเลือกฟาร์มก่อน');
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
                             return false;
                         }
                         if (!batchId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            alert('กรุณาเลือกรุ่นก่อน');
+                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
                             return false;
                         }
                         if (!itemType) {
                             e.preventDefault();
                             e.stopPropagation();
-                            alert('กรุณาเลือกประเภทก่อน');
+                            showSnackbar('กรุณาเลือกประเภทก่อน', '#dc3545');
                             return false;
                         }
                     }
@@ -704,7 +731,7 @@
                             if (!itemType) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                alert('กรุณาเลือกประเภทก่อน');
+                                showSnackbar('กรุณาเลือกประเภทก่อน', '#dc3545');
                                 return false;
                             }
                         }
