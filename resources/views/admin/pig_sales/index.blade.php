@@ -92,13 +92,6 @@
                     <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
                     </a>
-                    </ul>
-                </div>
-
-                <div class="ms-auto d-flex gap-2">
-                    <a class="btn btn-outline-success btn-sm" href="{{ route('pig_sale.export.csv') }}">
-                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
-                    </a>
                     <a class="btn btn-outline-danger btn-sm" href="{{ route('pig_sale.export.pdf') }}">
                         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                     </a>
@@ -1296,8 +1289,8 @@
                 color: white;
             }
         </style>
-
-        @push('scripts')
-            <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
-        @endpush
     @endsection
+
+    @push('scripts')
+        <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
+    @endpush

@@ -181,7 +181,6 @@
     .form-select {
         border: 1px solid var(--border-color);
         border-radius: 6px;
-        transition: all 0.3s ease;
     }
 
     .form-control:focus,
@@ -228,11 +227,10 @@
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 4px 12px rgba(255, 91, 34, 0.2);
-        transition: all 0.3s ease;
     }
 
     .card-custom:hover {
-        transform: translateY(-5px);
+
         box-shadow: 0 8px 20px rgba(255, 91, 34, 0.3);
     }
 
@@ -243,11 +241,10 @@
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 4px 12px rgba(30, 62, 98, 0.2);
-        transition: all 0.3s ease;
     }
 
     .card-custom-secondary:hover {
-        transform: translateY(-5px);
+
         box-shadow: 0 8px 20px rgba(30, 62, 98, 0.3);
     }
 
@@ -258,11 +255,9 @@
         border-radius: 12px;
         padding: 20px;
         box-shadow: 0 4px 12px rgba(254, 205, 166, 0.2);
-        transition: all 0.3s ease;
     }
 
     .card-custom-tertiary:hover {
-        transform: translateY(-5px);
         box-shadow: 0 8px 20px rgba(254, 205, 166, 0.3);
     }
 
@@ -354,14 +349,12 @@
     }
 
     .table-primary tbody tr {
-        transition: all 0.3s ease;
         cursor: pointer;
         border-bottom: 1px solid var(--light-peach);
     }
 
     .table-primary tbody tr:hover {
         background-color: var(--light-peach);
-        transform: scale(1.01);
     }
 
     .table-primary tbody td {
@@ -396,14 +389,12 @@
     }
 
     .table-secondary tbody tr {
-        transition: all 0.3s ease;
         cursor: pointer;
         border-bottom: 1px solid #e0e0e0;
     }
 
     .table-secondary tbody tr:hover {
         background-color: #e3f2fd;
-        transform: scale(1.01);
     }
 
     .table-secondary tbody td {
