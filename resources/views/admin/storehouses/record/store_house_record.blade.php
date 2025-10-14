@@ -88,7 +88,7 @@
                                                     class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-type-dropdown-btn"
                                                     type="button" data-bs-toggle="dropdown" aria-expanded="false"><span>--
                                                         เลือกประเภท --</span></button>
-                                                <ul class="dropdown-menu w-100">
+                                                <ul class="dropdown-menu w-100 item-type-dropdown-menu">
                                                     <li><a class="dropdown-item" href="#"
                                                             data-value="feed">ค่าอาหาร</a></li>
                                                 </ul>
@@ -193,7 +193,7 @@
                                                     class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-type-dropdown-btn"
                                                     type="button" data-bs-toggle="dropdown"
                                                     aria-expanded="false"><span>-- เลือกประเภท --</span></button>
-                                                <ul class="dropdown-menu w-100">
+                                                <ul class="dropdown-menu w-100 item-type-dropdown-menu">
                                                     <li><a class="dropdown-item" href="#"
                                                             data-value="medicine">ค่ายา/วัคซีน</a></li>
                                                 </ul>
@@ -644,7 +644,7 @@
                 document.addEventListener('click', function(e) {
                     // Handle item dropdown clicks
                     if (e.target.classList.contains('dropdown-item') && e.target.closest(
-                        '.item-dropdown-menu')) {
+                            '.item-dropdown-menu')) {
                         e.preventDefault();
                         const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
                         if (!row) return;
@@ -662,7 +662,7 @@
 
                     // Handle item type dropdown clicks
                     if (e.target.classList.contains('dropdown-item') && e.target.closest(
-                            '.item-type-dropdown-btn')?.nextElementSibling.contains(e.target)) {
+                            '.item-type-dropdown-menu')) {
                         e.preventDefault();
                         const row = e.target.closest('.feed-row, .medicine-row');
                         if (!row) return;
@@ -681,7 +681,7 @@
 
                     // Handle unit dropdown clicks
                     if (e.target.classList.contains('dropdown-item') && e.target.closest(
-                        '.unit-dropdown-menu')) {
+                            '.unit-dropdown-menu')) {
                         e.preventDefault();
                         const row = e.target.closest('.feed-row, .medicine-row, .monthly-row');
                         if (!row) return;
