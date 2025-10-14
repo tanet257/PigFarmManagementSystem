@@ -540,7 +540,7 @@
         border-radius: 8px;
         padding: 16px;
         position: fixed;
-        z-index: 9999;
+        z-index: 99999 !important;
         right: 20px;
         bottom: 30px;
         font-size: 16px;
