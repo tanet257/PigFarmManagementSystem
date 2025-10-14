@@ -1096,7 +1096,24 @@
                     const quantityInputs = document.querySelectorAll('.quantity-input');
 
                     quantityInputs.forEach(input => {
-                        input.addEventListener('input', calculateTotals);
+                        input.addEventListener('input', function() {
+                            const maxQuantity = parseInt(this.getAttribute('max'));
+                            const currentValue = parseInt(this.value);
+
+                            // ตรวจสอบว่ากรอกเกินจำนวนที่มีหรือไม่
+                            if (currentValue > maxQuantity) {
+                                this.value = maxQuantity;
+                                showSnackbar(`จำนวนหมูที่ขายต้องไม่เกิน ${maxQuantity} ตัว`, '#dc3545');
+                            }
+
+                            // ตรวจสอบว่าน้อยกว่า 1 หรือไม่
+                            if (currentValue < 1 && this.value !== '') {
+                                this.value = 1;
+                                showSnackbar('จำนวนหมูต้องมากกว่า 0', '#dc3545');
+                            }
+
+                            calculateTotals();
+                        });
                     });
                 }
 
@@ -1203,6 +1220,42 @@
 
                 if (shippingCostInput) {
                     shippingCostInput.addEventListener('input', calculatePrices);
+                }
+
+                // Form validation before submit
+                const pigSellForm = document.getElementById('pigSellForm');
+                if (pigSellForm) {
+                    pigSellForm.addEventListener('submit', function(e) {
+                        let hasError = false;
+                        const quantityInputs = document.querySelectorAll('.quantity-input:not([disabled])');
+
+                        quantityInputs.forEach(input => {
+                            const maxQuantity = parseInt(input.getAttribute('max'));
+                            const currentValue = parseInt(input.value);
+
+                            if (currentValue > maxQuantity) {
+                                e.preventDefault();
+                                hasError = true;
+                                showSnackbar(
+                                    `จำนวนหมูในบางคอกเกินจำนวนที่มี (สูงสุด ${maxQuantity} ตัว)`,
+                                    '#dc3545');
+                                input.focus();
+                                return false;
+                            }
+
+                            if (currentValue < 1 && input.value !== '') {
+                                e.preventDefault();
+                                hasError = true;
+                                showSnackbar('จำนวนหมูต้องมากกว่า 0', '#dc3545');
+                                input.focus();
+                                return false;
+                            }
+                        });
+
+                        if (hasError) {
+                            return false;
+                        }
+                    });
                 }
             });
 
