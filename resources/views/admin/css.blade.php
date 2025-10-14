@@ -204,15 +204,32 @@
         color: var(--secondary-orange);
     }
 
-    /* Dropdown */
+    /* ========== Dropdown Menu Styles ========== */
     .dropdown-menu {
+        min-width: 100% !important;
+        max-width: 100% !important;
+        width: 100% !important;
+        max-height: 300px;
+        overflow-y: auto;
         border: 1px solid var(--border-color);
-        box-shadow: var(--shadow-md);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border-radius: 0.375rem;
+    }
+
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+        transition: all 0.2s ease;
     }
 
     .dropdown-item:hover {
         background-color: var(--light-peach);
-        color: var(--text-dark);
+        color: var(--primary-orange);
+        transform: translateX(5px);
+    }
+
+    .dropdown-item:active {
+        background-color: var(--primary-orange);
+        color: white;
     }
 
     /* ========== Custom Cards ========== */
