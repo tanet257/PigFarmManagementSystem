@@ -1267,27 +1267,6 @@
             }
         </script>
 
-        {{-- Custom CSS --}}
-        <style>
-            .clickable-row {
-                cursor: pointer;
-                transition: background-color 0.2s ease, box-shadow 0.2s ease;
-            }
-
-            .clickable-row:hover {
-                background-color: #FFF5E6 !important;
-                box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
-            }
-
-            /* ป้องกันปุ่มใน column จัดการไม่ให้ trigger modal */
-            .clickable-row td:last-child {
-                pointer-events: none;
-            }
-
-            .clickable-row td:last-child>* {
-                pointer-events: auto;
-            }
-        </style>
     @endsection
 
     @push('scripts')

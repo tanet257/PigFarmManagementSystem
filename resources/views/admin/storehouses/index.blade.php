@@ -9,17 +9,59 @@
         </div>
         <div class="py-2"></div>
 
+        {{-- แจ้งเตือนสินค้าใกล้หมด --}}
+        @php
+            $lowStockItems = $storehouses->filter(function($item) {
+                return ($item->stock ?? 0) > 0 && ($item->stock ?? 0) < ($item->min_quantity ?? 0);
+            });
+            $outOfStockItems = $storehouses->filter(function($item) {
+                return ($item->stock ?? 0) <= 0;
+            });
+        @endphp
+
+        @if($lowStockItems->count() > 0)
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <strong>เตือน!</strong> มีสินค้าใกล้หมด {{ $lowStockItems->count() }} รายการ:
+                <ul class="mb-0 mt-2">
+                    @foreach($lowStockItems->take(5) as $item)
+                        <li>
+                            <strong>{{ $item->item_name }}</strong>
+                            - เหลือ {{ number_format($item->stock, 2) }} {{ $item->unit }}
+                            (ขั้นต่ำ {{ number_format($item->min_quantity ?? 0, 2) }})
+                        </li>
+                    @endforeach
+                    @if($lowStockItems->count() > 5)
+                        <li class="text-muted">และอีก {{ $lowStockItems->count() - 5 }} รายการ...</li>
+                    @endif
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
+        @if($outOfStockItems->count() > 0)
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-x-circle-fill me-2"></i>
+                <strong>สินค้าหมด!</strong> มีสินค้าหมดสต็อก {{ $outOfStockItems->count() }} รายการ:
+                <ul class="mb-0 mt-2">
+                    @foreach($outOfStockItems->take(5) as $item)
+                        <li><strong>{{ $item->item_name }}</strong> ({{ $item->item_code }})</li>
+                    @endforeach
+                    @if($outOfStockItems->count() > 5)
+                        <li class="text-muted">และอีก {{ $outOfStockItems->count() - 5 }} รายการ...</li>
+                    @endif
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         {{-- Toolbar --}}
         <div class="card-custom-secondary mb-3">
             <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-                <!-- Search -->
-                <input type="search" name="search" class="form-control form-control-sm" style="width: 200px;"
-                    placeholder="ค้นหาสินค้า..." value="{{ request('search') }}">
 
                 <!-- Farm Card Dropdown -->
                 <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #1E3E62; color: white; border: none;">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-building"></i>
                         {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
                     </button>
@@ -38,8 +80,7 @@
 
                 <!-- Category Dropdown (Orange) -->
                 <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #FF6500; color: white; border: none;">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-tag"></i>
                         @if (request('category') == 'อาหาร')
                             อาหาร
@@ -74,8 +115,7 @@
 
                 <!-- Stock Status Dropdown (Orange) -->
                 <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #FF6500; color: white; border: none;">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-box-seam"></i>
                         @if (request('stock_status') == 'in_stock')
                             มีสินค้า
@@ -105,8 +145,7 @@
 
                 <!-- Sort Dropdown (Orange) -->
                 <div class="dropdown">
-                    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        style="background-color: #FF6500; color: white; border: none;">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-sort-down"></i>
                         @if (request('sort') == 'name_asc')
                             ชื่อ (ก-ฮ)
@@ -153,73 +192,73 @@
         </div>
 
         {{-- Table --}}
-        <div class="card-custom-secondary mt-3">
-            <div class="table-responsive">
-                <table class="table table-hover mb-0">
-                    <thead class="table-header-custom">
-                        <tr>
-                            <th class="text-center">รหัส</th>
-                            <th class="text-center">ชื่อสินค้า</th>
-                            <th class="text-center">ประเภท</th>
-                            <th class="text-center">ฟาร์ม</th>
-                            <th class="text-center">จำนวน</th>
-                            <th class="text-center">หน่วย</th>
-                            <th class="text-center">สถานะ</th>
-                            <th class="text-center">วันหมดอายุ</th>
-                            <th class="text-center">จัดการ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($storehouses as $item)
-                            <tr class="clickable-row" data-bs-toggle="modal"
-                                data-bs-target="#viewModal{{ $item->id }}">
-                                <td class="text-center">
-                                    <strong>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</strong>
-                                </td>
-                                <td>{{ $item->item_name }}</td>
-                                <td class="text-center">
-                                    @if ($item->category == 'อาหาร')
-                                        <span class="badge bg-success">อาหาร</span>
-                                    @elseif($item->category == 'ยา')
-                                        <span class="badge bg-warning">ยา</span>
-                                    @elseif($item->category == 'วัคซีน')
-                                        <span class="badge bg-info">วัคซีน</span>
-                                    @else
-                                        <span class="badge bg-secondary">{{ $item->category }}</span>
+
+        <div class=" table-responsive">
+            <table class=" table-primary table mb-0">
+                <thead class="table-header-custom">
+                    <tr>
+                        <th class="text-center">รหัส</th>
+                        <th class="text-center">ชื่อสินค้า</th>
+                        <th class="text-center">ประเภท</th>
+                        <th class="text-center">ฟาร์ม</th>
+                        <th class="text-center">จำนวน</th>
+                        <th class="text-center">หน่วย</th>
+                        <th class="text-center">สถานะ</th>
+                        <th class="text-center">วันหมดอายุ</th>
+                        <th class="text-center">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($storehouses as $item)
+                        <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $item->id }}">
+                            <td class="text-center">
+                                <strong>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</strong>
+                            </td>
+                            <td>{{ $item->item_name }}</td>
+                            <td class="text-center">
+                                @if ($item->category == 'อาหาร')
+                                    <span class="badge bg-success">อาหาร</span>
+                                @elseif($item->category == 'ยา')
+                                    <span class="badge bg-warning">ยา</span>
+                                @elseif($item->category == 'วัคซีน')
+                                    <span class="badge bg-info">วัคซีน</span>
+                                @else
+                                    <span class="badge bg-secondary">{{ $item->category }}</span>
+                                @endif
+                            </td>
+                            <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
+                            <td class="text-center"><strong>{{ number_format($item->stock ?? 0, 2) }}</strong></td>
+                            <td class="text-center">{{ $item->unit }}</td>
+                            <td class="text-center">
+                                @if (($item->stock ?? 0) <= 0)
+                                    <span class="badge bg-danger">หมด</span>
+                                @elseif(($item->stock ?? 0) < ($item->min_quantity ?? 0))
+                                    <span class="badge bg-warning">ใกล้หมด</span>
+                                @else
+                                    <span class="badge bg-success">พร้อมใช้</span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if ($item->expire_date)
+                                    {{ \Carbon\Carbon::parse($item->expire_date)->format('d/m/Y') }}
+                                    @if (\Carbon\Carbon::parse($item->expire_date)->isPast())
+                                        <small class="text-danger d-block">หมดอายุแล้ว!</small>
+                                    @elseif(\Carbon\Carbon::parse($item->expire_date)->diffInDays() < 30)
+                                        <small class="text-warning d-block">ใกล้หมดอายุ</small>
                                     @endif
-                                </td>
-                                <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
-                                <td class="text-center"><strong>{{ number_format($item->quantity, 2) }}</strong></td>
-                                <td class="text-center">{{ $item->unit }}</td>
-                                <td class="text-center">
-                                    @if ($item->quantity <= 0)
-                                        <span class="badge bg-danger">หมด</span>
-                                    @elseif($item->quantity < $item->min_quantity)
-                                        <span class="badge bg-warning">ใกล้หมด</span>
-                                    @else
-                                        <span class="badge bg-success">พร้อมใช้</span>
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    @if ($item->expire_date)
-                                        {{ \Carbon\Carbon::parse($item->expire_date)->format('d/m/Y') }}
-                                        @if (\Carbon\Carbon::parse($item->expire_date)->isPast())
-                                            <small class="text-danger d-block">หมดอายุแล้ว!</small>
-                                        @elseif(\Carbon\Carbon::parse($item->expire_date)->diffInDays() < 30)
-                                            <small class="text-warning d-block">ใกล้หมดอายุ</small>
-                                        @endif
-                                    @else
-                                        -
-                                    @endif
-                                </td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                        data-bs-target="#viewModal{{ $item->id }}">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                    <a href="{{ route('storehouses.edit', $item->id) }}" class="btn btn-sm btn-warning">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
+                                @else
+                                    -
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                    data-bs-target="#viewModal{{ $item->id }}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-warning"
+                                    data-bs-toggle="modal" data-bs-target="#editModal{{ $item->id }}">
+                                    <i class="bi bi-pencil-square"></i>
+
                                     <form action="{{ route('storehouses.delete', $item->id) }}" method="POST"
                                         class="d-inline" onsubmit="return confirm('ต้องการลบสินค้านี้หรือไม่?')">
                                         @csrf
@@ -228,17 +267,17 @@
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="9" class="text-center text-danger">❌ ไม่มีข้อมูลสินค้าในคลัง</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="text-center text-danger">❌ ไม่มีข้อมูลสินค้าในคลัง</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
+
 
         {{-- Pagination --}}
         <div class="d-flex justify-content-between mt-3">
@@ -264,7 +303,7 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <table class="table table-sm">
+                                <table class="table table-secondary table-sm">
                                     <tr>
                                         <td width="40%"><strong>รหัสสินค้า:</strong></td>
                                         <td>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
@@ -284,10 +323,10 @@
                                 </table>
                             </div>
                             <div class="col-md-6">
-                                <table class="table table-sm">
+                                <table class="table table-secondary table-sm">
                                     <tr>
                                         <td width="40%"><strong>จำนวน:</strong></td>
-                                        <td><strong>{{ number_format($item->quantity, 2) }} {{ $item->unit }}</strong>
+                                        <td><strong>{{ number_format($item->stock, 2) }} {{ $item->unit }}</strong>
                                         </td>
                                     </tr>
                                     <tr>
@@ -313,9 +352,10 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <a href="{{ route('storehouses.edit', $item->id) }}" class="btn btn-warning">
+                        <button type="button" class="btn btn-warning" data-bs-dismiss="modal" data-bs-toggle="modal"
+                            data-bs-target="#editModal{{ $item->id }}">
                             <i class="bi bi-pencil-square"></i> แก้ไข
-                        </a>
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                     </div>
                 </div>
@@ -323,39 +363,92 @@
         </div>
     @endforeach
 
-    <style>
-        .clickable-row {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .clickable-row:hover {
-            background-color: #FFF5E6 !important;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
-        }
-
-        .clickable-row:active {
-            transform: translateY(0);
-        }
-
-        .clickable-row td:last-child {
-            pointer-events: none;
-        }
-
-        .clickable-row td:last-child>* {
-            pointer-events: auto;
-        }
-
-        .dropdown-menu .dropdown-item.active {
-            background-color: #FF6500;
-            color: white;
-        }
-
-        .dropdown-menu {
-            z-index: 1050 !important;
-        }
-    </style>
+    {{-- Edit Modals --}}
+    @foreach ($storehouses as $item)
+        <div class="modal fade" id="editModal{{ $item->id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form action="{{ route('storehouses.update', $item->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-header">
+                            <h5 class="modal-title">แก้ไขสินค้า - {{ $item->item_name }}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">รหัสสินค้า</label>
+                                    <input type="text" class="form-control" name="item_code"
+                                        value="{{ $item->item_code }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">ชื่อสินค้า</label>
+                                    <input type="text" class="form-control" name="item_name"
+                                        value="{{ $item->item_name }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">ประเภท</label>
+                                    <select class="form-select" name="item_type" required>
+                                        <option value="อาหาร" {{ $item->item_type == 'อาหาร' ? 'selected' : '' }}>อาหาร
+                                        </option>
+                                        <option value="ยา" {{ $item->item_type == 'ยา' ? 'selected' : '' }}>ยา
+                                        </option>
+                                        <option value="วัคซีน" {{ $item->item_type == 'วัคซีน' ? 'selected' : '' }}>วัคซีน
+                                        </option>
+                                        <option value="อื่นๆ" {{ $item->item_type == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">ฟาร์ม</label>
+                                    <select class="form-select" name="farm_id" required>
+                                        <option value="">เลือกฟาร์ม</option>
+                                        @foreach ($farms as $farm)
+                                            <option value="{{ $farm->id }}"
+                                                {{ $item->farm_id == $farm->id ? 'selected' : '' }}>
+                                                {{ $farm->farm_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">หน่วย</label>
+                                    <input type="text" class="form-control" name="unit"
+                                        value="{{ $item->unit }}" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">จำนวนขั้นต่ำ (เตือนเมื่อสต็อกต่ำกว่านี้)</label>
+                                    <input type="number" class="form-control" name="min_quantity"
+                                        value="{{ $item->min_quantity ?? 0 }}" min="0" step="0.01">
+                                    <small class="text-muted">ระบบจะแจ้งเตือนเมื่อสต็อกต่ำกว่าจำนวนนี้</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">สถานะ</label>
+                                    <select class="form-select" name="status">
+                                        <option value="available" {{ $item->status == 'available' ? 'selected' : '' }}>
+                                            พร้อมใช้</option>
+                                        <option value="unavailable"
+                                            {{ $item->status == 'unavailable' ? 'selected' : '' }}>หมด</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label">หมายเหตุ</label>
+                                    <textarea class="form-control" name="note" rows="3">{{ $item->note }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> บันทึก
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
 
     @push('scripts')
         <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>

@@ -280,40 +280,6 @@
         </div>
     @endforeach
 
-    <style>
-        .clickable-row {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .clickable-row:hover {
-            background-color: #FFF5E6 !important;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(255, 91, 34, 0.15);
-        }
-
-        .clickable-row:active {
-            transform: translateY(0);
-        }
-
-        .clickable-row td:last-child {
-            pointer-events: none;
-        }
-
-        .clickable-row td:last-child>* {
-            pointer-events: auto;
-        }
-
-        .dropdown-menu .dropdown-item.active {
-            background-color: #FF6500;
-            color: white;
-        }
-
-        .dropdown-menu {
-            z-index: 1050 !important;
-        }
-    </style>
-
     @push('scripts')
         <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
     @endpush

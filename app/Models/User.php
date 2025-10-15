@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Notification;
 
 class User extends Authenticatable
 {
@@ -104,5 +105,21 @@ class User extends Authenticatable
     public function isRejected()
     {
         return $this->status === 'rejected';
+    }
+
+    /**
+     * Get the user's custom notifications
+     */
+    public function userNotifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
+
+    /**
+     * Get unread notifications count
+     */
+    public function unreadNotificationsCount()
+    {
+        return $this->userNotifications()->where('is_read', false)->count();
     }
 }

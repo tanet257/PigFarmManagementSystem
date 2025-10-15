@@ -195,20 +195,23 @@ Route::prefix('pig_sale')->middleware(['auth'])->group(function () {
 //------------------- route notifications --------------------//
 Route::prefix('notifications')->middleware(['auth'])->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
     Route::get('/unread_count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
     Route::post('/{id}/mark_as_read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
-    Route::post('/mark_all_read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_read');
+    Route::post('/mark_all_read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_as_read');
+    Route::post('/clear_read', [NotificationController::class, 'clearRead'])->name('notifications.clear_read');
     Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 //------------------- route user management ------------------//
 Route::prefix('user_management')->middleware(['auth', 'permission:manage_users'])->group(function () {
-    Route::get('/', [UserManagementController::class, 'index'])->name('users.index');
-    Route::get('/pending', [UserManagementController::class, 'pending'])->name('users.pending');
-    Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('users.approve');
-    Route::post('/{id}/reject', [UserManagementController::class, 'reject'])->name('users.reject');
-    Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('users.assign_role');
-    Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('users.destroy');
+    Route::get('/', [UserManagementController::class, 'index'])->name('user_management.index');
+    Route::get('/pending', [UserManagementController::class, 'pending'])->name('user_management.pending');
+    Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('user_management.approve');
+    Route::post('/{id}/reject', [UserManagementController::class, 'reject'])->name('user_management.reject');
+    Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('user_management.assign_role');
+    Route::post('/{id}/update_roles', [UserManagementController::class, 'updateRoles'])->name('user_management.update_roles');
+    Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('user_management.destroy');
 });
 
 //------------------- route user approval --------------------//

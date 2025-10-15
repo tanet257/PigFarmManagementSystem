@@ -22,7 +22,7 @@ class NotificationHelper
                 'type' => 'user_registered',
                 'user_id' => $admin->id,
                 'related_user_id' => $newUser->id,
-                'title' => '🆕 ผู้ใช้ใหม่ลงทะเบียน',
+                'title' => 'ผู้ใช้ใหม่ลงทะเบียน',
                 'message' => "ผู้ใช้ {$newUser->name} ({$newUser->email}) ลงทะเบียนเข้าระบบและรอการอนุมัติ",
                 'url' => route('user_management.index'),
                 'is_read' => false,
@@ -39,7 +39,7 @@ class NotificationHelper
             'type' => 'user_approved',
             'user_id' => $user->id,
             'related_user_id' => $approvedBy->id,
-            'title' => '✅ บัญชีของคุณได้รับการอนุมัติแล้ว',
+            'title' => 'บัญชีของคุณได้รับการอนุมัติแล้ว',
             'message' => "บัญชีของคุณได้รับการอนุมัติโดย {$approvedBy->name} คุณสามารถเข้าสู่ระบบได้แล้ว",
             'url' => route('dashboard'),
             'is_read' => false,
@@ -55,7 +55,7 @@ class NotificationHelper
             'type' => 'user_rejected',
             'user_id' => $user->id,
             'related_user_id' => $rejectedBy->id,
-            'title' => '❌ บัญชีของคุณถูกปฏิเสธ',
+            'title' => 'บัญชีของคุณถูกปฏิเสธ',
             'message' => "บัญชีของคุณถูกปฏิเสธโดย {$rejectedBy->name}\nเหตุผล: {$reason}",
             'url' => null,
             'is_read' => false,
@@ -85,7 +85,7 @@ class NotificationHelper
                 'type' => 'pig_death',
                 'user_id' => $admin->id,
                 'related_user_id' => $reportedBy->id,
-                'title' => '💀 รายงานหมูตาย',
+                'title' => 'รายงานหมูตาย',
                 'message' => "มีหมูตาย {$pigDeath->amount} ตัว\nรุ่น: {$batch->batch_code}\nเล้า: {$barn->barn_code}\nคอก: {$pen->pen_code}\nสาเหตุ: " . ($pigDeath->cause ?? 'ไม่ระบุ'),
                 'url' => url('view_pig_death'),
                 'is_read' => false,
@@ -116,7 +116,7 @@ class NotificationHelper
                 'type' => 'batch_treatment',
                 'user_id' => $admin->id,
                 'related_user_id' => $reportedBy->id,
-                'title' => '💊 บันทึกการรักษาหมูป่วย',
+                'title' => 'บันทึกการรักษาหมูป่วย',
                 'message' => "มีการบันทึกการรักษา\nรุ่น: {$batch->batch_code}\nเล้า: {$barn->barn_code}\nคอก: {$pen->pen_code}\nยา: {$batchTreatment->medicine_name}\nจำนวน: {$batchTreatment->dosage} {$batchTreatment->unit}",
                 'url' => url('view_batch_treatment'),
                 'is_read' => false,
@@ -145,7 +145,7 @@ class NotificationHelper
                 'type' => 'pig_sale',
                 'user_id' => $admin->id,
                 'related_user_id' => $reportedBy->id,
-                'title' => '💰 บันทึกการขายหมู',
+                'title' => 'บันทึกการขายหมู',
                 'message' => "มีการขายหมู {$pigSale->quantity} ตัว\nรุ่น: {$batch->batch_code}\nราคารวม: " . number_format($pigSale->total_price, 2) . " บาท\nวันที่ขาย: {$pigSale->date}",
                 'url' => route('pig_sale.index'),
                 'is_read' => false,
@@ -172,9 +172,9 @@ class NotificationHelper
 
         // แปลประเภทการเคลื่อนไหว
         $typeText = match ($movementType) {
-            'in' => '📥 เพิ่มสินค้าเข้า',
-            'out' => '📤 เบิกสินค้าออก',
-            default => '🔄 ปรับปรุง'
+            'in' => 'เพิ่มสินค้าเข้า',
+            'out' => 'เบิกสินค้าออก',
+            default => 'ปรับปรุง'
         };
 
         foreach ($admins as $admin) {

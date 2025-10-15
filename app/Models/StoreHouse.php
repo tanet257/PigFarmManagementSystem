@@ -18,6 +18,7 @@ class StoreHouse extends Model
         'item_code',
         'item_name',
         'stock',
+        'min_quantity',
         'unit',
         'status',
 

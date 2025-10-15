@@ -271,20 +271,61 @@ class StoreHouseController extends Controller
             $query->where('farm_id', $request->farm_id);
         }
 
-        // sort
-        $sortBy = $request->get('sort_by', 'updated_at');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // filter category (item_type)
+        if ($request->filled('category')) {
+            $query->where('item_type', $request->category);
+        }
 
-        if ($sortBy === 'date') {
-            // sort ตาม latestCost->date
-            $query->whereHas('latestCost', function ($q) use ($sortOrder) {
-                $q->orderBy('date', $sortOrder);
-            });
-        } elseif (in_array($sortBy, ['stock', 'total_price', 'updated_at'])) {
-            // stock หรือ updated_at ของ storehouse
-            $query->orderBy($sortBy, $sortOrder);
+        // filter stock status
+        if ($request->filled('stock_status')) {
+            if ($request->stock_status == 'in_stock') {
+                // มีสินค้า: stock > min_quantity
+                $query->whereRaw('stock > COALESCE(min_quantity, 0)');
+            } elseif ($request->stock_status == 'low_stock') {
+                // สินค้าใกล้หมด: 0 < stock < min_quantity
+                $query->whereRaw('stock > 0')
+                    ->whereRaw('stock < COALESCE(min_quantity, 0)');
+            } elseif ($request->stock_status == 'out_of_stock') {
+                // สินค้าหมด: stock <= 0
+                $query->where('stock', '<=', 0);
+            }
+        }
+
+        // sort - รองรับทั้ง sort parameter (จาก dropdown) และ sort_by/sort_order (เดิม)
+        if ($request->filled('sort')) {
+            // จาก dropdown
+            switch ($request->sort) {
+                case 'name_asc':
+                    $query->orderBy('item_name', 'asc');
+                    break;
+                case 'name_desc':
+                    $query->orderBy('item_name', 'desc');
+                    break;
+                case 'quantity_asc':
+                    $query->orderBy('stock', 'asc');
+                    break;
+                case 'quantity_desc':
+                    $query->orderBy('stock', 'desc');
+                    break;
+                default:
+                    $query->orderBy('updated_at', 'desc');
+            }
         } else {
-            $query->orderBy('updated_at', 'desc');
+            // sort แบบเดิม (sort_by และ sort_order)
+            $sortBy = $request->get('sort_by', 'updated_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+
+            if ($sortBy === 'date') {
+                // sort ตาม latestCost->date
+                $query->whereHas('latestCost', function ($q) use ($sortOrder) {
+                    $q->orderBy('date', $sortOrder);
+                });
+            } elseif (in_array($sortBy, ['stock', 'total_price', 'updated_at'])) {
+                // stock หรือ updated_at ของ storehouse
+                $query->orderBy($sortBy, $sortOrder);
+            } else {
+                $query->orderBy('updated_at', 'desc');
+            }
         }
 
         // pagination
@@ -304,6 +345,7 @@ class StoreHouseController extends Controller
                 'item_code' => 'required|string',
                 'item_name' => 'required|string',
                 'unit' => 'required|string',
+                'min_quantity' => 'nullable|numeric|min:0',
                 'note' => 'nullable|string',
 
             ]);
@@ -314,6 +356,7 @@ class StoreHouseController extends Controller
             $data->item_code = $validated['item_code'];
             $data->item_name = $validated['item_name'];
             $data->unit   = $validated['unit'];
+            $data->min_quantity = $validated['min_quantity'] ?? 0;
             $data->note   = $validated['note'] ?? null;
             $data->status = $request->status ?? 'unavailable';
 
@@ -346,6 +389,7 @@ class StoreHouseController extends Controller
             'item_code' => 'required|string',
             'item_name' => 'required|string',
             'unit' => 'required|string',
+            'min_quantity' => 'nullable|numeric|min:0',
             'note' => 'nullable|string',
             'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
             'delete_receipt_file' => 'sometimes',
@@ -358,6 +402,7 @@ class StoreHouseController extends Controller
         $storehouse->item_code = $validated['item_code'];
         $storehouse->item_name = $validated['item_name'];
         $storehouse->unit      = $validated['unit'];
+        $storehouse->min_quantity = $validated['min_quantity'] ?? 0;
         $storehouse->note      = $validated['note'] ?? null;
         $storehouse->save();
 

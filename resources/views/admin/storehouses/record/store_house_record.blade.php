@@ -12,10 +12,10 @@
 
     <div class="container my-5">
         <div class="card shadow-lg border-0 rounded-3">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header text-white">
                 <h4 class="mb-0">บันทึกสินค้าเข้าคลัง (Store House Record)</h4>
             </div>
-            <div class="card-body">
+            <div class=" card-body">
                 <form action="{{ route('store_house_record.upload') }}" method="post" enctype="multipart/form-data">
                     @csrf
 
