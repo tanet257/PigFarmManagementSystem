@@ -276,6 +276,26 @@ class StoreHouseController extends Controller
             $query->where('item_type', $request->category);
         }
 
+        // Date Filter (based on updated_at)
+        if ($request->filled('selected_date')) {
+            $date = \Carbon\Carbon::now();
+            switch ($request->selected_date) {
+                case 'today':
+                    $query->whereDate('updated_at', $date);
+                    break;
+                case 'this_week':
+                    $query->whereBetween('updated_at', [$date->startOfWeek(), $date->copy()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('updated_at', $date->month)
+                        ->whereYear('updated_at', $date->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('updated_at', $date->year);
+                    break;
+            }
+        }
+
         // filter stock status
         if ($request->filled('stock_status')) {
             if ($request->stock_status == 'in_stock') {

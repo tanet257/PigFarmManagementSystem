@@ -256,6 +256,17 @@ class PigSaleController extends Controller
             'approvedBy'
         ]);
 
+        // Search
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('sale_number', 'like', '%' . $request->search . '%')
+                    ->orWhere('note', 'like', '%' . $request->search . '%')
+                    ->orWhereHas('customer', function ($sq) use ($request) {
+                        $sq->where('name', 'like', '%' . $request->search . '%');
+                    });
+            });
+        }
+
         // Filter by farm
         if ($request->filled('farm_id')) {
             $query->where('farm_id', $request->farm_id);
@@ -413,7 +424,7 @@ class PigSaleController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pig_sale.index')->with('success', 'บันทึกการขายหมูสำเร็จ');
+            return redirect()->route('pig_sales.index')->with('success', 'บันทึกการขายหมูสำเร็จ');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSell Create Error: ' . $e->getMessage());
@@ -447,7 +458,7 @@ class PigSaleController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pig_sale.index')->with('success', 'อนุมัติการขายเรียบร้อยแล้ว');
+            return redirect()->route('pig_sales.index')->with('success', 'อนุมัติการขายเรียบร้อยแล้ว');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSale Approve Error: ' . $e->getMessage());
@@ -488,7 +499,7 @@ class PigSaleController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pig_sale.index')->with('success', 'ปฏิเสธการขายเรียบร้อยแล้ว');
+            return redirect()->route('pig_sales.index')->with('success', 'ปฏิเสธการขายเรียบร้อยแล้ว');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSale Reject Error: ' . $e->getMessage());
@@ -553,7 +564,7 @@ class PigSaleController extends Controller
                 ? 'ชำระครบแล้ว'
                 : 'ชำระแล้ว ' . number_format($pigSale->paid_amount, 2) . ' บาท คงเหลือ ' . number_format($pigSale->balance, 2) . ' บาท';
 
-            return redirect()->route('pig_sale.index')->with('success', $message);
+            return redirect()->route('pig_sales.index')->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSell Upload Receipt Error: ' . $e->getMessage());
@@ -622,7 +633,7 @@ class PigSaleController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pig_sale.index')->with('success', 'ยกเลิกการขายสำเร็จ (คืนหมูกลับเล้า-คอกแล้ว)');
+            return redirect()->route('pig_sales.index')->with('success', 'ยกเลิกการขายสำเร็จ (คืนหมูกลับเล้า-คอกแล้ว)');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSell Cancel Error: ' . $e->getMessage());

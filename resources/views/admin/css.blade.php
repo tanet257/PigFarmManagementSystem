@@ -78,11 +78,27 @@
         /* Status Colors */
         --success: #28a745;
         --danger: #dc3545;
-        --warning: #ffc107;
+        --warning: #f39c12;
         --info: #17a2b8;
+
+        --bg-warning: #f39c12;
+        --bg-secondary: #FF9130;
+        --bg-tertiary: #ffffff;
     }
 
     /* ========== Global Styles ========== */
+
+    .bg-secondary {
+        background-color: var(--bg-secondary) !important;
+        color: var(--text-light);
+    }
+
+    .bg-tertiary {
+        background-color: var(--bg-tertiary) !important;
+        color: var(--text-dark);
+    }
+
+
     body {
         background-color: var(--body-bg);
         color: var(--text-dark);
@@ -103,6 +119,11 @@
         box-shadow: var(--shadow-md);
     }
 
+    .card-title {
+
+        color: #ffffff;
+    }
+
     .card-header {
         background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
         color: var(--text-light);
@@ -118,16 +139,47 @@
         padding: 25px !important;
     }
 
+    /* Status Summary Cards */
+    .card-status-summary {
+        background: transparent !important;
+        padding: 30px 20px !important;
+        border-radius: 12px !important;
+    }
+
+    .card-status-summary h3 {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        margin-bottom: 10px !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .card-status-summary p {
+        font-size: 1rem !important;
+        font-weight: 500 !important;
+        margin-bottom: 0 !important;
+        opacity: 0.95;
+    }
+
+    .card-status-summary i {
+        font-size: 1.2rem !important;
+        margin-right: 5px;
+    }
+
+    /* Override Bootstrap's bg-warning with custom color */
+    .bg-warning {
+        background-color: var(--bg-warning) !important;
+    }
+
     /* Buttons */
     .btn-primary {
-        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        background-color: var(--primary-orange) !important;
         border: none;
         color: white;
     }
 
     .btn-primary:hover {
-        background: linear-gradient(135deg, var(--secondary-orange), var(--primary-orange));
-        box-shadow: 0 4px 12px rgba(255, 91, 34, 0.3);
+        background-color: #EF7722 !important;
+        box-shadow: 0 4px 12px rgba(255, 91, 34, 0.3) !important;
     }
 
     .btn-secondary {
@@ -329,6 +381,12 @@
     /* Header */
     .page-header {
         background-color: #f5f5f5 !important;
+        border-bottom: 2px solid rgba(187, 186, 186, 0.3) !important;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .page-content {
+        background-color: #f5f5f5 !important;
         border-bottom: 2px solid rgba(255, 145, 48, 0.3) !important;
         box-shadow: var(--shadow-sm);
     }
@@ -360,6 +418,14 @@
     .form-select:focus {
         border-color: var(--primary-orange);
         box-shadow: 0 0 0 0.2rem rgba(255, 91, 34, 0.25);
+    }
+
+    .per-page {
+        width: 100px !important;
+        /* ความกว้างสั้นแต่ยังอ่านง่าย */
+        border-radius: 8px;
+        padding: 4px 8px;
+        font-size: 0.875rem;
     }
 
     /* Badges */
@@ -548,10 +614,9 @@
     }
 
     /* ========== Custom Select Styling for Filters (Global) ========== */
-    .filter-select-orange,
-    .filter-select-blue {
-        min-width: 160px;
-        max-width: 200px;
+    .filter-select-orange {
+        min-width: 120px;
+        max-width: 140px;
         cursor: pointer;
         font-weight: 500;
         transition: all 0.3s ease;
@@ -577,27 +642,8 @@
         box-shadow: 0 0 0 0.25rem rgba(255, 91, 34, 0.25);
     }
 
-    .filter-select-blue {
-        background-color: #1E3E62;
-        border: none;
-        color: white;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='white' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
-    }
-
-    .filter-select-blue:hover {
-        background-color: #2d5a8a;
-        box-shadow: 0 4px 12px rgba(30, 62, 98, 0.3);
-    }
-
-    .filter-select-blue:focus {
-        background-color: #1E3E62;
-        border-color: #1E3E62;
-        box-shadow: 0 0 0 0.25rem rgba(30, 62, 98, 0.25);
-    }
-
     /* Style select dropdown options */
-    .filter-select-orange option,
-    .filter-select-blue option {
+    .filter-select-orange option {
         background-color: white;
         color: #333;
         padding: 8px 12px;
@@ -880,7 +926,7 @@
         visibility: hidden;
         min-width: 250px;
         margin-left: -125px;
-        background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
+        background-color: #dc3545;
         color: #fff;
         text-align: center;
         border-radius: 8px;
@@ -1183,6 +1229,18 @@
     .modal.show .modal-dialog {
         transform: none !important;
     }
+
+    .list-group-item {
+        border: none !important;
+        border-bottom: 1px solid rgba(108, 108, 108, 0.5) !important;
+        border-top: 1px solid rgba(108, 108, 108, 0.5) !important;
+    }
+
+    .btn-info {
+    border-radius: 8px !important; /* มนขึ้นนิดหน่อย */
+    color: #fff !important;
+    transition: all 0.2s ease-in-out;
+}
 </style>
 
 <script>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\BatchPenAllocation;
 use App\Models\Farm;
@@ -28,7 +29,28 @@ class BatchPenAllocationController extends Controller
         $page    = $request->get('page', 1);
 
         // base query barns -> pens -> allocations
-        $barnsQuery = Barn::with(['pens.batchPenAllocations.batch.farm']);
+        $barnsQuery = Barn::with(['pens.batchPenAllocations' => function ($query) use ($request) {
+            // Date Filter on BatchPenAllocations
+            if ($request->filled('selected_date')) {
+                $date = Carbon::now();
+                switch ($request->selected_date) {
+                    case 'today':
+                        $query->whereDate('created_at', $date);
+                        break;
+                    case 'this_week':
+                        $query->whereBetween('created_at', [$date->startOfWeek(), $date->copy()->endOfWeek()]);
+                        break;
+                    case 'this_month':
+                        $query->whereMonth('created_at', $date->month)
+                            ->whereYear('created_at', $date->year);
+                        break;
+                    case 'this_year':
+                        $query->whereYear('created_at', $date->year);
+                        break;
+                }
+            }
+        }, 'pens.batchPenAllocations.batch.farm']);
+
         if ($farmId) {
             $barnsQuery->where('farm_id', $farmId);
         }
@@ -36,53 +58,53 @@ class BatchPenAllocationController extends Controller
 
         // summary barns
         $barnSummariesCollection = $barns->map(function ($barn) use ($batchId) {
-    $pensInfo = $barn->pens->map(function ($pen) use ($batchId) {
-        $allocations = $pen->batchPenAllocations;
+            $pensInfo = $barn->pens->map(function ($pen) use ($batchId) {
+                $allocations = $pen->batchPenAllocations;
 
-        if ($batchId) {
-            $allocations = $allocations->filter(fn($a) => $a->batch_id == $batchId);
-        }
+                if ($batchId) {
+                    $allocations = $allocations->filter(fn($a) => $a->batch_id == $batchId);
+                }
 
-        return [
-            'pen_code' => $pen->pen_code,
-            'capacity' => $pen->pig_capacity,
-            'allocated' => $allocations->sum('allocated_pigs'),
-            'batches' => $allocations->map(fn($a) => optional($a->batch)->batch_code)->unique()->values()->all()
-        ];
-    })->values(); // แปลงเป็น array
+                return [
+                    'pen_code' => $pen->pen_code,
+                    'capacity' => $pen->pig_capacity,
+                    'allocated' => $allocations->sum('allocated_pigs'),
+                    'batches' => $allocations->map(fn($a) => optional($a->batch)->batch_code)->unique()->values()->all()
+                ];
+            })->values(); // แปลงเป็น array
 
-    $totalAllocated = $pensInfo->sum('allocated');
+            $totalAllocated = $pensInfo->sum('allocated');
 
-    $farmNames = $barn->pens->flatMap(function ($pen) {
-        return $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name);
-    })->filter()->unique()->values()->all();
+            $farmNames = $barn->pens->flatMap(function ($pen) {
+                return $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name);
+            })->filter()->unique()->values()->all();
 
-    $batchCodes = $barn->pens->flatMap(function ($pen) {
-        return $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code);
-    })->filter()->unique()->values()->all();
+            $batchCodes = $barn->pens->flatMap(function ($pen) {
+                return $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code);
+            })->filter()->unique()->values()->all();
 
-    return [
-        'farm_name' => implode(', ', $farmNames),
-        'batch_code' => implode(', ', $batchCodes),
-        'barn_code' => $barn->barn_code,
-        'capacity' => $barn->pig_capacity,
-        'total_allocated' => $totalAllocated,
-        'pens' => $pensInfo->toArray(), // แปลงเป็น array
-    ];
-})->values(); // แปลง collection เป็น array
+            return [
+                'farm_name' => implode(', ', $farmNames),
+                'batch_code' => implode(', ', $batchCodes),
+                'barn_code' => $barn->barn_code,
+                'capacity' => $barn->pig_capacity,
+                'total_allocated' => $totalAllocated,
+                'pens' => $pensInfo->toArray(), // แปลงเป็น array
+            ];
+        })->values(); // แปลง collection เป็น array
 
-// Pagination
-$perPage = $request->get('per_page', 10);
-$page = $request->get('page', 1);
-$barnSummaries = new LengthAwarePaginator(
-    $barnSummariesCollection->forPage($page, $perPage),
-    $barnSummariesCollection->count(),
-    $perPage,
-    $page,
-    ['path' => $request->url(), 'query' => $request->query()]
-);
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $page = $request->get('page', 1);
+        $barnSummaries = new LengthAwarePaginator(
+            $barnSummariesCollection->forPage($page, $perPage),
+            $barnSummariesCollection->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
-return view('admin.batch_pen_allocations.index', compact('farms','batches','barnSummaries'));
+        return view('admin.batch_pen_allocations.index', compact('farms', 'batches', 'barnSummaries'));
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//
@@ -102,11 +124,13 @@ return view('admin.batch_pen_allocations.index', compact('farms','batches','barn
             });
 
             $totalAllocated = $pensInfo->sum('allocated');
-            $farmNames = $barn->pens->flatMap(fn($pen) =>
+            $farmNames = $barn->pens->flatMap(
+                fn($pen) =>
                 $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name)
             )->filter()->unique()->values();
 
-            $batchCodes = $barn->pens->flatMap(fn($pen) =>
+            $batchCodes = $barn->pens->flatMap(
+                fn($pen) =>
                 $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code)
             )->filter()->unique()->values();
 
@@ -115,7 +139,7 @@ return view('admin.batch_pen_allocations.index', compact('farms','batches','barn
                 'batch_code'     => $batchCodes->join(', '),
                 'barn_code'      => $barn->barn_code,
                 'capacity'       => $barn->pig_capacity,
-                'total_allocated'=> $totalAllocated,
+                'total_allocated' => $totalAllocated,
                 'pens'           => $pensInfo,
             ];
         });
@@ -148,11 +172,13 @@ return view('admin.batch_pen_allocations.index', compact('farms','batches','barn
             });
 
             $totalAllocated = $pensInfo->sum('allocated');
-            $farmNames = $barn->pens->flatMap(fn($pen) =>
+            $farmNames = $barn->pens->flatMap(
+                fn($pen) =>
                 $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name)
             )->filter()->unique()->values();
 
-            $batchCodes = $barn->pens->flatMap(fn($pen) =>
+            $batchCodes = $barn->pens->flatMap(
+                fn($pen) =>
                 $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code)
             )->filter()->unique()->values();
 
@@ -161,7 +187,7 @@ return view('admin.batch_pen_allocations.index', compact('farms','batches','barn
                 'batch_code'     => $batchCodes->join(', '),
                 'barn_code'      => $barn->barn_code,
                 'capacity'       => $barn->pig_capacity,
-                'total_allocated'=> $totalAllocated,
+                'total_allocated' => $totalAllocated,
             ];
         });
 

@@ -54,11 +54,6 @@ Route::get('/add_cost', [AdminController::class, 'add_cost'])->name('cost.add');
 Route::post('/upload_cost', [AdminController::class, 'upload_cost'])->name('cost.upload');
 Route::get('/view_cost', [AdminController::class, 'view_cost'])->name('cost.view');
 
-//------------------- route pig sell -------------------------//
-Route::get('/add_pig_sell_record', [AdminController::class, 'add_pig_sell'])->name('pig_sell.add');
-Route::post('/upload_pig_sell_record', [AdminController::class, 'upload_pig_sell'])->name('pig_sell.upload');
-Route::get('/view_pig_sell_record', [AdminController::class, 'view_pig_sell'])->name('pig_sell.view');
-
 //------------------- route feeding --------------------------//
 Route::get('/add_feed', [AdminController::class, 'add_feed'])->name('feeding.add');
 Route::post('/upload_feed', [AdminController::class, 'upload_feed'])->name('feeding.upload');
@@ -108,17 +103,9 @@ Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dair
 Route::prefix('dairy_record')->group(function () {
     Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');
     Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
+    Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
 
     //Route::put('/{dairyId}/{useId}/{type}/update-uses', [DairyController::class, 'updateDairyUse'])->name('dairy_records.update_uses');
-    // Feed
-    Route::put('/{dairyId}/{useId}/{type}/update-feed', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
-
-    // Medicine
-    Route::put('/{dairyId}/{btId}/{type}/update-medicine', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
-
-
-
-
     Route::delete('/dairy_storehouse_uses/{id}', [DairyController::class, 'destroyFeed'])->name('dairy_storehouse_uses.destroy');
     Route::delete('/batch_treatments/{id}', [DairyController::class, 'destroyMedicine'])->name('batch_treatments.destroy');
     Route::delete('/pig_deaths/{id}', [DairyController::class, 'destroyPigDeath'])->name('pig_deaths.destroy');
@@ -171,25 +158,25 @@ Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.
 
 
 //------------------- route pig sales (New System) -----------//
-Route::prefix('pig_sale')->middleware(['auth'])->group(function () {
-    Route::get('/', [PigSaleController::class, 'index'])->name('pig_sale.index');
-    Route::get('/create', [PigSaleController::class, 'create'])->name('pig_sale.create');
-    Route::post('/', [PigSaleController::class, 'store'])->name('pig_sale.store');
-    Route::get('/{id}', [PigSaleController::class, 'show'])->name('pig_sale.show');
-    Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sale.edit');
-    Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sale.update');
-    Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sale.cancel');
-    Route::post('/{id}/approve', [PigSaleController::class, 'approve'])->name('pig_sale.approve')->middleware('permission:approve_sales');
-    Route::post('/{id}/reject', [PigSaleController::class, 'reject'])->name('pig_sale.reject')->middleware('permission:approve_sales');
-    Route::post('/{id}/upload_receipt', [PigSaleController::class, 'uploadReceipt'])->name('pig_sale.upload_receipt');
+Route::prefix('pig_sales')->middleware(['auth'])->group(function () {
+    Route::get('/', [PigSaleController::class, 'index'])->name('pig_sales.index');
+    Route::get('/create', [PigSaleController::class, 'create'])->name('pig_sales.create');
+    Route::post('/', [PigSaleController::class, 'store'])->name('pig_sales.store');
+    Route::get('/{id}', [PigSaleController::class, 'show'])->name('pig_sales.show');
+    Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sales.edit');
+    Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sales.update');
+    Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sales.cancel');
+    Route::post('/{id}/approve', [PigSaleController::class, 'approve'])->name('pig_sales.approve')->middleware('permission:approve_sales');
+    Route::post('/{id}/reject', [PigSaleController::class, 'reject'])->name('pig_sales.reject')->middleware('permission:approve_sales');
+    Route::post('/{id}/upload_receipt', [PigSaleController::class, 'uploadReceipt'])->name('pig_sales.upload_receipt');
 
     //------------------- route AJAX helpers ---------------------//
-    Route::get('/pens-by-farm/{farmId}', [PigSaleController::class, 'getPensByFarm'])->name('pig_sale.pens_by_farm');
-    Route::get('/pens-by-batch/{batchId}', [PigSaleController::class, 'getPensByBatch'])->name('pig_sale.pens_by_batch');
+    Route::get('/pens-by-farm/{farmId}', [PigSaleController::class, 'getPensByFarm'])->name('pig_sales.pens_by_farm');
+    Route::get('/pens-by-batch/{batchId}', [PigSaleController::class, 'getPensByBatch'])->name('pig_sales.pens_by_batch');
 
     //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sale.export.csv');
-    Route::get('/export/pdf', [PigSaleController::class, 'exportPdf'])->name('pig_sale.export.pdf');
+    Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sales.export.csv');
+    Route::get('/export/pdf', [PigSaleController::class, 'exportPdf'])->name('pig_sales.export.pdf');
 });
 
 //------------------- route notifications --------------------//

@@ -5,6 +5,7 @@
          <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
          <button onclick="closeSnackbar()">✕</button>
      </div>
+
      <!-- Sidebar Navigation-->
      <nav id="sidebar">
          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
@@ -60,7 +61,7 @@
              <li><a href="#pigsaleMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Add Pig Sale </a>
                  <ul id="pigsaleMenuDropdown" class="collapse list-unstyled ">
-                     <li><a href="{{ route('pig_sale.index') }}">View Pig Sale</a></li>
+                     <li><a href="{{ route('pig_sales.index') }}">View Pig Sale</a></li>
                  </ul>
              </li>
 

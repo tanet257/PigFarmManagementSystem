@@ -1,71 +1,29 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    @include('admin.css')
+@extends('layouts.admin')
 
-    <style>
+@section('title', 'All Barn')
 
-        table
-        {
-            border:1px solid skyblue;
-            margin: auto;
-            width: 800px;
-        }
+@section('content')
+    <div class="container-fluid">
+        <h1>All Barn</h1>
 
-        th
-        {
-            background-color: skyblue;
-            color: white;
-            padding: 10px;
-            margin: 10px;
-        }
+        <div>
+            <table>
+                <tr>
+                    <th>Barn Code</th>
+                    <th>Pig Capacity</th>
+                    <th>Pen Capacity</th>
+                    <th>Note</th>
+                </tr>
 
-        td
-        {
-            color: white;
-            padding: 10px;
-        }
-
-    </style>
-  </head>
-  <body>
-
-    @include('admin.header')
-
-    @include('admin.sidebar')
-
-
-    <div class="page-content">
-        <div class="page-header">
-            <div class="container-fluid">
-
-            <h1>All Barn</h1>
-
-            <div>
-
-                <table>
-
+                @foreach ($barns as $barn)
                     <tr>
-                        <th>Barn Code</th>
-                        <th>Pig Capacity</th>
-                        <th>Pen Capacity</th>
-                        <th>Note</th>
+                        <td>{{ $barn->barn_code }}</td>
+                        <td>{{ $barn->pig_capacity }}</td>
+                        <td>{{ $barn->pen_capacity }}</td>
+                        <td>{{ $barn->note }}</td>
                     </tr>
-
-                    @foreach($barns as $barn)
-
-                    <tr>
-                        <td>{{ $barn->barn_code}}</td>
-                        <td>{{ $barn->pig_capacity}}</td>
-                        <td>{{ $barn->pen_capacity}}</td>
-                        <td>{{ $barn->note}}</td>
-                    </tr>
-                    @endforeach
-                </table>
-            </div>
-      </div>
+                @endforeach
+            </table>
+        </div>
     </div>
-    <!-- JavaScript files-->
-   @include('admin.js')
-  </body>
-</html>
+@endsection

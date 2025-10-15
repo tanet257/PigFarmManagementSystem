@@ -209,14 +209,42 @@ class PigEntryController extends Controller
 
         $query = PigEntryRecord::with(['farm', 'batch.costs']);
 
+        // Search
         if ($request->filled('search')) {
             $query->where('note', 'like', '%' . $request->search . '%');
         }
 
+        // Date Filter
+        if ($request->filled('selected_date')) {
+            $date = Carbon::now();
+            switch ($request->selected_date) {
+                case 'today':
+                    $query->whereDate('pig_entry_date', $date);
+                    break;
+                case 'this_week':
+                    $query->whereBetween('pig_entry_date', [$date->startOfWeek(), $date->copy()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('pig_entry_date', $date->month)
+                        ->whereYear('pig_entry_date', $date->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('pig_entry_date', $date->year);
+                    break;
+            }
+        }
+
+        // Farm Filter
         if ($request->filled('farm_id')) {
             $query->where('farm_id', $request->farm_id);
         }
 
+        // Batch Filter
+        if ($request->filled('batch_id')) {
+            $query->where('batch_id', $request->batch_id);
+        }
+
+        // Sort
         $sortBy = $request->get('sort_by', 'updated_at');
         $sortOrder = $request->get('sort_order', 'desc');
 
@@ -226,6 +254,7 @@ class PigEntryController extends Controller
             $query->orderBy('updated_at', 'desc');
         }
 
+        // Pagination
         $perPage = $request->get('per_page', 10);
         $pigEntryRecords = $query->paginate($perPage);
 

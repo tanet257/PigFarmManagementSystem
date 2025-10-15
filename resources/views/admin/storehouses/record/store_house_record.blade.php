@@ -3,12 +3,6 @@
 @section('title', 'บันทึกสินค้าเข้าคลัง')
 
 @section('content')
-    {{-- SnackBar --}}
-    <div id="snackbar" class="snackbar">
-        <span id="snackbarMessage"></span>
-        <button onclick="copySnackbar()" id="copyBtn"><i class="bi bi-copy"></i></button>
-        <button onclick="closeSnackbar()">✕</button>
-    </div>
 
     <div class="container my-5">
         <div class="card shadow-lg border-0 rounded-3">
@@ -701,7 +695,7 @@
                         if (!farmId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน');
                             return false;
                         }
                     }
@@ -714,13 +708,13 @@
                         if (!farmId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน');
                             return false;
                         }
                         if (!batchId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
+                            showSnackbar('กรุณาเลือกรุ่นก่อน');
                             return false;
                         }
                     }
@@ -738,19 +732,19 @@
                         if (!farmId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            showSnackbar('กรุณาเลือกฟาร์มก่อน', '#dc3545');
+                            showSnackbar('กรุณาเลือกฟาร์มก่อน');
                             return false;
                         }
                         if (!batchId) {
                             e.preventDefault();
                             e.stopPropagation();
-                            showSnackbar('กรุณาเลือกรุ่นก่อน', '#dc3545');
+                            showSnackbar('กรุณาเลือกรุ่นก่อน');
                             return false;
                         }
                         if (!itemType) {
                             e.preventDefault();
                             e.stopPropagation();
-                            showSnackbar('กรุณาเลือกประเภทก่อน', '#dc3545');
+                            showSnackbar('กรุณาเลือกประเภทก่อน');
                             return false;
                         }
                     }
@@ -767,7 +761,7 @@
                             if (!itemType) {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                showSnackbar('กรุณาเลือกประเภทก่อน', '#dc3545');
+                                showSnackbar('กรุณาเลือกประเภทก่อน');
                                 return false;
                             }
                         }

@@ -11,11 +11,65 @@ class NotificationController extends Controller
     /**
      * แสดงรายการแจ้งเตือนทั้งหมด
      */
-    public function index()
+    public function index(Request $request)
     {
-        $notifications = Notification::where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->paginate(20);
+        $query = Notification::where('user_id', Auth::id());
+
+        // Search
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('title', 'like', '%' . $request->search . '%')
+                    ->orWhere('message', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Filter by read status
+        if ($request->filled('status')) {
+            if ($request->status === 'unread') {
+                $query->whereNull('read_at');
+            } elseif ($request->status === 'read') {
+                $query->whereNotNull('read_at');
+            }
+        }
+
+        // Filter by type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        // Date Filter
+        if ($request->filled('selected_date')) {
+            $date = \Carbon\Carbon::now();
+            switch ($request->selected_date) {
+                case 'today':
+                    $query->whereDate('created_at', $date);
+                    break;
+                case 'this_week':
+                    $query->whereBetween('created_at', [$date->startOfWeek(), $date->copy()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('created_at', $date->month)
+                        ->whereYear('created_at', $date->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('created_at', $date->year);
+                    break;
+            }
+        }
+
+        // Sort
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+
+        if (in_array($sortBy, ['created_at', 'read_at', 'title'])) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 20);
+        $notifications = $query->paginate($perPage);
 
         $unreadCount = Notification::where('user_id', Auth::id())
             ->unread()

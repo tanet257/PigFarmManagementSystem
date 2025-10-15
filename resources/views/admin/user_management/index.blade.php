@@ -13,7 +13,7 @@
         <div class="row mb-4">
             <div class="col-md-4">
                 <div class="card text-center bg-warning text-white">
-                    <div class="card-body">
+                    <div class="card-status-summary">
                         <h3>{{ $pendingCount }}</h3>
                         <p class="mb-0"><i class="bi bi-clock"></i> รอการอนุมัติ</p>
                     </div>
@@ -21,7 +21,7 @@
             </div>
             <div class="col-md-4">
                 <div class="card text-center bg-success text-white">
-                    <div class="card-body">
+                    <div class="card-status-summary">
                         <h3>{{ $approvedCount }}</h3>
                         <p class="mb-0"><i class="bi bi-check-circle"></i> อนุมัติแล้ว</p>
                     </div>
@@ -29,7 +29,7 @@
             </div>
             <div class="col-md-4">
                 <div class="card text-center bg-danger text-white">
-                    <div class="card-body">
+                    <div class="card-status-summary">
                         <h3>{{ $rejectedCount }}</h3>
                         <p class="mb-0"><i class="bi bi-x-circle"></i> ปฏิเสธแล้ว</p>
                     </div>
@@ -38,22 +38,62 @@
         </div>
 
         {{-- Toolbar --}}
-        <form method="GET" action="{{ route('user_management.index') }}">
-            <div class="toolbar-card">
-                <select name="status" onchange="this.form.submit()">
+
+        <div class="card-custom-secondary mb-3">
+            <form method="GET" action="{{ route('user_management.index') }}"
+                class="d-flex align-items-center gap-2 flex-wrap" id="filterForm">
+                <!-- Date Filter (Orange) -->
+                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange"
+                    onchange="this.form.submit()">
+                    <option value="">วันที่ทั้งหมด</option>
+                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
+                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
+                    </option>
+                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
+                    </option>
+                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
+                </select>
+
+                <!-- Status Filter -->
+                <select name="status" class="form-select form-select-sm filter-select-orange"
+                    onchange="this.form.submit()">
                     <option value="">สถานะทั้งหมด</option>
                     <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>รอการอนุมัติ</option>
                     <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
                     <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>ปฏิเสธแล้ว</option>
                 </select>
 
-                <input type="text" name="search" placeholder="ค้นหาชื่อหรืออีเมล..." value="{{ request('search') }}">
+                <!-- Sort Dropdown (Orange) -->
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        <i class="bi bi-sort-down"></i>
+                        @if (request('sort_by') == 'name')
+                            ชื่อ
+                        @elseif(request('sort_by') == 'created_at')
+                            วันที่สมัคร
+                        @else
+                            เรียงตาม
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('sort_by') == 'name' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['sort_by' => 'name', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">ชื่อ</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('sort_by') == 'created_at' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['sort_by' => 'created_at', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">วันที่สมัคร</a>
+                        </li>
+                    </ul>
+                </div>
 
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-search"></i> ค้นหา
-                </button>
-            </div>
-        </form>
+                <!-- Per Page -->
+                <select name="per_page" class="form-select form-select-sm filter-select-orange">
+                    @foreach ([10, 25, 50, 100] as $n)
+                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
+                            {{ $n }} แถว</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
 
         {{-- Table --}}
         <div class="table-card mt-3 table-responsive">
@@ -68,7 +108,7 @@
                             <th class="text-center">Role</th>
                             <th class="text-center">สถานะ</th>
                             <th class="text-center">ลงทะเบียนเมื่อ</th>
-                            <th class="text-center">จัดการ</th>
+                            <th class="text-end">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -110,44 +150,48 @@
                                 <td class="text-center">
                                     {{ $user->created_at->format('d/m/Y H:i') }}
                                 </td>
-                                <td class="text-center">
-                                    @if ($user->status == 'pending')
-                                        {{-- ปุ่มอนุมัติ --}}
-                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
-                                            data-bs-target="#approveModal{{ $user->id }}">
-                                            <i class="bi bi-check-circle"></i> อนุมัติ
-                                        </button>
-
-                                        {{-- ปุ่มปฏิเสธ --}}
-                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
-                                            data-bs-target="#rejectModal{{ $user->id }}">
-                                            <i class="bi bi-x-circle"></i> ปฏิเสธ
-                                        </button>
-                                    @elseif ($user->status == 'approved')
-                                        {{-- ปุ่มจัดการ Role --}}
-                                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                            data-bs-target="#updateRoleModal{{ $user->id }}">
-                                            <i class="bi bi-person-badge"></i> จัดการ Role
-                                        </button>
-                                    @endif
-
-                                    {{-- ปุ่มดูรายละเอียด --}}
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                        data-bs-target="#viewModal{{ $user->id }}">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-
-                                    {{-- ปุ่มลบ (ถ้าไม่ใช่ตัวเอง) --}}
-                                    @if ($user->id !== auth()->id())
-                                        <form action="{{ route('user_management.destroy', $user->id) }}" method="POST"
-                                            class="d-inline" onsubmit="return confirm('ต้องการลบผู้ใช้นี้หรือไม่?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger">
-                                                <i class="bi bi-trash"></i>
+                                <td>
+                                    <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                        @if ($user->status == 'pending')
+                                            {{-- ปุ่มอนุมัติ --}}
+                                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                                data-bs-target="#approveModal{{ $user->id }}">
+                                                <i class="bi bi-check-circle"></i> อนุมัติ
                                             </button>
-                                        </form>
-                                    @endif
+
+                                            {{-- ปุ่มปฏิเสธ --}}
+                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                                data-bs-target="#rejectModal{{ $user->id }}">
+                                                <i class="bi bi-x-circle"></i> ปฏิเสธ
+                                            </button>
+                                        @elseif ($user->status == 'approved')
+                                            {{-- ปุ่มจัดการ Role --}}
+                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                                data-bs-target="#updateRoleModal{{ $user->id }}">
+                                                <i class="bi bi-person-badge"></i> จัดการ Role
+                                            </button>
+                                        @endif
+
+                                        {{-- ปุ่มดูรายละเอียด --}}
+                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                            data-bs-target="#viewModal{{ $user->id }}">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+
+                                        {{-- ปุ่มลบ (ถ้าไม่ใช่ตัวเอง) --}}
+                                        @if ($user->id !== auth()->id())
+                                            <form action="{{ route('user_management.destroy', $user->id) }}"
+                                                method="POST" class="d-inline"
+                                                onsubmit="return confirm('ต้องการลบผู้ใช้นี้หรือไม่?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
                                 </td>
                             </tr>
                         @empty

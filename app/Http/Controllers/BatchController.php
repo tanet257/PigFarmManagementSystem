@@ -66,37 +66,62 @@ class BatchController extends Controller
 
     //Index batch
     public function indexBatch(Request $request)
-{
-    $query = Batch::with('farm.barns.pens');
+    {
+        $query = Batch::with('farm.barns.pens');
 
-    if ($request->filled('search')) {
-        $query->where('batch_code', 'like', '%' . $request->search . '%');
+        if ($request->filled('search')) {
+            $query->where('batch_code', 'like', '%' . $request->search . '%');
+        }
+
+        // Date Filter
+        if ($request->filled('selected_date')) {
+            $date = Carbon::now();
+            switch ($request->selected_date) {
+                case 'today':
+                    $query->whereDate('created_at', $date);
+                    break;
+                case 'this_week':
+                    $query->whereBetween('created_at', [$date->startOfWeek(), $date->copy()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('created_at', $date->month)
+                        ->whereYear('created_at', $date->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('created_at', $date->year);
+                    break;
+            }
+        }
+
+        if ($request->filled('farm_id')) {
+            $query->where('farm_id', $request->farm_id);
+        }
+
+        // Batch Filter
+        if ($request->filled('batch_id')) {
+            $query->where('id', $request->batch_id);
+        }
+
+        if ($request->filled('sort_by')) {
+            $sortOrder = $request->get('sort_order', 'asc');
+            $query->orderBy($request->sort_by, $sortOrder);
+        }
+
+        $perPage = $request->get('per_page', 10);
+        $batches = $query->paginate($perPage);
+
+        // --- คำนวณค่าเฉลี่ยน้ำหนักต่อตัว ---
+        foreach ($batches as $batch) {
+            $batch->avg_pig_weight = $batch->total_pig_amount > 0
+                ? $batch->total_pig_weight / $batch->total_pig_amount
+                : 0;
+        }
+
+        $farms = Farm::all();
+        $allBatches = Batch::select('id', 'batch_code', 'farm_id')->get();
+
+        return view('admin.batches.index', compact('batches', 'farms', 'allBatches'));
     }
-
-    if ($request->filled('farm_id')) {
-        $query->where('farm_id', $request->farm_id);
-    }
-
-    if ($request->filled('sort_by')) {
-        $sortOrder = $request->get('sort_order', 'asc');
-        $query->orderBy($request->sort_by, $sortOrder);
-    }
-
-    $perPage = $request->get('per_page', 10);
-    $batches = $query->paginate($perPage);
-
-    // --- คำนวณค่าเฉลี่ยน้ำหนักต่อตัว ---
-    foreach ($batches as $batch) {
-        $batch->avg_pig_weight = $batch->total_pig_amount > 0
-            ? $batch->total_pig_weight / $batch->total_pig_amount
-            : 0;
-    }
-
-    $farms = Farm::all();
-
-    return view('admin.batches.index', compact('batches', 'farms'));
-}
-
 
 
     //Create Batch

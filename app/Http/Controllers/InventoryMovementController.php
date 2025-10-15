@@ -33,9 +33,29 @@ class InventoryMovementController extends Controller
                 $q->where('note', 'like', "%{$search}%")
                     ->orWhereHas('storehouse', function ($sq) use ($search) {
                         $sq->where('item_name', 'like', "%{$search}%")
-                           ->orWhere('item_code', 'like', "%{$search}%");
+                            ->orWhere('item_code', 'like', "%{$search}%");
                     });
             });
+        }
+
+        // Date Filter
+        if ($request->filled('selected_date')) {
+            $date = Carbon::now();
+            switch ($request->selected_date) {
+                case 'today':
+                    $query->whereDate('date', $date);
+                    break;
+                case 'this_week':
+                    $query->whereBetween('date', [$date->startOfWeek(), $date->copy()->endOfWeek()]);
+                    break;
+                case 'this_month':
+                    $query->whereMonth('date', $date->month)
+                        ->whereYear('date', $date->year);
+                    break;
+                case 'this_year':
+                    $query->whereYear('date', $date->year);
+                    break;
+            }
         }
 
         // filter farm
@@ -65,7 +85,7 @@ class InventoryMovementController extends Controller
         $perPage = $request->get('per_page', 10);
         $movements = $query->paginate($perPage);
 
-        return view('admin.inventory_movements.index', compact('farms', 'batches','barns', 'movements','dairy_records'));
+        return view('admin.inventory_movements.index', compact('farms', 'batches', 'barns', 'movements', 'dairy_records'));
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//
@@ -73,7 +93,7 @@ class InventoryMovementController extends Controller
     // Export PDF
     public function exportPdf()
     {
-        $movements = InventoryMovement::with(['storehouse.farm', 'batch','barn','dairy_record'])->get();
+        $movements = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record'])->get();
 
         $pdf = Pdf::loadView('admin.inventory_movements.exports.pdf', compact('movements'))
             ->setPaper('a4', 'landscape')
@@ -90,14 +110,24 @@ class InventoryMovementController extends Controller
     // Export CSV
     public function exportCsv()
     {
-        $movements = InventoryMovement::with(['storehouse.farm', 'batch','barn','dairy_record'])->get();
+        $movements = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record'])->get();
         $filename = "inventory_movements_" . date('Y-m-d_H-i-s') . ".csv";
 
         return response()->streamDownload(function () use ($movements) {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, [
-                'ID', 'Farm', 'Storehouse Item Code', 'Storehouse Item Name',
-                'Batch','Barn','Dairy record', 'Change Type', 'Quantity', 'Note', 'Date', 'Created At'
+                'ID',
+                'Farm',
+                'Storehouse Item Code',
+                'Storehouse Item Name',
+                'Batch',
+                'Barn',
+                'Dairy record',
+                'Change Type',
+                'Quantity',
+                'Note',
+                'Date',
+                'Created At'
             ]);
 
             foreach ($movements as $m) {

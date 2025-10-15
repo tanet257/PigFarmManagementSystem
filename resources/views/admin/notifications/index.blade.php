@@ -36,25 +36,25 @@
         <div class="row mb-4">
             <div class="col-md-4">
                 <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fa fa-bell"></i> ทั้งหมด</h5>
-                        <h2 class="mb-0">{{ $notifications->total() }}</h2>
+                    <div class="card-status-summary">
+                        <h5 class="card-title text-center"><i class="fa fa-bell"></i> ทั้งหมด</h5>
+                        <h2 class="mb-0 text-center">{{ $notifications->total() }}</h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card bg-danger text-white">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fa fa-envelope"></i> ยังไม่อ่าน</h5>
-                        <h2 class="mb-0">{{ $unreadCount }}</h2>
+                    <div class="card-status-summary">
+                        <h5 class="card-title text-center"><i class="fa fa-envelope"></i> ยังไม่อ่าน</h5>
+                        <h2 class="mb-0 text-center">{{ $unreadCount }}</h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="fa fa-envelope-open"></i> อ่านแล้ว</h5>
-                        <h2 class="mb-0">{{ $notifications->total() - $unreadCount }}</h2>
+                    <div class="card-status-summary">
+                        <h5 class="card-title text-center"><i class="fa fa-envelope-open"></i> อ่านแล้ว</h5>
+                        <h2 class="mb-0 text-center">{{ $notifications->total() - $unreadCount }}</h2>
                     </div>
                 </div>
             </div>
@@ -66,7 +66,7 @@
                 @if ($notifications->count() > 0)
                     <div class="list-group">
                         @foreach ($notifications as $notification)
-                            <div class="list-group-item {{ $notification->is_read ? '' : 'bg-secondary' }}">
+                            <div class="list-group-item {{ $notification->is_read ? 'bg-tertiary' : 'bg-secondary' }}">
                                 <div class="d-flex w-100 justify-content-between align-items-start">
                                     <div class="flex-grow-1">
                                         <div class="d-flex align-items-center mb-2">
@@ -144,19 +144,4 @@
         </div>
     </div>
 
-    <style>
-        .list-group-item {
-            border: 1px solid #dee2e6;
-            margin-bottom: 10px;
-            border-radius: 5px;
-        }
-
-        .list-group-item.bg-light {
-            background-color: #f8f9fa !important;
-        }
-
-        .card {
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-    </style>
 @endsection

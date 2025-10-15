@@ -175,6 +175,14 @@
                     </ul>
                 </div>
 
+                <!-- Per Page -->
+                <select name="per_page" class="form-select form-select-sm filter-select-orange">
+                    @foreach ([10, 25, 50, 100] as $n)
+                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
+                            {{ $n }} แถว</option>
+                    @endforeach
+                </select>
+
                 <!-- Right side buttons -->
                 <div class="ms-auto d-flex gap-2">
                     <a class="btn btn-outline-success btn-sm" href="{{ route('storehouses.export.csv') }}">

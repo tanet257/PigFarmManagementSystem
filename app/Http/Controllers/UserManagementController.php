@@ -37,7 +37,9 @@ class UserManagementController extends Controller
         $sortOrder = $request->get('sort_order', 'desc');
         $query->orderBy($sortBy, $sortOrder);
 
-        $users = $query->paginate(15);
+        // Pagination
+        $perPage = $request->get('per_page', 15);
+        $users = $query->paginate($perPage);
         $roles = Role::all();
 
         // นับจำนวนตาม status
