@@ -22,8 +22,15 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
 class DairyController extends Controller
-
 {
+    // Helper for updating note and date
+    private function updateNoteAndDate($model, $note, $dateField, $dateValue)
+    {
+        $model->update([
+            'note' => $note ?? $model->note,
+            $dateField => $dateValue,
+        ]);
+    }
     //--------------------------------------- VIEW ------------------------------------------//
     public function viewDairy(Request $request)
     {
@@ -539,158 +546,121 @@ class DairyController extends Controller
 
     //--------------------------------------- EDIT / UPDATE ------------------------------------------//
     //edit_feed_treatment
+
     public function updateFeed(Request $request, $dairyId, $useId, $type)
     {
+        $validated = $request->validate([
+            'quantity' => 'required|integer|min:0',
+            'note'     => 'nullable|string',
+            'date'     => 'required|string', // เปลี่ยนจาก date เป็น string
+        ]);
+
+        try {
+            $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->withErrors(['date' => 'วันที่ไม่ถูกต้อง']);
+        }
+        $formattedDate = $dt->format('Y-m-d H:i:s');
+
         DB::beginTransaction();
         try {
             $dairy = DairyRecord::findOrFail($dairyId);
-
-
             $use = DairyStorehouseUse::findOrFail($useId);
-
-            $validated = $request->validate([
-                'quantity' => 'required|integer|min:0',
-                'note'     => 'nullable|string',
-                'date'     => 'required|date',
-            ]);
-
             $oldQuantity = $use->quantity;
             $newQuantity = $validated['quantity'];
-            $date        = Carbon::parse($validated['date'])->format('Y-m-d H:i:s');
 
-            // 1️⃣ อัปเดต DairyStorehouseUse
-            $use->update([
-                'quantity' => $newQuantity,
-                'note'     => $validated['note'] ?? $use->note,
-                'date'     => $date,
-            ]);
+            $use->update(['quantity' => $newQuantity]);
+            $this->updateNoteAndDate($use, $validated['note'], 'date', $formattedDate);
+            $this->updateNoteAndDate($dairy, $validated['note'], 'date', $formattedDate);
 
-            // 2️⃣ อัปเดต DairyRecord
-            $dairy->update([
-                'note' => $validated['note'] ?? $dairy->note,
-                'date' => $date,
-            ]);
-
-            // 3️⃣ อัปเดต Storehouse stock
             $storehouse = $use->storehouse;
             if (!$storehouse) throw new \Exception('ไม่พบสินค้าจาก DairyStorehouseUse');
-
             $diff = $newQuantity - $oldQuantity;
-            if ($diff > 0 && $storehouse->stock < $diff) {
-                throw new \Exception("สต็อกสินค้าไม่เพียงพอ (เหลือ {$storehouse->stock}, ต้องการเพิ่ม {$diff})");
+            if ($diff > 0) {
+                if ($storehouse->stock < $diff) throw new \Exception("สต็อกสินค้าไม่เพียงพอ");
+                $storehouse->decrement('stock', $diff);
+            } elseif ($diff < 0) {
+                $storehouse->increment('stock', abs($diff));
             }
-            $storehouse->stock -= $diff;
-            $storehouse->save();
 
-            // 4️⃣ อัปเดต InventoryMovement (เลือกตาม storehouse + batch + out)
-            $movement = InventoryMovement::where('storehouse_id', $storehouse->id)
+            InventoryMovement::where('storehouse_id', $storehouse->id)
                 ->where('batch_id', $dairy->batch_id)
                 ->where('change_type', 'out')
                 ->latest('id')
-                ->first();
-
-            if ($movement) {
-                $movement->update([
+                ->first()?->update([
                     'quantity' => $newQuantity,
                     'note'     => 'ปรับแก้การใช้สินค้า (Batch: ' . $dairy->batch_id . ')',
-                    'date'     => $date,
+                    'date'     => $formattedDate,
                 ]);
-            }
 
             DB::commit();
-            return back()->with('success', 'แก้ไขอาหารเรียบร้อย');
+            return redirect()->route('dairy_records.index')->with('success', 'แก้ไขอาหารเรียบร้อย');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', $e->getMessage());
+            return redirect()->route('dairy_records.index')->with('error', $e->getMessage());
         }
     }
 
-
-    //edit medicine use
+    // --- updateMedicine ---
     public function updateMedicine(Request $request, $dairyId, $btId, $type)
     {
-        DB::beginTransaction();
+        $validated = $request->validate([
+            'quantity' => 'required|integer|min:0',
+            'status'   => 'nullable|string',
+            'note'     => 'nullable|string',
+            'date'     => 'required|string',
+        ]);
 
+        try {
+            $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->withErrors(['date' => 'วันที่ไม่ถูกต้อง']);
+        }
+        $formattedDate = $dt->format('Y-m-d H:i:s');
+
+        DB::beginTransaction();
         try {
             $bt = BatchTreatment::findOrFail($btId);
             $dairy = DairyRecord::findOrFail($bt->dairy_record_id);
-            $validated = $request->validate([
-                'quantity' => 'required|integer|min:0',
-                'status'   => 'nullable|string',
-                'note'     => 'nullable|string',
-                'date'     => 'required|date',
-            ]);
-
             $oldQuantity = $bt->quantity;
             $newQuantity = $validated['quantity'];
-            $date = Carbon::parse($validated['date'])->format('Y-m-d H:i:s');
 
-            // 1️⃣ อัปเดต BatchTreatment โดยตรง
             $bt->update([
                 'quantity' => $newQuantity,
-                'note'     => $validated['note'] ?? $bt->note,
                 'status'   => $validated['status'] ?? $bt->status,
-                'date'     => $date,
             ]);
 
-            // 2️⃣ อัปเดตสต็อกใน Storehouse
+            $this->updateNoteAndDate($bt, $validated['note'], 'date', $formattedDate);
+            $this->updateNoteAndDate($dairy, $validated['note'], 'date', $formattedDate);
+
             $storehouse = Storehouse::where('item_code', $bt->medicine_code)->first();
             if ($storehouse) {
                 $diff = $newQuantity - $oldQuantity;
-                if ($diff > 0 && $storehouse->stock < $diff) {
-                    throw new \Exception("สต็อกสินค้าไม่เพียงพอ (เหลือ {$storehouse->stock}, ต้องการเพิ่ม {$diff})");
-                }
-                $storehouse->stock -= $diff;
-                $storehouse->save();
-            }
+                if ($diff > 0 && $storehouse->stock < $diff) throw new \Exception("สต็อกสินค้าไม่เพียงพอ");
+                $storehouse->decrement('stock', $diff);
 
-            // 3️⃣ อัปเดต InventoryMovement
-            if ($storehouse) {
-                $movement = InventoryMovement::where('storehouse_id', $storehouse->id)
+                InventoryMovement::where('storehouse_id', $storehouse->id)
                     ->where('batch_id', $dairy->batch_id)
                     ->where('change_type', 'out')
                     ->latest('id')
-                    ->first();
-
-                if ($movement) {
-                    $movement->update([
+                    ->first()?->update([
                         'quantity' => $newQuantity,
                         'movement_note' => 'ปรับแก้การใช้ยา (Batch: ' . $dairy->batch_id . ')',
-                        'movement_date' => $date,
+                        'movement_date' => $formattedDate,
                     ]);
-                } else {
-                    InventoryMovement::create([
-                        'storehouse_id' => $storehouse->id,
-                        'batch_id'      => $dairy->batch_id,
-                        'change_type'   => 'out',
-                        'quantity'      => $newQuantity,
-                        'movement_note' => 'สร้างใหม่จากการปรับแก้การใช้ยา (Batch: ' . $dairy->batch_id . ')',
-                        'movement_date' => $date,
-                    ]);
-                }
             }
 
-            // 4️⃣ อัปเดต DairyRecord
-            $dairy->update([
-                'note' => $validated['note'] ?? $dairy->note,
-                'date' => $date,
-            ]);
-
             DB::commit();
-            return back()->with('success', 'แก้ไขยารักษาเรียบร้อย');
+            return redirect()->route('dairy_records.index')->with('success', 'แก้ไขยารักษาเรียบร้อย');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->route('dairy_records.index')->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 
-
-
-    //edit_pig_death
+    // --- updatePigDeath ---
     public function updatePigDeath(Request $request, $id)
     {
-        $pigDeath = PigDeath::findOrFail($id);
-
         $validated = $request->validate([
             'quantity' => 'required|integer|min:0',
             'cause'    => 'nullable|string',
@@ -699,43 +669,32 @@ class DairyController extends Controller
 
         DB::beginTransaction();
         try {
+            $pigDeath = PigDeath::findOrFail($id);
             $batch = $pigDeath->batch;
-
-            if (!$batch) {
-                throw new \Exception("ไม่พบ Batch ที่เกี่ยวข้อง");
-            }
-
-            // --- คำนวณการเปลี่ยนแปลงจำนวนตาย ---
+            if (!$batch) throw new \Exception("ไม่พบ Batch ที่เกี่ยวข้อง");
             $oldQuantity = $pigDeath->quantity;
             $newQuantity = $validated['quantity'];
-            $diffQuantity = $newQuantity - $oldQuantity; // ถ้า + ก็เพิ่มตาย, ถ้า - ก็ลดตาย
+            $diffQuantity = $newQuantity - $oldQuantity;
 
-            // --- อัปเดต PigDeath ---
             $pigDeath->update([
                 'quantity' => $newQuantity,
                 'cause'    => $validated['cause'] ?? $pigDeath->cause,
-                'note'     => $validated['note'] ?? $pigDeath->note,
             ]);
+            $this->updateNoteAndDate($pigDeath, $validated['note'], 'updated_at', now());
 
-            // --- อัปเดต Batch ---
-            $batch->total_deaths += $diffQuantity; // ปรับ total_deaths ให้สะสมถูกต้อง
+            $batch->total_deaths += $diffQuantity;
             $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $diffQuantity, 0);
-
-            // --- อัปเดต weight ต่อหัว ถ้ามี ---
             $avgWeightPerPig = ($batch->total_pig_amount + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
                 ? $batch->total_pig_weight / ($batch->total_pig_amount + $diffQuantity)
                 : 0;
             $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $diffQuantity), 0);
-
             $batch->save();
 
-            // --- อัปเดต allocations ถ้ามี pen_id ---
             if ($pigDeath->pen_id) {
                 $allocation = DB::table('batch_pen_allocations')
                     ->where('batch_id', $batch->id)
                     ->where('pen_id', $pigDeath->pen_id)
                     ->first();
-
                 if ($allocation) {
                     $newAllocated = max($allocation->allocated_pigs - $diffQuantity, 0);
                     DB::table('batch_pen_allocations')
@@ -745,13 +704,13 @@ class DairyController extends Controller
             }
 
             DB::commit();
-
-            return redirect()->back()->with('success', 'แก้ไขข้อมูลหมูตายเรียบร้อยแล้ว');
+            return redirect()->route('dairy_records.index')->with('success', 'แก้ไขข้อมูลหมูตายเรียบร้อยแล้ว');
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->route('dairy_records.index')->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
+
 
 
 

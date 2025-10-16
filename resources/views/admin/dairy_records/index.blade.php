@@ -13,14 +13,13 @@
         <div class="card-custom-secondary mb-3">
             <form method="GET" action="{{ route('dairy_records.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
 
-                <!-- Farm Card Dropdown -->
+                <!-- Farm Dropdown -->
                 <div class="dropdown">
-                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        id="farmDropdownBtn">
+                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-building"></i>
                         {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
                     </button>
-                    <ul class="dropdown-menu" id="farmDropdownMenu">
+                    <ul class="dropdown-menu">
                         <li><a class="dropdown-item farm-link" data-farm-id=""
                                 href="{{ route('dairy_records.index', array_merge(request()->except(['farm_id', 'batch_id']), [])) }}">ฟาร์มทั้งหมด</a>
                         </li>
@@ -34,14 +33,13 @@
                     </ul>
                 </div>
 
-                <!-- Batch Card Dropdown -->
+                <!-- Batch Dropdown -->
                 <div class="dropdown">
-                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        id="batchDropdownBtn">
+                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-layers"></i>
                         {{ request('batch_id') ? $batches->find(request('batch_id'))->batch_code ?? 'รุ่น' : 'รุ่นทั้งหมด' }}
                     </button>
-                    <ul class="dropdown-menu" id="batchDropdownMenu">
+                    <ul class="dropdown-menu">
                         <li><a class="dropdown-item"
                                 href="{{ route('dairy_records.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a>
                         </li>
@@ -54,10 +52,9 @@
                     </ul>
                 </div>
 
-                <!-- Barn Dropdown (Orange) -->
+                <!-- Barn Dropdown -->
                 <div class="dropdown">
-                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        id="barnDropdownBtn">
+                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-house"></i>
                         {{ request('barn_id') ? $barns->find(request('barn_id'))->barn_code ?? 'เล้า' : 'เล้าทั้งหมด' }}
                     </button>
@@ -66,7 +63,7 @@
                                 href="{{ route('dairy_records.index', array_merge(request()->except('barn_id'), [])) }}">เล้าทั้งหมด</a>
                         </li>
                         @foreach ($barns as $barn)
-                            <li><a class=" dropdown-item {{ request('barn_id') == $barn->id ? 'active' : '' }}"
+                            <li><a class="dropdown-item {{ request('barn_id') == $barn->id ? 'active' : '' }}"
                                     href="{{ route('dairy_records.index', array_merge(request()->all(), ['barn_id' => $barn->id])) }}">
                                     {{ $barn->barn_code }}
                                 </a></li>
@@ -74,10 +71,9 @@
                     </ul>
                 </div>
 
-                <!-- Type Dropdown (Orange) -->
+                <!-- Type Dropdown -->
                 <div class="dropdown">
-                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                        id="typeDropdownBtn">
+                    <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-filter"></i>
                         @if (request('type') == 'food')
                             อาหาร
@@ -105,7 +101,7 @@
                     </ul>
                 </div>
 
-                <!-- Sort Dropdown (Orange) -->
+                <!-- Sort Dropdown -->
                 <div class="dropdown">
                     <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-sort-down"></i>
@@ -180,29 +176,19 @@
                     @forelse ($dairyRecords as $index => $record)
                         <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $record->id }}">
                             <td class="text-center">{{ $dairyRecords->firstItem() + $index }}</td>
-                            <td class="text-center">{{ \Carbon\Carbon::parse($record->updated_at)->format('d/m/Y') }}</td>
+                            <td class="text-center">{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</td>
                             <td class="text-center">{{ $record->batch->farm->farm_name ?? '-' }}</td>
                             <td class="text-center">{{ $record->batch->batch_code ?? '-' }}</td>
                             <td class="text-center">{{ $record->display_barn }}</td>
                             <td class="text-center">
                                 @php
                                     $typeBadge = '-';
-                                    if (request('type')) {
-                                        if (request('type') == 'food') {
-                                            $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-                                        } elseif (request('type') == 'treatment') {
-                                            $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-                                        } elseif (request('type') == 'death') {
-                                            $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
-                                        }
-                                    } else {
-                                        if ($record->dairy_storehouse_uses->count()) {
-                                            $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-                                        } elseif ($record->batch_treatments->count()) {
-                                            $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-                                        } elseif ($record->pig_deaths->count()) {
-                                            $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
-                                        }
+                                    if ($record->dairy_storehouse_uses->count()) {
+                                        $typeBadge = '<span class="badge bg-success">อาหาร</span>';
+                                    } elseif ($record->batch_treatments->count()) {
+                                        $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
+                                    } elseif ($record->pig_deaths->count()) {
+                                        $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
                                     }
                                 @endphp
                                 {!! $typeBadge !!}
@@ -214,9 +200,10 @@
                                     data-bs-target="#viewModal{{ $record->id }}">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <a href="{{ route('dairy_records.edit', $record->id) }}" class="btn btn-sm btn-warning">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                    data-bs-target="#editModal{{ $record->id }}">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </td>
                         </tr>
                     @empty
@@ -240,81 +227,209 @@
         </div>
     </div>
 
-    {{-- View Modals --}}
+    {{-- Modals --}}
     @foreach ($dairyRecords as $record)
+        @php
+            $isFeed = $record->dairy_storehouse_uses->count();
+            $isMedicine = $record->batch_treatments->count();
+            $isDeath = $record->pig_deaths->count();
+
+            $formAction = '#';
+            if ($isFeed) {
+                $formAction = route('dairy_records.update_feed', [
+                    'dairyId' => $record->id,
+                    'useId' => $record->dairy_storehouse_uses->first()->id ?? 0,
+                    'type' => 'food',
+                ]);
+            } elseif ($isMedicine) {
+                $formAction = route('dairy_records.update_medicine', [
+                    'dairyId' => $record->id,
+                    'btId' => $record->batch_treatments->first()->id ?? 0,
+                    'type' => 'treatment',
+                ]);
+            } elseif ($isDeath) {
+                $formAction = route('pig_deaths.update', [
+                    'id' => $record->pig_deaths->first()->id ?? 0,
+                    'type' => 'death',
+                ]);
+            }
+        @endphp
+
+        <!-- View Modal -->
         <div class="modal fade" id="viewModal{{ $record->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">รายละเอียดบันทึกประจำวัน</h5>
+                        <h5 class="modal-title">รายละเอียดบันทึกประจำวัน - {{ $record->id }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
-                        <table class="table table-secondary table-sm">
-                            <tr>
-                                <td width="30%"><strong>วันที่:</strong></td>
-                                <td>{{ \Carbon\Carbon::parse($record->updated_at)->format('d/m/Y H:i') }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>ฟาร์ม:</strong></td>
-                                <td>{{ $record->batch->farm->farm_name ?? '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>รุ่น:</strong></td>
-                                <td>{{ $record->batch->batch_code ?? '-' }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>เล้า:</strong></td>
-                                <td>{{ $record->display_barn }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>ประเภท:</strong></td>
-                                <td>
-                                    @php
-                                        $typeBadge = '-';
-                                        if (request('type')) {
-                                            if (request('type') == 'food') {
-                                                $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-                                            } elseif (request('type') == 'treatment') {
-                                                $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-                                            } elseif (request('type') == 'death') {
-                                                $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
-                                            }
-                                        } else {
-                                            if ($record->dairy_storehouse_uses->count()) {
-                                                $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-                                            } elseif ($record->batch_treatments->count()) {
-                                                $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-                                            } elseif ($record->pig_deaths->count()) {
-                                                $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
-                                            }
-                                        }
-                                    @endphp
-                                    {!! $typeBadge !!}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>รายละเอียด:</strong></td>
-                                <td>{{ $record->display_details }}</td>
-                            </tr>
-                            <tr>
-                                <td><strong>จำนวน:</strong></td>
-                                <td>{{ $record->display_quantity }}</td>
-                            </tr>
-                        </table>
+                        <div class="row">
+                            <!-- ข้อมูลหลัก -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary">ข้อมูลหลัก</h6>
+                                <table class="table table-secondary table-sm">
+                                    <tr>
+                                        <td><strong>วันที่:</strong></td>
+                                        <td>{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y H:i') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ฟาร์ม:</strong></td>
+                                        <td>{{ $record->batch->farm->farm_name ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>รุ่น:</strong></td>
+                                        <td>{{ $record->batch->batch_code ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>เล้า:</strong></td>
+                                        <td>{{ $record->display_barn }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ประเภท:</strong></td>
+                                        <td>{!! $typeBadge !!}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- ข้อมูลเพิ่มเติม / จำนวน / รายละเอียด -->
+                            <div class="col-md-6">
+                                <h6 class="text-primary">รายละเอียด</h6>
+                                <table class="table table-secondary table-sm">
+                                    <tr>
+                                        <td><strong>จำนวน:</strong></td>
+                                        <td>{{ $record->display_quantity }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>รายละเอียด:</strong></td>
+                                        <td>{{ $record->display_details ?? '-' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <a href="{{ route('dairy_records.edit', $record->id) }}" class="btn btn-warning">
-                            <i class="bi bi-pencil-square"></i> แก้ไข
-                        </a>
+                        <button type="button" class="btn btn-warning" data-bs-toggle="modal"
+                            data-bs-target="#editModal{{ $record->id }}" data-bs-dismiss="modal">
+                            แก้ไข
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- End View Modal -->
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal{{ $record->id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">แก้ไขบันทึกประจำวัน</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <form action="{{ $formAction }}" method="POST">
+                        @csrf
+                        @if ($isFeed || $isMedicine || $isDeath)
+                            @method('PUT')
+                        @endif
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label>วันที่</label>
+                                    <input type="text" name="date" class="thai-datepicker form-control bg-white"
+                                        value="{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y H:i') }}"
+                                        autocomplete="off" placeholder="วัน-เดือน-ปี ชั่วโมง:นาที">
+                                </div>
+
+                                <div class="col-md-4">
+                                    <label>ฟาร์ม</label>
+                                    <input type="text" class="form-control form-disabled"
+                                        value="{{ $record->batch->farm->farm_name ?? '-' }}" disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>รุ่น</label>
+                                    <input type="text" class="form-control form-disabled"
+                                        value="{{ $record->batch->batch_code ?? '-' }}" disabled>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label>เล้า</label>
+                                    <input type="text" class="form-control form-disabled"
+                                        value="{{ $record->display_barn }}" disabled>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>ประเภท</label>
+                                    <div>{!! $typeBadge !!}</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label>จำนวน</label>
+                                    <input type="text" name="quantity" class="form-control"
+                                        value="{{ $record->display_quantity }}">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label>รายละเอียด</label>
+                                    <textarea class="form-control form-disabled" rows="2" disabled>{{ $record->display_details }}</textarea>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-12">
+                                    <label>หมายเหตุ</label>
+                                    <textarea name="note" class="form-control" rows="2">{{ $record->note }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-success">บันทึกการแก้ไข</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                        </div>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+        <!-- End Edit Modal -->
     @endforeach
 
     @push('scripts')
+        <!-- Datepicker JS (flatpickr) -->
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
+        <!-- Datepicker JS (flatpickr) -->
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/th.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                flatpickr('.thai-datepicker', {
+                    enableTime: true,
+                    dateFormat: 'd/m/Y H:i', // แสดงวันที่แบบ วัน-เดือน-ปี ชั่วโมง:นาที
+                    time_24hr: true,
+                    locale: 'th',
+                    onClose: function(selectedDates, dateStr, instance) {
+                        // แปลงปีไทยเป็น ค.ศ. ก่อน submit
+                        if (dateStr) {
+                            let parts = dateStr.split('-'); // ["15","10","2568 06:53"]
+                            let day = parts[0];
+                            let month = parts[1];
+                            let yearAndTime = parts[2].split(' ');
+                            let year = parseInt(yearAndTime[0]);
+                            let time = yearAndTime[1] ?? '00:00';
+
+                            if (year > 2500) year = year - 543; // แปลงเป็น ค.ศ.
+
+                            instance.input.value = `${day}-${month}-${year} ${time}`;
+                        }
+                    }
+                });
+            });
+        </script>
+
         <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
 
         {{-- Farm to Batch Filter Script --}}
@@ -327,56 +442,40 @@
                 farmLinks.forEach(link => {
                     link.addEventListener('click', function(e) {
                         e.preventDefault();
-
                         const farmId = this.getAttribute('data-farm-id');
                         const targetUrl = this.getAttribute('href');
 
                         if (farmId) {
-                            // โหลด batches จาก API
                             fetch('/get-batches/' + farmId)
                                 .then(response => response.json())
                                 .then(data => {
-                                    // อัพเดท batch dropdown
                                     updateBatchDropdown(data, targetUrl);
-                                    // Redirect
                                     window.location.href = targetUrl;
                                 })
                                 .catch(error => {
                                     console.error('Error loading batches:', error);
-                                    // Redirect ถึงแม้เกิด error
                                     window.location.href = targetUrl;
                                 });
                         } else {
-                            // ถ้าเลือก "ฟาร์มทั้งหมด" redirect ทันที
                             window.location.href = targetUrl;
                         }
                     });
                 });
 
                 function updateBatchDropdown(batches, currentUrl) {
-                    // สร้าง URL object เพื่อจัดการ query parameters
                     const url = new URL(currentUrl, window.location.origin);
                     const params = new URLSearchParams(url.search);
-
-                    // ลบ batch_id ออกจาก params
                     params.delete('batch_id');
-
-                    // สร้าง base URL สำหรับ batch links
                     const baseUrl = url.pathname + '?' + params.toString();
 
-                    // สร้าง HTML ใหม่
                     let html = `<li><a class="dropdown-item" href="${baseUrl}">รุ่นทั้งหมด</a></li>`;
-
                     batches.forEach(batch => {
                         const batchParams = new URLSearchParams(params);
                         batchParams.set('batch_id', batch.id);
                         const batchUrl = url.pathname + '?' + batchParams.toString();
                         html += `<li><a class="dropdown-item" href="${batchUrl}">${batch.batch_code}</a></li>`;
                     });
-
                     batchDropdownMenu.innerHTML = html;
-
-                    // อัพเดทปุ่ม dropdown
                     batchDropdownBtn.innerHTML = '<i class="bi bi-layers"></i> รุ่นทั้งหมด';
                 }
             });

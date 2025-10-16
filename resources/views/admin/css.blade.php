@@ -98,6 +98,16 @@
         color: var(--text-dark);
     }
 
+    .bg-white {
+        background-color: #ffffff !important;
+        color: var(--text-dark);
+    }
+
+    .bg-white:hover{
+        background-color: var(--bg-tertiary) !important;
+        color: var(--text-dark);
+    }
+
 
     body {
         background-color: var(--body-bg);
@@ -418,6 +428,13 @@
     .form-select:focus {
         border-color: var(--primary-orange);
         box-shadow: 0 0 0 0.2rem rgba(255, 91, 34, 0.25);
+    }
+
+    .form-control.form-disabled{
+
+        background-color: #e9ecef;
+        opacity: 1;
+
     }
 
     .per-page {

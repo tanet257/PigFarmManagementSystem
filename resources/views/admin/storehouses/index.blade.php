@@ -11,27 +11,27 @@
 
         {{-- แจ้งเตือนสินค้าใกล้หมด --}}
         @php
-            $lowStockItems = $storehouses->filter(function($item) {
+            $lowStockItems = $storehouses->filter(function ($item) {
                 return ($item->stock ?? 0) > 0 && ($item->stock ?? 0) < ($item->min_quantity ?? 0);
             });
-            $outOfStockItems = $storehouses->filter(function($item) {
+            $outOfStockItems = $storehouses->filter(function ($item) {
                 return ($item->stock ?? 0) <= 0;
             });
         @endphp
 
-        @if($lowStockItems->count() > 0)
+        @if ($lowStockItems->count() > 0)
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                 <strong>เตือน!</strong> มีสินค้าใกล้หมด {{ $lowStockItems->count() }} รายการ:
                 <ul class="mb-0 mt-2">
-                    @foreach($lowStockItems->take(5) as $item)
+                    @foreach ($lowStockItems->take(5) as $item)
                         <li>
                             <strong>{{ $item->item_name }}</strong>
                             - เหลือ {{ number_format($item->stock, 2) }} {{ $item->unit }}
                             (ขั้นต่ำ {{ number_format($item->min_quantity ?? 0, 2) }})
                         </li>
                     @endforeach
-                    @if($lowStockItems->count() > 5)
+                    @if ($lowStockItems->count() > 5)
                         <li class="text-muted">และอีก {{ $lowStockItems->count() - 5 }} รายการ...</li>
                     @endif
                 </ul>
@@ -39,15 +39,15 @@
             </div>
         @endif
 
-        @if($outOfStockItems->count() > 0)
+        @if ($outOfStockItems->count() > 0)
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <i class="bi bi-x-circle-fill me-2"></i>
                 <strong>สินค้าหมด!</strong> มีสินค้าหมดสต็อก {{ $outOfStockItems->count() }} รายการ:
                 <ul class="mb-0 mt-2">
-                    @foreach($outOfStockItems->take(5) as $item)
+                    @foreach ($outOfStockItems->take(5) as $item)
                         <li><strong>{{ $item->item_name }}</strong> ({{ $item->item_code }})</li>
                     @endforeach
-                    @if($outOfStockItems->count() > 5)
+                    @if ($outOfStockItems->count() > 5)
                         <li class="text-muted">และอีก {{ $outOfStockItems->count() - 5 }} รายการ...</li>
                     @endif
                 </ul>
@@ -57,7 +57,8 @@
 
         {{-- Toolbar --}}
         <div class="card-custom-secondary mb-3">
-            <form method="GET" action="{{ route('storehouses.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
+            <form method="GET" action="{{ route('storehouses.index') }}"
+                class="d-flex align-items-center gap-2 flex-wrap">
 
                 <!-- Farm Card Dropdown -->
                 <div class="dropdown">
@@ -263,8 +264,8 @@
                                     data-bs-target="#viewModal{{ $item->id }}">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-warning"
-                                    data-bs-toggle="modal" data-bs-target="#editModal{{ $item->id }}">
+                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                    data-bs-target="#editModal{{ $item->id }}">
                                     <i class="bi bi-pencil-square"></i>
 
                                     <form action="{{ route('storehouses.delete', $item->id) }}" method="POST"
@@ -370,6 +371,72 @@
             </div>
         </div>
     @endforeach
+
+    {{-- Create Modal --}}
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form action="{{ route('storehouses.create') }}" method="POST">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">เพิ่มสินค้าใหม่</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">รหัสสินค้า</label>
+                                <input type="text" class="form-control" name="item_code" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ชื่อสินค้า</label>
+                                <input type="text" class="form-control" name="item_name" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ประเภท</label>
+                                <select class="form-select" name="item_type" required>
+                                    <option value="">เลือกประเภท</option>
+                                    <option value="อาหาร">อาหาร</option>
+                                    <option value="ยา">ยา</option>
+                                    <option value="วัคซีน">วัคซีน</option>
+                                    <option value="อื่นๆ">อื่นๆ</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ฟาร์ม</label>
+                                <select class="form-select" name="farm_id" required>
+                                    <option value="">เลือกฟาร์ม</option>
+                                    @foreach ($farms as $farm)
+                                        <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">หน่วย</label>
+                                <input type="text" class="form-control" name="unit" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">จำนวนขั้นต่ำ (เตือนเมื่อสต็อกต่ำกว่านี้)</label>
+                                <input type="number" class="form-control" name="min_quantity" min="0"
+                                    step="0.01">
+                                <small class="text-muted">ระบบจะแจ้งเตือนเมื่อสต็อกต่ำกว่าจำนวนนี้</small>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label">หมายเหตุ</label>
+                                <textarea class="form-control" name="note" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> บันทึก
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     {{-- Edit Modals --}}
     @foreach ($storehouses as $item)

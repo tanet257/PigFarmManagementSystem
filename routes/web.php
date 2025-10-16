@@ -102,10 +102,13 @@ Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dair
 
 Route::prefix('dairy_record')->group(function () {
     Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');
-    Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
-    Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
+    // Edit Feed
+    Route::put('/{dairyId}/{useId}/{type}/edit-feed', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
+    // Edit Medicine
+    Route::put('/{dairyId}/{btId}/{type}/edit-medicine', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
+    // Edit Pig Death
+    Route::put('/pig-deaths/{id}/{type}/edit', [DairyController::class, 'updatePigDeath'])->name('pig_deaths.update');
 
-    //Route::put('/{dairyId}/{useId}/{type}/update-uses', [DairyController::class, 'updateDairyUse'])->name('dairy_records.update_uses');
     Route::delete('/dairy_storehouse_uses/{id}', [DairyController::class, 'destroyFeed'])->name('dairy_storehouse_uses.destroy');
     Route::delete('/batch_treatments/{id}', [DairyController::class, 'destroyMedicine'])->name('batch_treatments.destroy');
     Route::delete('/pig_deaths/{id}', [DairyController::class, 'destroyPigDeath'])->name('pig_deaths.destroy');
@@ -114,8 +117,6 @@ Route::prefix('dairy_record')->group(function () {
     Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
     Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
 });
-Route::put('/pig-deaths/{id}', [DairyController::class, 'updatePigDeath'])
-    ->name('pig_deaths.update');
 
 //------------------- route storehouse record ---------------------//
 Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.recordview');
