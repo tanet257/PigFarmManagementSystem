@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Pen;
+use App\Models\Role;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -16,11 +17,15 @@ class DatabaseSeeder extends Seeder
     {
         // เรียก Seeder อื่น ๆ ที่สร้างไว้
         $this->call([
-            StorehouseSeeder::class
+            //FarmSeeder::class,
+            //BarnSeeder::class,
             //PenSeeder::class,
+            //StorehouseSeeder::class
             //RoleSeeder::class,
             //PermissionSeeder::class,
             //RolePermissionSeeder::class,
+            //UserSeeder::class,
+            //RoleUserSeeder::class,
         ]);
     }
 }

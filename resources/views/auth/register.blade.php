@@ -9,48 +9,76 @@
         <form method="POST" action="{{ route('register') }}">
             @csrf
 
-            <div>
+            <!-- Name -->
+            <div style="margin-bottom: 1rem;">
                 <x-label for="name" value="{{ __('Name') }}" />
-                <x-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
+                <x-input id="name" type="text" name="name" :value="old('name')"
+                    required autofocus autocomplete="name"
+                    style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';"
+                />
             </div>
 
-            <div class="mt-4">
+            <!-- Email -->
+            <div style="margin-bottom: 1rem;">
                 <x-label for="email" value="{{ __('Email') }}" />
-                <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
+                <x-input id="email" type="email" name="email" :value="old('email')" required
+                    autocomplete="username"
+                    style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';"
+                />
             </div>
 
-             <div>
+            <!-- Phone -->
+            <div style="margin-bottom: 1rem;">
                 <x-label for="phone" value="{{ __('Phone') }}" />
-                <x-input id="phone" class="block mt-1 w-full" type="text" name="phone" :value="old('phone')" required autofocus autocomplete="phone" />
+                <x-input id="phone" type="text" name="phone" :value="old('phone')" required
+                    autocomplete="phone"
+                    style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';"
+                />
             </div>
 
-             <div>
+            <!-- Address -->
+            <div style="margin-bottom: 1rem;">
                 <x-label for="address" value="{{ __('Address') }}" />
-                <x-input id="address" class="block mt-1 w-full" type="text" name="address" :value="old('address')" required autofocus autocomplete="address" />
+                <x-input id="address" type="text" name="address" :value="old('address')" required
+                    autocomplete="address"
+                    style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';"
+                />
             </div>
 
-
-
-            <div class="mt-4">
+            <!-- Password -->
+            <div style="margin-bottom: 1rem;">
                 <x-label for="password" value="{{ __('Password') }}" />
-                <x-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
+                <x-input id="password" type="password" name="password" required
+                    autocomplete="new-password"
+                    style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';"
+                />
             </div>
 
-            <div class="mt-4">
+            <!-- Confirm Password -->
+            <div style="margin-bottom: 1rem;">
                 <x-label for="password_confirmation" value="{{ __('Confirm Password') }}" />
-                <x-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
+                <x-input id="password_confirmation" type="password" name="password_confirmation" required
+                    autocomplete="new-password"
+                    style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
+                    onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';"
+                />
             </div>
 
+            <!-- Terms -->
             @if (Laravel\Jetstream\Jetstream::hasTermsAndPrivacyPolicyFeature())
-                <div class="mt-4">
+                <div style="margin-bottom: 1rem;">
                     <x-label for="terms">
-                        <div class="flex items-center">
+                        <div style="display:flex; align-items:center; font-size:0.875rem;">
                             <x-checkbox name="terms" id="terms" required />
-
-                            <div class="ml-2">
+                            <div style="margin-left:0.5rem;">
                                 {!! __('I agree to the :terms_of_service and :privacy_policy', [
-                                        'terms_of_service' => '<a target="_blank" href="'.route('terms.show').'" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">'.__('Terms of Service').'</a>',
-                                        'privacy_policy' => '<a target="_blank" href="'.route('policy.show').'" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">'.__('Privacy Policy').'</a>',
+                                    'terms_of_service' => '<a target="_blank" href="'.route('terms.show').'" style="text-decoration:underline; color:#FF5B22;">'.__('Terms of Service').'</a>',
+                                    'privacy_policy' => '<a target="_blank" href="'.route('policy.show').'" style="text-decoration:underline; color:#FF5B22;">'.__('Privacy Policy').'</a>',
                                 ]) !!}
                             </div>
                         </div>
@@ -58,12 +86,16 @@
                 </div>
             @endif
 
-            <div class="flex items-center justify-end mt-4">
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                    {{ __('Already registered?') }}
+            <!-- Buttons -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem;">
+                <a href="{{ route('login') }}" style="font-size:0.875rem; color:#FF5B22; text-decoration:underline;">
+                    Already registered?
                 </a>
 
-                <x-button class="ml-4">
+                <x-button type="submit"
+                    style="background-color:#FF5B22; color:white; border:none; padding:0.5rem 1rem; border-radius:6px; cursor:pointer; font-weight:bold;"
+                    onmouseover="this.style.backgroundColor='#e65a00';" onmouseout="this.style.backgroundColor='#FF5B22';"
+                >
                     {{ __('Register') }}
                 </x-button>
             </div>

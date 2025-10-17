@@ -1083,6 +1083,7 @@
         padding: 3px 6px;
         font-size: 0.7rem;
     }
+    
 
     /* ========== Modal Styles ========== */
     /* Modal backdrop - พื้นหลังโปร่งแสง */

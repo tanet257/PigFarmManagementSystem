@@ -34,12 +34,19 @@ class RolePermissionSeeder extends Seeder
             ['role_id' => 1, 'permission_id' => 10],
             ['role_id' => 1, 'permission_id' => 11],
 
-            // staff (role_id = 2) ได้สิทธิ์บางส่วน]
+            // staff (role_id = 2) ได้บางสิทธิ์
             ['role_id' => 2, 'permission_id' => 1],
             ['role_id' => 2, 'permission_id' => 2],
             ['role_id' => 2, 'permission_id' => 3],
             ['role_id' => 2, 'permission_id' => 5],
             ['role_id' => 2, 'permission_id' => 6],
+
+            // manager (role_id = 3) ได้สิทธิ์บางส่วน
+            ['role_id' => 3, 'permission_id' => 1],
+            ['role_id' => 3, 'permission_id' => 2],
+            ['role_id' => 3, 'permission_id' => 3],
+            ['role_id' => 3, 'permission_id' => 5],
+            ['role_id' => 3, 'permission_id' => 7],
         ]);
     }
 }
