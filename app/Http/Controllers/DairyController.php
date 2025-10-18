@@ -20,6 +20,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\PigInventoryHelper;
 
 class DairyController extends Controller
 {
@@ -471,7 +472,7 @@ class DairyController extends Controller
                             $batch = Batch::find($validated['batch_id']);
                             if (!$batch) continue;
 
-                            $batch->total_deaths += $deadQuantity;
+                            $batch->total_death += $deadQuantity;
                             $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $deadQuantity, 0);
 
                             $currentAmount = $batch->total_pig_amount + $deadQuantity;
@@ -496,14 +497,36 @@ class DairyController extends Controller
                                         ->first();
 
                                     if ($allocation) {
-                                        $reduce = min($remainingDead, $allocation->allocated_pigs);
+                                        // Use helper to reduce inventory where possible
+                                        $availableInAllocation = $allocation->current_quantity ?? $allocation->allocated_pigs;
+                                        $reduce = min($remainingDead, $availableInAllocation);
 
-                                        DB::table('batch_pen_allocations')
-                                            ->where('id', $allocation->id)
-                                            ->update([
-                                                'allocated_pigs' => $allocation->allocated_pigs - $reduce,
-                                                'updated_at'     => now(),
-                                            ]);
+                                        $result = PigInventoryHelper::reducePigInventory(
+                                            $batch->id,
+                                            $allocation->pen_id,
+                                            $reduce,
+                                            'death'
+                                        );
+
+                                        if (!$result['success']) {
+                                            // fallback to direct update: adjust current_quantity if present, else allocated_pigs
+                                            if (property_exists($allocation, 'current_quantity')) {
+                                                $newCurrent = max(($allocation->current_quantity ?? $allocation->allocated_pigs) - $reduce, 0);
+                                                DB::table('batch_pen_allocations')
+                                                    ->where('id', $allocation->id)
+                                                    ->update([
+                                                        'current_quantity' => $newCurrent,
+                                                        'updated_at'     => now(),
+                                                    ]);
+                                            } else {
+                                                DB::table('batch_pen_allocations')
+                                                    ->where('id', $allocation->id)
+                                                    ->update([
+                                                        'allocated_pigs' => max($allocation->allocated_pigs - $reduce, 0),
+                                                        'updated_at'     => now(),
+                                                    ]);
+                                            }
+                                        }
                                     }
                                 }
 
@@ -682,7 +705,7 @@ class DairyController extends Controller
             ]);
             $this->updateNoteAndDate($pigDeath, $validated['note'], 'updated_at', now());
 
-            $batch->total_deaths += $diffQuantity;
+            $batch->total_death += $diffQuantity;
             $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $diffQuantity, 0);
             $avgWeightPerPig = ($batch->total_pig_amount + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
                 ? $batch->total_pig_weight / ($batch->total_pig_amount + $diffQuantity)
@@ -696,10 +719,30 @@ class DairyController extends Controller
                     ->where('pen_id', $pigDeath->pen_id)
                     ->first();
                 if ($allocation) {
-                    $newAllocated = max($allocation->allocated_pigs - $diffQuantity, 0);
-                    DB::table('batch_pen_allocations')
-                        ->where('id', $allocation->id)
-                        ->update(['allocated_pigs' => $newAllocated, 'updated_at' => now()]);
+                    $availableInAllocation = $allocation->current_quantity ?? $allocation->allocated_pigs;
+                    $reduce = min($diffQuantity, $availableInAllocation);
+
+                    $result = PigInventoryHelper::reducePigInventory(
+                        $batch->id,
+                        $allocation->pen_id,
+                        $reduce,
+                        'death'
+                    );
+
+                    if (!$result['success']) {
+                        // fallback to direct update: adjust current_quantity if present, else allocated_pigs
+                        if (property_exists($allocation, 'current_quantity')) {
+                            $newCurrent = max(($allocation->current_quantity ?? $allocation->allocated_pigs) - $diffQuantity, 0);
+                            DB::table('batch_pen_allocations')
+                                ->where('id', $allocation->id)
+                                ->update(['current_quantity' => $newCurrent, 'updated_at' => now()]);
+                        } else {
+                            $newAllocated = max($allocation->allocated_pigs - $diffQuantity, 0);
+                            DB::table('batch_pen_allocations')
+                                ->where('id', $allocation->id)
+                                ->update(['allocated_pigs' => $newAllocated, 'updated_at' => now()]);
+                        }
+                    }
                 }
             }
 

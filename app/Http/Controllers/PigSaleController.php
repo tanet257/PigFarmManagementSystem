@@ -427,7 +427,7 @@ class PigSaleController extends Controller
             return redirect()->route('pig_sales.index')->with('success', 'บันทึกการขายหมูสำเร็จ');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('PigSell Create Error: ' . $e->getMessage());
+            Log::error('PigSale Create Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
@@ -567,7 +567,7 @@ class PigSaleController extends Controller
             return redirect()->route('pig_sales.index')->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('PigSell Upload Receipt Error: ' . $e->getMessage());
+            Log::error('PigSale Upload Receipt Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
@@ -636,7 +636,7 @@ class PigSaleController extends Controller
             return redirect()->route('pig_sales.index')->with('success', 'ยกเลิกการขายสำเร็จ (คืนหมูกลับเล้า-คอกแล้ว)');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('PigSell Cancel Error: ' . $e->getMessage());
+            Log::error('PigSale Cancel Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }

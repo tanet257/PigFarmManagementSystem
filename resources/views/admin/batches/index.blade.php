@@ -79,26 +79,21 @@
                 </div>
 
                 <!-- Per Page -->
-                <select name="per_page" class="form-select form-select-sm filter-select-orange">
-                    @foreach ([10, 25, 50, 100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                            {{ $n }} แถว</option>
-                    @endforeach
-                </select>
+                @include('components.per-page-dropdown')
 
+                <div class="ms-auto d-flex gap-2">
+                    <a href="{{ route('batches.export.csv') }}" class="btn btn-sm btn-success">
+                        <i class="bi bi-file-earmark-excel"></i> Export CSV
+                    </a>
+                    <a href="{{ route('batches.export.pdf') }}" class="btn btn-sm btn-danger">
+                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
+                    </a>
+                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                        data-bs-target="#createModal">
+                        <i class="bi bi-plus-circle"></i> เพิ่มรุ่นใหม่
+                    </button>
+                </div>
             </form>
-        </div>
-
-        <div class="d-flex justify-content-end gap-2 mb-3">
-            <a href="{{ route('batches.export.csv') }}" class="btn btn-sm btn-success">
-                <i class="bi bi-file-earmark-excel"></i> Export CSV
-            </a>
-            <a href="{{ route('batches.export.pdf') }}" class="btn btn-sm btn-danger">
-                <i class="bi bi-file-earmark-pdf"></i> Export PDF
-            </a>
-            <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#createModal">
-                <i class="bi bi-plus-circle"></i> เพิ่มรุ่นใหม่
-            </button>
         </div>
 
         {{-- Table --}}
@@ -259,34 +254,42 @@
     </div>
 
     {{-- Modal Create --}}
-    <div class="modal fade" id="createModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="createModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content bg-dark text-light">
-                <div class="modal-header">
-                    <h5>เพิ่มรุ่นใหม่</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
+            <div class="modal-content">
                 <form action="{{ route('batches.create') }}" method="POST" enctype="multipart/form-data">
                     @csrf
-                    <div class="mb-3">
-                        <label>ฟาร์ม</label>
-                        <select name="farm_id" class="form-select">
-                            @foreach ($farms as $farm)
-                                <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                            @endforeach
-                        </select>
+                    <div class="modal-header">
+                        <h5 class="modal-title">เพิ่มรุ่นใหม่</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ฟาร์ม</label>
+                                <select name="farm_id" class="form-select" required>
+                                    <option value="">เลือกฟาร์ม</option>
+                                    @foreach ($farms as $farm)
+                                        <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                    <div class="mb-3">
-                        <label>รหัสรุ่น</label>
-                        <input type="text" name="batch_code" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label>โน๊ต</label>
-                        <textarea name="note" class="form-control"></textarea>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">รหัสรุ่น</label>
+                                <input type="text" name="batch_code" class="form-control" required>
+                            </div>
+
+                            <div class="col-12 mb-3">
+                                <label class="form-label">หมายเหตุ</label>
+                                <textarea name="note" class="form-control" rows="3"></textarea>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> บันทึก
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
                     </div>
                 </form>

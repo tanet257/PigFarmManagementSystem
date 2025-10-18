@@ -134,12 +134,7 @@
                 </div>
 
                 <!-- Per Page -->
-                <select name="per_page" class="per-page form-select form-select-sm w-20 filter-select-orange">
-                    @foreach ([10, 25, 50, 100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                            {{ $n }} แถว</option>
-                    @endforeach
-                </select>
+                @include('components.per-page-dropdown')
 
                 <!-- Right side buttons -->
                 <div class="ms-auto d-flex gap-2">

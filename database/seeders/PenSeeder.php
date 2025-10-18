@@ -10,22 +10,20 @@ class PenSeeder extends Seeder
 {
     public function run(): void
     {
-        // ดึง barns ทั้งหมด
+        // ดึง barns ทั้งหมดจากฐานข้อมูล
         $barns = Barn::all();
 
-        // ตัวอักษรเริ่มจาก A, B, C ...
-        $alphabet = range('A', 'B');
+        foreach ($barns as $barn) {
+            // ดึง farm_id และ barn_code ของแต่ละเล้า
+            $farmId = $barn->farm_id;
+            $barnCode = $barn->barn_code; // เช่น F1-B01
 
-        foreach ($barns as $index => $barn) {
-            if ($index >= 4) break; // หยุดเมื่อเกิน 4 barns
-
-            $prefix = chr(65 + $index); // 65 คือ 'A' → A, B, C, D
-
+            // วนสร้าง pen 20 คอกในแต่ละเล้า
             for ($i = 1; $i <= 20; $i++) {
                 Pen::create([
                     'barn_id'      => $barn->id,
-                    'pen_code'     => sprintf('%s%02d', $prefix, $i), // เช่น A01, A02 … A20
-                    'pig_capacity' => 38, // กำหนดค่าตามจริง
+                    'pen_code'     => "{$barnCode}-P" . str_pad($i, 2, '0', STR_PAD_LEFT), // เช่น F1-B01-P01
+                    'pig_capacity' => 38, // ความจุตามจริง
                     'status'       => 'กำลังใช้งาน',
                     'note'         => null,
                 ]);

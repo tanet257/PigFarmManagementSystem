@@ -9,6 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Models\Farm;
 use App\Models\Batch;
+use Illuminate\Validation\Rule;
 use App\Models\Barn;
 use App\Models\Pen;
 
@@ -128,32 +129,38 @@ class BatchController extends Controller
     public function createBatch(Request $request)
     {
         try {
-            //validate
+            // validate
             $validated = $request->validate([
-                'farm_id'  => 'required|exists:farms,id',
-                'batch_code' => 'required|unique:batches,batch_code',
-                'end_date' => 'nullable|date|after_or_equal:start_date',
+                'farm_id'     => 'required|exists:farms,id',
+                'batch_code'  => [
+                    'required',
+                    Rule::unique('batches', 'batch_code')->where(function ($query) use ($request) {
+                        return $query->where('farm_id', $request->input('farm_id'));
+                    }),
+                ],
+                'status'      => 'nullable|string',
+                'end_date'    => 'nullable|date|after_or_equal:today',
+                'note'        => 'nullable|string',
             ]);
 
-            $data = new Batch;
-            $data->farm_id = $validated['farm_id'];
-
-            //unique
-            $data->batch_code = $validated['batch_code'];
-
-            $data->status = $validated['status'] ?? 'กำลังเลี้ยง';
-            $data->note = $validated['note'] ?? null;
-
-            $data->start_date = Carbon::now(); // เวลาปัจจุบัน
-            $data->end_date = $validated['end_date'] ?? null;
-
-            $data->save();
+            $batch = new Batch();
+            $batch->farm_id = $validated['farm_id'];
+            $batch->batch_code = $validated['batch_code'];
+            $batch->status = $validated['status'] ?? 'กำลังเลี้ยง';
+            $batch->note = $validated['note'] ?? null;
+            $batch->start_date = Carbon::now();
+            $batch->end_date = $validated['end_date'] ?? null;
+            $batch->save();
 
             return redirect()->back()->with('success', 'เพิ่มรุ่นเรียบร้อย');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการเพิ่มรุ่น: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->withErrors([$e->getMessage()])
+                ->with('modal', 'create'); // แจ้งให้ modal เปิดค้าง
         }
     }
+
 
     //Edit batch
     public function editBatch(Request $request)
@@ -170,7 +177,12 @@ class BatchController extends Controller
         $batch = Batch::findOrFail($id);
 
         $validated = $request->validate([
-            'batch_code' => 'required|string|max:255',
+            'batch_code' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('batches', 'batch_code')->where(fn($q) => $q->where('farm_id', $request->input('farm_id')))->ignore($batch->id),
+            ],
             'status'     => 'required|string',
             'note'       => 'nullable|string',
             'start_date' => 'nullable|date',

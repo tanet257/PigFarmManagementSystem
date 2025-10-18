@@ -13,7 +13,6 @@ class StoreHouse extends Model
 
     protected $fillable = [
         'farm_id',
-        'batch_id',
         'item_type',
         'item_code',
         'item_name',

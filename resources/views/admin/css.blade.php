@@ -103,7 +103,7 @@
         color: var(--text-dark);
     }
 
-    .bg-white:hover{
+    .bg-white:hover {
         background-color: var(--bg-tertiary) !important;
         color: var(--text-dark);
     }
@@ -430,7 +430,7 @@
         box-shadow: 0 0 0 0.2rem rgba(255, 91, 34, 0.25);
     }
 
-    .form-control.form-disabled{
+    .form-control.form-disabled {
 
         background-color: #e9ecef;
         opacity: 1;
@@ -474,6 +474,12 @@
         border: 1px solid #1E3E62;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         border-radius: 0.375rem;
+    }
+
+    .dropdown-menu-xl {
+        min-width: 150px !important;
+        max-width: 300px !important;
+        width: auto !important;
     }
 
     .dropdown-toggle {
@@ -565,6 +571,7 @@
         padding: 1rem 1.5rem;
         color: white;
         box-shadow: 0 4px 12px rgba(30, 62, 98, 0.2);
+        overflow: visible !important;
     }
 
     .card-custom-secondary:hover {
@@ -1083,7 +1090,7 @@
         padding: 3px 6px;
         font-size: 0.7rem;
     }
-    
+
 
     /* ========== Modal Styles ========== */
     /* Modal backdrop - พื้นหลังโปร่งแสง */
@@ -1255,10 +1262,88 @@
     }
 
     .btn-info {
-    border-radius: 8px !important; /* มนขึ้นนิดหน่อย */
-    color: #fff !important;
-    transition: all 0.2s ease-in-out;
-}
+        border-radius: 8px !important;
+        /* มนขึ้นนิดหน่อย */
+        color: #fff !important;
+        transition: all 0.2s ease-in-out;
+    }
+
+    /* ================= Choices.js theme overrides ================= */
+    /* Ensure overrides are specific enough to win over choices.min.css */
+    .choices {
+        --choices-bg: var(--card-bg);
+    }
+
+    .choices .choices__inner {
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 6px 10px !important;
+        min-height: 42px !important;
+        box-shadow: none !important;
+    }
+
+    .choices .choices__item--selectable {
+        background: transparent !important;
+        color: var(--text-dark) !important;
+        padding: 6px 8px !important;
+        border-radius: 6px !important;
+        margin: 3px 4px !important;
+    }
+
+    .choices .choices__item--disabled {
+        opacity: 0.9 !important;
+    }
+
+    .choices .choices__placeholder {
+        color: var(--text-muted) !important;
+    }
+
+    .choices .choices__input {
+        margin: 0 !important;
+        padding: 0 !important;
+        color: var(--text-dark) !important;
+    }
+
+    .choices .choices__list--dropdown {
+        background-color: var(--card-bg) !important;
+        border: 1px solid rgba(39, 63, 79, 0.08) !important;
+        box-shadow: 0 6px 18px rgba(39, 63, 79, 0.12) !important;
+        border-radius: 8px !important;
+        overflow: hidden !important;
+        max-height: 320px !important;
+    }
+
+    .choices .choices__list--dropdown .choices__item--choice {
+        padding: 10px 14px !important;
+        color: var(--text-dark) !important;
+        border-bottom: 1px solid rgba(254, 205, 166, 0.15) !important;
+    }
+
+    .choices .choices__list--dropdown .choices__item--choice.is-highlighted,
+    .choices .choices__list--dropdown .choices__item--choice:hover {
+        background: linear-gradient(90deg, rgba(255, 91, 34, 0.06), rgba(255, 145, 48, 0.04)) !important;
+        color: var(--text-dark) !important;
+    }
+
+    /* Focus states to match theme */
+    .choices:focus-within .choices__inner,
+    .choices .is-open .choices__inner {
+        border-color: var(--primary-orange) !important;
+        box-shadow: 0 0 0 0.2rem rgba(255, 91, 34, 0.12) !important;
+    }
+
+    /* Small variant used in toolbar/filters */
+    .choices.filter-select-orange .choices__inner {
+        min-height: 36px !important;
+        padding: 4px 8px !important;
+        border-radius: 6px !important;
+    }
+
+    /* Ensure dropdown caret uses theme color when collapsed */
+    .choices__inner .choices__list--single::after {
+        border-top-color: var(--primary-orange) !important;
+    }
 </style>
 
 <script>

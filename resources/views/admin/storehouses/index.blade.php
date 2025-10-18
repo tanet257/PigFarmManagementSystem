@@ -177,12 +177,7 @@
                 </div>
 
                 <!-- Per Page -->
-                <select name="per_page" class="form-select form-select-sm filter-select-orange">
-                    @foreach ([10, 25, 50, 100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                            {{ $n }} แถว</option>
-                    @endforeach
-                </select>
+                @include('components.per-page-dropdown')
 
                 <!-- Right side buttons -->
                 <div class="ms-auto d-flex gap-2">
@@ -192,10 +187,25 @@
                     <a class="btn btn-outline-danger btn-sm" href="{{ route('storehouses.export.pdf') }}">
                         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                     </a>
-                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#createModal">
-                        <i class="bi bi-plus-circle me-1"></i> เพิ่มสินค้า
-                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-success btn-sm " data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                            <i class="bi bi-plus-circle me-1"></i> เพิ่มสินค้า
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-xl">
+                            <li>
+                                <a class="dropdown-item" href="{{ route('store_house_record.recordview') }}">
+                                    <i class="bi bi-journal-text me-1"></i> อัปเดทสต็อกสินค้า
+                                </a>
+                            </li>
+                            <li>
+                                <button class="dropdown-item" type="button" data-bs-toggle="modal"
+                                    data-bs-target="#createModal">
+                                    <i class="bi bi-plus-circle me-1"></i> เพิ่มสินค้าใหม่
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </form>
         </div>
@@ -213,7 +223,6 @@
                         <th class="text-center">จำนวน</th>
                         <th class="text-center">หน่วย</th>
                         <th class="text-center">สถานะ</th>
-                        <th class="text-center">วันหมดอายุ</th>
                         <th class="text-center">จัดการ</th>
                     </tr>
                 </thead>
@@ -247,18 +256,7 @@
                                     <span class="badge bg-success">พร้อมใช้</span>
                                 @endif
                             </td>
-                            <td class="text-center">
-                                @if ($item->expire_date)
-                                    {{ \Carbon\Carbon::parse($item->expire_date)->format('d/m/Y') }}
-                                    @if (\Carbon\Carbon::parse($item->expire_date)->isPast())
-                                        <small class="text-danger d-block">หมดอายุแล้ว!</small>
-                                    @elseif(\Carbon\Carbon::parse($item->expire_date)->diffInDays() < 30)
-                                        <small class="text-warning d-block">ใกล้หมดอายุ</small>
-                                    @endif
-                                @else
-                                    -
-                                @endif
-                            </td>
+
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
                                     data-bs-target="#viewModal{{ $item->id }}">

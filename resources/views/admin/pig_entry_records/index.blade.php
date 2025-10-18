@@ -81,12 +81,7 @@
                 </div>
 
                 <!-- Per Page -->
-                <select name="per_page" class="form-select form-select-sm filter-select-orange">
-                    @foreach ([10, 25, 50, 100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                            {{ $n }} แถว</option>
-                    @endforeach
-                </select>
+                @include('components.per-page-dropdown')
 
                 <div class="ms-auto d-flex gap-2">
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
@@ -306,7 +301,8 @@
                                                 {{-- delete file --}}
                                                 @if ($record->latestCost && $record->latestCost->receipt_file)
                                                     @php$file = $record->latestCost->receipt_file;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @endphp ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @endphp ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?>
+                                                    ?>
                                                     <small class="text-muted">ไฟล์ปัจจุบัน:</small>
                                                     @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
                                                         <div><img src="{{ $file }}" alt="Receipt"
@@ -362,8 +358,6 @@
                 {{ $pigEntryRecords->withQueryString()->links() }}
             </div>
         </div>
-    </div>
-    </div>
     </div>
 
     {{-- Modal Create --}}
@@ -498,37 +492,153 @@
                     removeItemButton: true,
                     placeholderValue: '-- เลือกเล้า --'
                 });
-
                 farmSelect.addEventListener('change', function() {
                     const farmId = this.value;
-                    batchChoice.clearChoices();
-                    barnChoice.clearChoices();
 
+                    // Immediately reset batch and barn to placeholder so stale values aren't shown
+                    batchChoice.clearChoices();
+                    batchChoice.setChoices([{
+                        value: '',
+                        label: '-- เลือกรุ่น --',
+                        selected: true,
+                        disabled: true
+                    }]);
+
+                    barnChoice.clearChoices();
+                    barnChoice.setChoices([{
+                        value: '',
+                        label: '-- เลือกเล้า --',
+                        selected: true,
+                        disabled: true
+                    }]);
+
+                    // If farm cleared, nothing more to do
                     if (!farmId) return;
 
-                    fetch('/get-batches/' + farmId)
-                        .then(res => res.json())
+                    // Show loading states
+                    batchChoice.clearChoices();
+                    batchChoice.setChoices([{
+                        value: '',
+                        label: 'กำลังโหลด...',
+                        selected: true,
+                        disabled: true
+                    }]);
+
+                    barnChoice.clearChoices();
+                    barnChoice.setChoices([{
+                        value: '',
+                        label: 'กำลังโหลดเล้า...',
+                        selected: true,
+                        disabled: true
+                    }]);
+
+                    // Fetch batches with improved error handling
+                    fetch('{{ url('get-batches') }}/' + farmId)
+                        .then(res => {
+                            if (!res.ok) {
+                                // Try to read body for extra debug info
+                                return res.text().then(body => {
+                                    const err = new Error('Failed to load batches: HTTP ' + res.status +
+                                        ' - ' + body);
+                                    err.status = res.status;
+                                    throw err;
+                                });
+                            }
+                            return res.json();
+                        })
                         .then(data => {
-                            batchChoice.setChoices(
-                                data.map(batch => ({
+                            const choices = [{
+                                value: '',
+                                label: '-- เลือกรุ่น --',
+                                selected: true,
+                                disabled: true
+                            }];
+                            if (Array.isArray(data) && data.length > 0) {
+                                data.forEach(batch => choices.push({
                                     value: batch.id,
                                     label: batch.batch_code
-                                })), 'value', 'label', true
-                            );
+                                }));
+                            } else if (Array.isArray(data) && data.length === 0) {
+                                // no batches for this farm
+                                choices.push({
+                                    value: '',
+                                    label: '❌ ไม่พบรุ่นสำหรับฟาร์มนี้',
+                                    disabled: true
+                                });
+                            }
+                            batchChoice.clearChoices();
+                            batchChoice.setChoices(choices, 'value', 'label', true);
+                            try {
+                                batchChoice.setChoiceByValue('');
+                            } catch (e) {}
+                        })
+                        .catch(err => {
+                            console.error('Error loading batches:', err);
+                            batchChoice.clearChoices();
+                            batchChoice.setChoices([{
+                                value: '',
+                                label: '❌ ไม่สามารถโหลดรุ่น',
+                                selected: true,
+                                disabled: true
+                            }]);
                         });
 
-                    fetch('/get-available-barns/' + farmId)
-                        .then(res => res.json())
+                    // Fetch barns with improved error handling (use absolute url)
+                    fetch('{{ url('get-available-barns') }}/' + farmId)
+                        .then(res => {
+                            if (!res.ok) {
+                                return res.text().then(body => {
+                                    const err = new Error('Failed to load barns: HTTP ' + res.status +
+                                        ' - ' + body);
+                                    err.status = res.status;
+                                    throw err;
+                                });
+                            }
+                            return res.json();
+                        })
                         .then(data => {
-                            barnChoice.setChoices(
-                                data.map(barn => ({
+                            const choices = [{
+                                value: '',
+                                label: '-- เลือกเล้า --',
+                                selected: true,
+                                disabled: true
+                            }];
+                            if (Array.isArray(data) && data.length > 0) {
+                                data.forEach(barn => choices.push({
                                     value: barn.id,
-                                    label: barn.barn_code + ' (เหลือ ' + barn.remaining + ' ตัว)'
-                                })),
-                                'value', 'label', true
-                            );
+                                    label: barn.barn_code + ' (เหลือ ' + (barn.remaining ?? 0) + ' ตัว)'
+                                }));
+                            } else if (Array.isArray(data) && data.length === 0) {
+                                choices.push({
+                                    value: '',
+                                    label: '❌ ไม่พบเล้าที่มีที่ว่างในฟาร์มนี้',
+                                    disabled: true
+                                });
+                            }
+                            barnChoice.clearChoices();
+                            barnChoice.setChoices(choices, 'value', 'label', true);
+                            try {
+                                barnChoice.setChoiceByValue('');
+                            } catch (e) {}
+                        })
+                        .catch(err => {
+                            console.error('Error loading barns:', err);
+                            barnChoice.clearChoices();
+                            barnChoice.setChoices([{
+                                value: '',
+                                label: '❌ ไม่สามารถโหลดเล้า',
+                                selected: true,
+                                disabled: true
+                            }]);
                         });
                 });
+
+                // mark this farm select as initialized so we don't double-init
+                try {
+                    farmSelect.choicesInstance = true;
+                } catch (e) {
+                    // ignore
+                }
             }
 
             // Create modal
@@ -590,8 +700,8 @@
                         // แสดง loading
                         batchFilter.innerHTML = '<option value="">กำลังโหลด...</option>';
 
-                        // โหลด batches จาก API
-                        fetch('/get-batches/' + farmId)
+                        // โหลด batches จาก API (ใช้ absolute url เพื่อให้ทำงานภายใต้ sub-folder ถ้ามี)
+                        fetch('{{ url('get-batches') }}/' + farmId)
                             .then(response => response.json())
                             .then(data => {
                                 batchFilter.innerHTML = '<option value="">รุ่นทั้งหมด</option>';

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\PigSale;
+use App\Models\DairyStorehouseUse;
 
 class Batch extends Model
 {
@@ -16,12 +18,24 @@ class Batch extends Model
         'batch_code',
         'total_pig_weight',
         'total_pig_amount',
+        'current_quantity',
+        'average_weight_per_pig',
+        'average_price_per_pig',
         'total_pig_price',
-        'total_deaths',
+        'total_death',
         'status',
         'note',
         'start_date',
         'end_date'
+    ];
+
+    protected $casts = [
+        'current_quantity' => 'integer',
+        'average_weight_per_pig' => 'float',
+        'average_price_per_pig' => 'float',
+        'total_death' => 'integer',
+        'start_date' => 'date',
+        'end_date' => 'date',
     ];
 
     // Relation กับ Farm
@@ -34,6 +48,15 @@ class Batch extends Model
     public function pig_entry_records()
     {
         return $this->hasMany(PigEntryRecord::class, 'batch_id');
+    }
+
+    /**
+     * Compatibility helper: returns pig sales for this batch.
+     * Uses the existing PigSale model in the app.
+     */
+    public function pig_sells()
+    {
+        return $this->hasMany(PigSale::class, 'batch_id');
     }
 
     public function costs()
@@ -51,10 +74,18 @@ class Batch extends Model
         return $this->hasMany(InventoryMovement::class, 'batch_id', 'id');
     }
 
+    public function dairy_storehouse_uses()
+    {
+        return $this->hasMany(DairyStorehouseUse::class, 'batch_id');
+    }
+
     public function pig_deaths()
     {
         return $this->hasMany(PigDeath::class);
     }
 
-
+    public function batch_metric()
+    {
+        return $this->hasOne(BatchMetric::class, 'batch_id');
+    }
 }

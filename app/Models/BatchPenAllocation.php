@@ -15,7 +15,8 @@ class BatchPenAllocation extends Model
         'batch_id',
         'barn_id',
         'pen_id',
-        'pig_amount',
+        'allocated_pigs',
+        'current_quantity',
         'move_date',
         'note',
     ];

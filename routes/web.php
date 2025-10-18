@@ -98,7 +98,7 @@ Route::prefix('batch_pen_allocations')->group(function () {
 Route::get('/viewDairy', [DairyController::class, 'viewDairy'])->name('dairy_records.record');
 Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dairy_records.upload');
 
-//------------------- route crud storehouse -----------------------//
+//------------------- route crud dairy_record -----------------------//
 
 Route::prefix('dairy_record')->group(function () {
     Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');

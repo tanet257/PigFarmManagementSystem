@@ -86,12 +86,7 @@
                 </div>
 
                 <!-- Per Page -->
-                <select name="per_page" class="form-select form-select-sm filter-select-orange">
-                    @foreach ([10, 25, 50, 100] as $n)
-                        <option value="{{ $n }}" {{ request('per_page', 10) == $n ? 'selected' : '' }}>
-                            {{ $n }} แถว</option>
-                    @endforeach
-                </select>
+                @include('components.per-page-dropdown')
             </form>
         </div>
 

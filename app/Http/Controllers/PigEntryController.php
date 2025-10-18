@@ -15,6 +15,7 @@ use App\Models\Barn;
 use App\Models\Pen;
 use App\Models\Cost;
 use App\Models\PigEntryRecord;
+use App\Helpers\PigInventoryHelper;
 
 class PigEntryController extends Controller
 {
@@ -36,11 +37,12 @@ class PigEntryController extends Controller
         $barns = Barn::where('farm_id', $farmId)->get();
 
         $barns = $barns->map(function ($barn) {
+            // ใช้ current_quantity ถ้ามี ถ้าไม่มีก็ fallback ไป allocated_pigs หรือ pig_amount
             $allocated = DB::table('batch_pen_allocations')
                 ->where('barn_id', $barn->id)
-                ->sum('allocated_pigs');
+                ->sum(DB::raw('COALESCE(current_quantity, allocated_pigs, pig_amount)'));
 
-            $barn->remaining = $barn->pig_capacity - $allocated;
+            $barn->remaining = ($barn->pig_capacity ?? 0) - ($allocated ?? 0);
             return $barn;
         });
 
@@ -64,7 +66,20 @@ class PigEntryController extends Controller
     public function upload_pig_entry_record(Request $request)
     {
         try {
-            $status = $request->input('status');
+            // Prefer the batch status if available; fall back to request input.
+            $batchFromRequestId = $request->input('batch_id');
+            $status = null;
+            if ($batchFromRequestId) {
+                $batchForStatus = Batch::find($batchFromRequestId);
+                if ($batchForStatus) {
+                    $status = $batchForStatus->status;
+                }
+            }
+
+            // If still null, fall back to provided request status
+            if (!$status) {
+                $status = $request->input('status');
+            }
 
             if ($status === "กำลังเลี้ยง") {
                 $validated = $request->validate([
@@ -118,14 +133,12 @@ class PigEntryController extends Controller
                         $allocateToPen = min($availableInPen, $remainingPigs);
                         $remainingPigs -= $allocateToPen;
 
-                        DB::table('batch_pen_allocations')->insert([
-                            'batch_id'       => $batch->id,
-                            'barn_id'        => $barn->id,
-                            'pen_id'         => $pen->id,
-                            'allocated_pigs' => $allocateToPen,
-                            'created_at'     => now(),
-                            'updated_at'     => now(),
-                        ]);
+                        // Use PigInventoryHelper to create/update allocation record
+                        $result = PigInventoryHelper::addPigs($batch->id, $barn->id, $pen->id, $allocateToPen);
+                        if (!isset($result['success']) || $result['success'] !== true) {
+                            // Bubble up error to outer catch
+                            throw new \Exception('ไม่สามารถบันทึก allocation: ' . ($result['message'] ?? 'Unknown error'));
+                        }
                     }
                 }
 

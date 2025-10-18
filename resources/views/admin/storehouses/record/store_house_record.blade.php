@@ -17,7 +17,7 @@
                         <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3">
 
                             <div class="col-md-5">
-                                <div class="dropdown">
+                                <div class="dropdown" >
                                     <button
                                         class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
                                         type="button" id="farmDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
