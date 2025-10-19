@@ -207,13 +207,17 @@ class BatchController extends Controller
     //Delete batch
     public function deleteBatch($id)
     {
-        $batch = Batch::find($id);
-        if (!$batch) {
-            return redirect()->back()->with('error', 'ไม่พบรุ่นที่ต้องการลบ');
-        }
+        try {
+            $result = \App\Helpers\PigInventoryHelper::deleteBatchWithAllocations($id);
 
-        $batch->delete();
-        return redirect()->route('batches.index')->with('success', 'ลบรุ่นหมูเรียบร้อยแล้ว');
+            if (!$result['success']) {
+                return redirect()->back()->with('error', $result['message']);
+            }
+
+            return redirect()->route('batches.index')->with('success', $result['message']);
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//

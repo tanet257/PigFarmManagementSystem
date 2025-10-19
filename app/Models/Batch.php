@@ -69,6 +69,12 @@ class Batch extends Model
     {
         return $this->hasMany(BatchPenAllocation::class, 'batch_id');
     }
+
+    public function batchPenAllocations()
+    {
+        return $this->hasMany(BatchPenAllocation::class, 'batch_id');
+    }
+
     public function inventory_movements()
     {
         return $this->hasMany(InventoryMovement::class, 'batch_id', 'id');
@@ -87,5 +93,43 @@ class Batch extends Model
     public function batch_metric()
     {
         return $this->hasOne(BatchMetric::class, 'batch_id');
+    }
+
+    /**
+     * Boot method to handle cascading deletes
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // ลบ batch_pen_allocations
+        static::deleting(function ($batch) {
+            BatchPenAllocation::where('batch_id', $batch->id)->delete();
+        });
+
+        // ลบ costs
+        static::deleting(function ($batch) {
+            Cost::where('batch_id', $batch->id)->delete();
+        });
+
+        // ลบ pig_entry_records
+        static::deleting(function ($batch) {
+            PigEntryRecord::where('batch_id', $batch->id)->delete();
+        });
+
+        // ลบ pig_sells
+        static::deleting(function ($batch) {
+            PigSale::where('batch_id', $batch->id)->delete();
+        });
+
+        // ลบ inventory_movements
+        static::deleting(function ($batch) {
+            InventoryMovement::where('batch_id', $batch->id)->delete();
+        });
+
+        // ลบ pig_deaths
+        static::deleting(function ($batch) {
+            PigDeath::where('batch_id', $batch->id)->delete();
+        });
     }
 }

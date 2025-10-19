@@ -14,12 +14,22 @@ class PigEntryRecord extends Model
     protected $fillable = [
         'farm_id',
         'batch_id',
-
         'pig_entry_date',
         'total_pig_amount',
         'total_pig_weight',
         'total_pig_price',
+        'average_weight_per_pig',
+        'average_price_per_pig',
         'note',
+    ];
+
+    protected $casts = [
+        'pig_entry_date' => 'datetime',
+        'total_pig_amount' => 'integer',
+        'total_pig_weight' => 'float',
+        'total_pig_price' => 'float',
+        'average_weight_per_pig' => 'float',
+        'average_price_per_pig' => 'float',
     ];
 
     // ------------ Relationships ------------ //
@@ -27,6 +37,16 @@ class PigEntryRecord extends Model
     public function batch()
     {
         return $this->belongsTo(Batch::class);
+    }
+
+    public function farm()
+    {
+        return $this->belongsTo(Farm::class);
+    }
+
+    public function entryDetails()
+    {
+        return $this->hasMany(PigEntryDetail::class, 'pig_entry_id');
     }
 
     public function getTransportCostAttribute()
@@ -40,13 +60,7 @@ class PigEntryRecord extends Model
     }
 
     public function latestCost()
-{
-    return $this->hasOne(Cost::class, 'batch_id', 'batch_id')->latestOfMany();
-}
-
-
-    public function farm()
     {
-        return $this->belongsTo(Farm::class);
+        return $this->hasOne(Cost::class, 'batch_id', 'batch_id')->latestOfMany();
     }
 }

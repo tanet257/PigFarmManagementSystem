@@ -108,6 +108,7 @@
                         <th class="text-center">น้ำหนักหมูรวม</th>
                         <th class="text-center">น้ำหนักเฉลี่ย/ตัว</th>
                         <th class="text-center">จำนวนหมูรวม</th>
+                        <th class="text-center">หมูคงเหลือ</th>
                         <th class="text-center">ต้นทุนหมูเข้า</th>
                         <th class="text-center">สถานะ</th>
                         <th class="text-center">หมายเหตุ</th>
@@ -133,6 +134,8 @@
                             </td>
                             <td class="text-center">{{ number_format($batch->avg_pig_weight ?? 0, 2) }} กก.</td>
                             <td class="text-center"><strong>{{ number_format($batch->total_pig_amount ?? 0) }}</strong>
+                            </td>
+                            <td class="text-center"><strong style="color: {{ ($batch->current_quantity ?? $batch->total_pig_amount) > 0 ? '#28a745' : '#dc3545' }}">{{ number_format($batch->current_quantity ?? $batch->total_pig_amount) }}</strong>
                             </td>
                             <td class="text-center">{{ number_format($batch->total_pig_price ?? 0, 2) }} ฿</td>
                             <td class="text-center">

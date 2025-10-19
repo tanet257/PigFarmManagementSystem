@@ -106,10 +106,10 @@
                     <tr>
                         <th class="text-center">เลขที่</th>
                         <th class="text-center">
-                            <a href="{{ route('pig_sales.index', array_merge(request()->all(), ['sort_by' => 'sell_date', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}"
+                            <a href="{{ route('pig_sales.index', array_merge(request()->all(), ['sort_by' => 'date', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}"
                                 class="text-white text-decoration-none d-flex align-items-center justify-content-center gap-1">
                                 วันที่ขาย
-                                @if (request('sort_by') == 'sell_date')
+                                @if (request('sort_by') == 'date')
                                     <i class="bi bi-{{ request('sort_order') == 'asc' ? 'sort-up' : 'sort-down' }}"></i>
                                 @else
                                     <i class="bi bi-arrow-down-up"></i>
@@ -155,7 +155,7 @@
                                 <strong>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}</strong>
                             </td>
                             <td class="text-center">
-                                {{ $sell->sell_date ? \Carbon\Carbon::parse($sell->sell_date)->format('d/m/Y') : '-' }}
+                                {{ $sell->date ? \Carbon\Carbon::parse($sell->date)->format('d/m/Y') : '-' }}
                             </td>
                             <td class="text-center">
                                 {{ $sell->customer->customer_name ?? ($sell->buyer_name ?? '-') }}
@@ -295,7 +295,7 @@
                                     </tr>
                                     <tr>
                                         <td><strong>วันที่ขาย:</strong></td>
-                                        <td>{{ \Carbon\Carbon::parse($sell->sell_date)->format('d/m/Y') }}
+                                        <td>{{ \Carbon\Carbon::parse($sell->date)->format('d/m/Y') }}
                                         </td>
                                     </tr>
                                     <tr>
@@ -548,7 +548,7 @@
 
     {{-- Create Modal --}}
     <div class="modal fade" id="createModal" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title">
@@ -556,7 +556,7 @@
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form action="{{ route('pig_sales.store') }}" method="POST" id="pigSellForm">
+                <form action="{{ route('pig_sales.store') }}" method="POST" id="pigSaleForm">
                     @csrf
                     <div class="modal-body">
                         {{-- Step 1: เลือกฟาร์มและรุ่น --}}
@@ -564,28 +564,42 @@
                             <div class="card-header bg-light">
                                 <h6 class="mb-0"><i class="bi bi-1-circle me-2"></i>เลือกฟาร์มและรุ่น</h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-custom-quaternary">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">ฟาร์ม <span class="text-danger">*</span></label>
-                                        <select name="farm_id" id="farm_select_create" class="form-select" required>
-                                            <option value="">-- เลือกฟาร์ม --</option>
-                                            @foreach ($farms as $farm)
-                                                <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="dropdown">
+                                            <button
+                                                class="btn btn-primary dropdown-toggle shadow-sm w-100 d-flex justify-content-between align-items-center"
+                                                type="button" id="farmDropdownBtn" data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                                <span>-- เลือกฟาร์ม --</span>
+                                            </button>
+                                            <ul class="dropdown-menu w-100" id="farmDropdownMenu">
+                                                @foreach ($farms as $farm)
+                                                    <li><a class="dropdown-item" href="#"
+                                                            data-farm-id="{{ $farm->id }}">{{ $farm->farm_name }}</a>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                            <input type="hidden" name="farm_id" id="farm_select_create" value=""
+                                                required>
+                                        </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">รุ่น <span class="text-danger">*</span></label>
-                                        <select name="batch_id" id="batch_select_create" class="form-select" required>
-                                            <option value="">-- เลือกฟาร์มก่อน --</option>
-                                            @foreach ($batches as $batch)
-                                                <option value="{{ $batch->id }}"
-                                                    data-farm-id="{{ $batch->farm_id }}">
-                                                    {{ $batch->batch_code }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                        <div class="dropdown">
+                                            <button
+                                                class="btn btn-primary dropdown-toggle shadow-sm w-100 d-flex justify-content-between align-items-center"
+                                                type="button" id="batchDropdownBtn" data-bs-toggle="dropdown"
+                                                aria-expanded="false" disabled>
+                                                <span>-- เลือกฟาร์มก่อน --</span>
+                                            </button>
+                                            <ul class="dropdown-menu w-100" id="batchDropdownMenu">
+                                            </ul>
+                                            <input type="hidden" name="batch_id" id="batch_select_create"
+                                                value="" required>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -614,7 +628,7 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">วันที่ขาย <span class="text-danger">*</span></label>
-                                        <input type="date" name="sell_date" class="form-control"
+                                        <input type="date" name="date" class="form-control"
                                             value="{{ date('Y-m-d') }}" required>
                                     </div>
                                     <div class="col-md-6 mb-3">
@@ -724,7 +738,7 @@
                             <div class="card-header bg-light">
                                 <h6 class="mb-0"><i class="bi bi-4-circle me-2"></i>ข้อมูลเพิ่มเติม</h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-custom-quaternary">
                                 <div class="mb-3">
                                     <label class="form-label">ชื่อผู้ซื้อ <span class="text-danger">*</span></label>
                                     <input type="text" name="buyer_name" class="form-control" required>
@@ -739,447 +753,279 @@
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                                 <button type="submit" class="btn btn-success">บันทึก</button>
                             </div>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Initialize Choices.js for select elements in modals only
-            const selectElements = document.querySelectorAll('.modal select');
-            const choicesInstances = {};
 
-            selectElements.forEach(function(select) {
-                const isMultiple = select.hasAttribute('multiple');
-                choicesInstances[select.id] = new Choices(select, {
-                    searchEnabled: true,
-                    searchPlaceholderValue: 'ค้นหา...',
-                    noResultsText: 'ไม่พบข้อมูล',
-                    itemSelectText: 'คลิกเพื่อเลือก',
-                    shouldSort: false,
-                    removeItemButton: isMultiple, // แสดงปุ่มลบถ้าเป็น multiple
-                    allowHTML: true
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Auto-submit form on filter change (for index page filters)
+                const filterForm = document.getElementById('filterForm');
+                if (filterForm) {
+                    const filterSelects = filterForm.querySelectorAll('select');
+                    filterSelects.forEach(function(select) {
+                        select.addEventListener('change', function() {
+                            filterForm.submit();
+                        });
+                    });
+                }
+            });
+
+            // Get DOM elements
+            const farmSelectInput = document.getElementById('farm_select_create');
+            const batchSelectInput = document.getElementById('batch_select_create');
+            const farmDropdownBtn = document.getElementById('farmDropdownBtn');
+            const batchDropdownBtn = document.getElementById('batchDropdownBtn');
+            const farmDropdownMenu = document.getElementById('farmDropdownMenu');
+            const batchDropdownMenu = document.getElementById('batchDropdownMenu');
+            const penSelectionContainer = document.getElementById('pen_selection_container');
+            const farmSelect = farmSelectInput;
+            const batchSelect = batchSelectInput;
+
+            // ========== FARM DROPDOWN ==========
+            farmDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const farmId = this.getAttribute('data-farm-id');
+                    const farmName = this.textContent;
+
+                    // Update farm select value and button
+                    farmSelectInput.value = farmId;
+                    farmDropdownBtn.querySelector('span').textContent = farmName;
+
+                    // Reset batch
+                    batchSelectInput.value = '';
+                    batchDropdownBtn.querySelector('span').textContent = '-- เลือกฟาร์มก่อน --';
+                    batchDropdownBtn.disabled = true;
+                    batchDropdownMenu.innerHTML = '';
+
+                    // Fetch batches for selected farm
+                    if (farmId) {
+                        batchDropdownBtn.disabled = false;
+                        loadBatchesForFarm(farmId);
+                    }
+
+                    // Reset pen selection
+                    penSelectionContainer.innerHTML =
+                        '<div class="alert alert-info">กรุณาเลือกฟาร์มและรุ่นก่อน</div>';
                 });
             });
 
-            // AJAX: Step 1 - ดึง Barns จาก Farm
-            const batchSelect = document.getElementById('batch_select_create');
-            const barnSelect = document.getElementById('barn_select_create');
-            const penSelect = document.getElementById('pen_select_create');
-            const farmSelect = document.getElementById('farm_select_create');
+            // ========== BATCH DROPDOWN ==========
+            function loadBatchesForFarm(farmId) {
+                fetch(`/pig_sales/batches-by-farm/${farmId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Batch response:', data);
+                        batchDropdownMenu.innerHTML = '';
 
-            if (farmSelect && barnSelect) {
-                farmSelect.addEventListener('change', function() {
-                    const farmId = this.value;
+                        if (data.success && data.batches && data.batches.length > 0) {
+                            data.batches.forEach(batch => {
+                                const li = document.createElement('li');
+                                const a = document.createElement('a');
+                                a.href = '#';
+                                a.className = 'dropdown-item';
+                                a.setAttribute('data-batch-id', batch.id);
+                                a.textContent = `${batch.batch_code} (${batch.total_pigs} ตัว)`;
+                                li.appendChild(a);
+                                batchDropdownMenu.appendChild(li);
+                            });
 
-                    // รีเซ็ต barn และ pen
-                    if (choicesInstances['barn_select_create']) {
-                        choicesInstances['barn_select_create'].clearChoices();
-                        choicesInstances['barn_select_create'].setChoices([{
-                            value: '',
-                            label: '-- เลือกฟาร์มก่อน --',
-                            selected: true,
-                            disabled: true
-                        }]);
-                    }
-                    if (choicesInstances['pen_select_create']) {
-                        choicesInstances['pen_select_create'].clearChoices();
-                        choicesInstances['pen_select_create'].setChoices([{
-                            value: '',
-                            label: '-- เลือกเล้าก่อน --',
-                            selected: true,
-                            disabled: true
-                        }]);
-                    }
+                            // Add event listeners to batch items
+                            batchDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+                                item.addEventListener('click', function(e) {
+                                    e.preventDefault();
+                                    const batchId = this.getAttribute('data-batch-id');
+                                    const batchName = this.textContent;
 
-                    if (!farmId) return;
+                                    batchSelectInput.value = batchId;
+                                    batchDropdownBtn.querySelector('span').textContent = batchName;
 
-                    // Loading state for barn
-                    if (choicesInstances['barn_select_create']) {
-                        choicesInstances['barn_select_create'].clearChoices();
-                        choicesInstances['barn_select_create'].setChoices([{
-                            value: '',
-                            label: 'กำลังโหลดเล้า...',
-                            selected: true,
-                            disabled: true
-                        }]);
-                    }
-
-                    // AJAX call - ดึง Barns ที่มีหมู
-                    fetch(`/pig_sales/barns-by-farm/${farmId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.data.length > 0) {
-                                const choices = [{
-                                    value: '',
-                                    label: '-- เลือกเล้า --',
-                                    selected: true,
-                                    disabled: true
-                                }];
-
-                                data.data.forEach(barn => {
-                                    choices.push({
-                                        value: barn.barn_id,
-                                        label: barn.display_text,
-                                        selected: false
-                                    });
+                                    // Load pen selection table
+                                    loadPenSelectionTable();
                                 });
-
-                                if (choicesInstances['barn_select_create']) {
-                                    choicesInstances['barn_select_create'].clearChoices();
-                                    choicesInstances['barn_select_create'].setChoices(choices);
-                                }
-                            } else {
-                                if (choicesInstances['barn_select_create']) {
-                                    choicesInstances['barn_select_create'].clearChoices();
-                                    choicesInstances['barn_select_create'].setChoices([{
-                                        value: '',
-                                        label: '❌ ไม่พบเล้าที่มีหมูในฟาร์มนี้',
-                                        selected: true,
-                                        disabled: true
-                                    }]);
-                                }
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            if (choicesInstances['barn_select_create']) {
-                                choicesInstances['barn_select_create'].clearChoices();
-                                choicesInstances['barn_select_create'].setChoices([{
-                                    value: '',
-                                    label: '❌ เกิดข้อผิดพลาด',
-                                    selected: true,
-                                    disabled: true
-                                }]);
-                            }
-                        });
-                });
-            }
-
-            // AJAX: Step 2 - ดึง Pens จาก Barn
-            if (barnSelect && penSelect) {
-                barnSelect.addEventListener('change', function() {
-                    const barnId = this.value;
-                    const farmId = farmSelect.value;
-
-                    if (!barnId) {
-                        // รีเซ็ต pen dropdown
-                        if (choicesInstances['pen_select_create']) {
-                            choicesInstances['pen_select_create'].clearChoices();
-                            choicesInstances['pen_select_create'].setChoices([{
-                                value: '',
-                                label: '-- เลือกเล้าก่อน --',
-                                selected: true,
-                                disabled: true
-                            }]);
-                        }
-                        return;
-                    }
-
-                    // Loading state
-                    if (choicesInstances['pen_select_create']) {
-                        choicesInstances['pen_select_create'].clearChoices();
-                        choicesInstances['pen_select_create'].setChoices([{
-                            value: '',
-                            label: 'กำลังโหลดคอก...',
-                            selected: true,
-                            disabled: true
-                        }]);
-                    }
-
-                    // AJAX call - ดึง Pens ในเล้านี้
-                    fetch(`/pig_sales/pens-by-barn/${barnId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.data.length > 0) {
-                                const choices = [];
-
-                                data.data.forEach(pen => {
-                                    choices.push({
-                                        value: pen.pen_id,
-                                        label: pen.display_text,
-                                        selected: false
-                                    });
-                                });
-
-                                if (choicesInstances['pen_select_create']) {
-                                    choicesInstances['pen_select_create'].clearChoices();
-                                    choicesInstances['pen_select_create'].setChoices(choices);
-                                }
-                            } else {
-                                if (choicesInstances['pen_select_create']) {
-                                    choicesInstances['pen_select_create'].clearChoices();
-                                    choicesInstances['pen_select_create'].setChoices([{
-                                        value: '',
-                                        label: '❌ ไม่พบคอกที่มีหมูในเล้านี้',
-                                        selected: true,
-                                        disabled: true
-                                    }]);
-                                }
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            if (choicesInstances['pen_select_create']) {
-                                choicesInstances['pen_select_create'].clearChoices();
-                                choicesInstances['pen_select_create'].setChoices([{
-                                    value: '',
-                                    label: '❌ เกิดข้อผิดพลาด',
-                                    selected: true,
-                                    disabled: true
-                                }]);
-                            }
-                        });
-                });
-            }
-
-            // Filter batch by farm
-            if (farmSelect && batchSelect) {
-                farmSelect.addEventListener('change', function() {
-                    const farmId = this.value;
-                    const batchOptions = batchSelect.querySelectorAll('option');
-
-                    batchOptions.forEach(option => {
-                        if (option.value === '') {
-                            option.style.display = 'block';
-                            return;
-                        }
-
-                        const optionFarmId = option.getAttribute('data-farm-id');
-                        if (!farmId || optionFarmId === farmId) {
-                            option.style.display = 'block';
+                            });
                         } else {
-                            option.style.display = 'none';
+                            const li = document.createElement('li');
+                            const span = document.createElement('span');
+                            span.className = 'dropdown-item disabled';
+                            span.textContent = '❌ ไม่พบรุ่นในฟาร์มนี้';
+                            li.appendChild(span);
+                            batchDropdownMenu.appendChild(li);
                         }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching batches:', error);
+                        batchDropdownMenu.innerHTML =
+                            '<li><span class="dropdown-item disabled">❌ เกิดข้อผิดพลาด</span></li>';
                     });
-
-                    // Reset batch
-                    if (choicesInstances['batch_select_create']) {
-                        choicesInstances['batch_select_create'].setChoiceByValue('');
-                    }
-
-                    // Load pen selection table
-                    loadPenSelectionTable();
-                });
-
-                // Load table when batch changes
-                batchSelect.addEventListener('change', function() {
-                    loadPenSelectionTable();
-                });
             }
 
             // Load pen selection table based on farm and batch
             function loadPenSelectionTable() {
-                const farmId = farmSelect.value;
-                const batchId = batchSelect.value;
+                const farmId = farmSelectInput.value;
+                const batchId = batchSelectInput.value;
                 const container = document.getElementById('pen_selection_container');
 
-                // ต้องเลือกทั้งฟาร์มและรุ่นก่อน
+                // Reset if no farm or batch selected
                 if (!farmId || !batchId) {
-                    container.innerHTML =
-                        '<div class="alert alert-warning mb-0"><i class="fas fa-exclamation-triangle"></i> กรุณาเลือกฟาร์มและรุ่นก่อน</div>';
+                    container.innerHTML = '<div class="alert alert-info">กรุณาเลือกฟาร์มและรุ่นก่อน</div>';
                     return;
                 }
 
                 // Show loading
                 container.innerHTML =
-                    '<div class="text-center py-4"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">กำลังโหลด...</span></div><div class="mt-2">กำลังโหลดข้อมูลคอก...</div></div>';
+                    '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">กำลังโหลด...</p></div>';
 
-                // Fetch pens from farm
-                fetch(`/pig_sales/pens-by-farm/${farmId}`)
-                    .then(response => {
-                        console.log('Response status:', response.status);
-                        if (!response.ok) {
-                            throw new Error(`HTTP error! status: ${response.status}`);
+                // Fetch pen allocation data using batch ID
+                fetch(`/pig_sales/pens-by-batch/${batchId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Pens response:', data); // DEBUG
+                        if (data.success && data.data && data.data.length > 0) {
+                            // Create table
+                            let html = `
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th class="text-center" style="width: 50px;">
+                                                    <input type="checkbox" id="select_all_pens" class="form-check-input">
+                                                </th>
+                                                <th style="width: 120px;">เล้า</th>
+                                                <th style="width: 120px;">คอก</th>
+                                                <th>สถานะ</th>
+                                                <th class="text-center" style="width: 120px;">จำนวนหมูที่เหลือ</th>
+                                                <th class="text-center" style="width: 120px;">จำนวนหมูที่ขาย</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>`;
+
+                            data.data.forEach((pen, index) => {
+                                const penId = pen.pen_id; // API ส่ง pen_id
+                                const maxQty = pen.current_quantity || 0; // API ส่ง current_quantity
+                                html += `
+                                    <tr class="pen-row" data-pen-id="${penId}">
+                                        <td class="text-center">
+                                            <input type="checkbox" class="form-check-input pen-checkbox" name="selected_pens[]" value="${penId}" data-pen-id="${penId}" data-max-qty="${maxQty}">
+                                        </td>
+                                        <td>${pen.barn_name || 'N/A'}</td>
+                                        <td>${pen.pen_name || 'N/A'}</td>
+                                        <td><span class="badge bg-success">มีหมู</span></td>
+                                        <td class="text-center">${maxQty}</td>
+                                        <td class="text-center">
+                                            <input type="number" name="quantities[${penId}]"
+                                                class="form-control form-control-sm quantity-input text-center"
+                                                data-pen-id="${penId}"
+                                                min="0" max="${maxQty}" value=""
+                                                style="width: 100%;" disabled>
+                                        </td>
+                                    </tr>`;
+                            });
+
+                            html += `
+                                        </tbody>
+                                    </table>
+                                </div>`;
+                            container.innerHTML = html;
+
+                            // Add event listeners for checkboxes
+                            const selectAllCheckbox = document.getElementById('select_all_pens');
+                            const penCheckboxes = document.querySelectorAll('.pen-checkbox');
+
+                            selectAllCheckbox?.addEventListener('change', function() {
+                                penCheckboxes.forEach(checkbox => {
+                                    checkbox.checked = this.checked;
+                                    toggleQuantityInput(checkbox);
+                                });
+                            });
+
+                            penCheckboxes.forEach(checkbox => {
+                                checkbox.addEventListener('change', function() {
+                                    toggleQuantityInput(this);
+                                    updateSelectAll();
+                                });
+                            });
+
+                            function toggleQuantityInput(checkbox) {
+                                const row = checkbox.closest('tr');
+                                const quantityInput = row?.querySelector('.quantity-input');
+                                if (quantityInput) {
+                                    quantityInput.disabled = !checkbox.checked;
+                                    if (checkbox.checked) {
+                                        quantityInput.focus();
+                                    } else {
+                                        quantityInput.value = '0';
+                                    }
+                                }
+                            }
+
+                            function updateSelectAll() {
+                                const allChecked = Array.from(penCheckboxes).every(cb => cb.checked);
+                                const someChecked = Array.from(penCheckboxes).some(cb => cb.checked);
+                                if (selectAllCheckbox) {
+                                    selectAllCheckbox.checked = allChecked;
+                                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                                }
+                            }
+
+                            // Add event listeners for quantity inputs
+                            const quantityInputs = document.querySelectorAll('.quantity-input');
+                            quantityInputs.forEach(input => {
+                                input.addEventListener('input', function() {
+                                    const maxQty = parseInt(this.getAttribute('max'));
+                                    const currentValue = parseInt(this.value) || 0;
+
+                                    // ตรวจสอบว่าเกินจำนวนที่มี
+                                    if (currentValue > maxQty) {
+                                        this.value = maxQty;
+                                        showSnackbar(`จำนวนต้องไม่เกิน ${maxQty} ตัว`);
+                                    }
+
+                                    // อัปเดทจำนวนรวม
+                                    calculateTotalQuantity();
+                                });
+                            });
+
+                            // Calculate total quantity from all checked pens
+                            function calculateTotalQuantity() {
+                                let totalQty = 0;
+                                const checkedPens = document.querySelectorAll('.pen-checkbox:checked');
+
+                                checkedPens.forEach(checkbox => {
+                                    const penId = checkbox.getAttribute('data-pen-id');
+                                    const quantityInput = document.querySelector(
+                                        `.quantity-input[data-pen-id="${penId}"]`);
+                                    if (quantityInput) {
+                                        totalQty += parseInt(quantityInput.value) || 0;
+                                    }
+                                });
+
+                                // Update summary
+                                const summaryQty = document.getElementById('summary_total_quantity');
+                                const hiddenQty = document.getElementById('hidden_total_quantity');
+                                if (summaryQty) summaryQty.textContent = totalQty;
+                                if (hiddenQty) hiddenQty.value = totalQty;
+
+                                // Update prices
+                                calculatePrices();
+                            }
+                        } else {
+                            container.innerHTML = '<div class="alert alert-warning">ไม่พบคอกที่มีหมูในรุ่นนี้</div>';
                         }
-                        return response.json();
-                    })
-                    .then(result => {
-                        console.log('Received result:', result);
-
-                        // Extract data from response
-                        const data = result.data || result;
-
-                        if (!Array.isArray(data)) {
-                            console.error('Data is not an array:', data);
-                            throw new Error('Invalid data format received');
-                        }
-
-                        if (data.length === 0) {
-                            container.innerHTML =
-                                '<div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> ไม่มีคอกที่มีหมูในฟาร์มนี้</div>';
-                            return;
-                        }
-
-                        // Get selected batch code
-                        const selectedBatchOption = batchSelect.options[batchSelect.selectedIndex];
-                        const selectedBatchCode = selectedBatchOption ? selectedBatchOption.text : '';
-                        console.log('Selected batch code:', selectedBatchCode);
-
-                        // Filter pens by selected batch
-                        const pensInBatch = data.filter(pen => pen.batch_code === selectedBatchCode);
-                        console.log('Pens in batch:', pensInBatch);
-
-                        if (pensInBatch.length === 0) {
-                            container.innerHTML =
-                                '<div class="alert alert-warning mb-0"><i class="fas fa-exclamation-triangle"></i> ไม่มีหมูในรุ่นนี้ที่สามารถขายได้</div>';
-                            return;
-                        }
-
-                        // Generate table
-                        let tableHTML = `
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-hover align-middle mb-0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th class="text-center" style="width: 50px;">
-                                                <input type="checkbox" id="select_all_pens" class="form-check-input">
-                                            </th>
-                                            <th style="width: 120px;">เล้า</th>
-                                            <th style="width: 120px;">คอก</th>
-                                            <th class="text-end" style="width: 150px;">มีหมู (ตัว)</th>
-                                            <th style="width: 200px;">จำนวนขาย (ตัว)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>`;
-
-                        pensInBatch.forEach(pen => {
-                            tableHTML += `
-                                <tr class="pen-row">
-                                    <td class="text-center">
-                                        <input type="checkbox" class="form-check-input pen-checkbox"
-                                               name="selected_pens[]" value="${pen.pen_id}"
-                                               data-pen-id="${pen.pen_id}">
-                                    </td>
-                                    <td><strong>${pen.barn_name}</strong></td>
-                                    <td><strong>${pen.pen_name}</strong></td>
-                                    <td class="text-end">
-                                        <span class="badge bg-info">${pen.current_quantity}</span>
-                                    </td>
-                                    <td>
-                                        <input type="number" class="form-control form-control-sm quantity-input"
-                                               name="quantities[${pen.pen_id}]"
-                                               data-pen-id="${pen.pen_id}"
-                                               min="1" max="${pen.current_quantity}"
-                                               placeholder="0"
-                                               disabled>
-                                    </td>
-                                </tr>`;
-                        });
-
-                        tableHTML += `
-                                    </tbody>
-                                </table>
-                            </div>`;
-
-                        container.innerHTML = tableHTML;
-
-                        // Add event listeners
-                        setupPenSelectionListeners();
                     })
                     .catch(error => {
                         console.error('Error loading pens:', error);
-                        container.innerHTML =
-                            `<div class="alert alert-danger mb-0">
-                                <i class="fas fa-times-circle"></i>
-                                <strong>เกิดข้อผิดพลาดในการโหลดข้อมูล</strong><br>
-                                <small>${error.message}</small><br>
-                                <small class="text-muted">กรุณาเปิด Console (F12) เพื่อดูรายละเอียด</small>
-                            </div>`;
+                        container.innerHTML = '<div class="alert alert-danger">เกิดข้อผิดพลาดในการโหลดคอก</div>';
                     });
             }
 
-            // Setup event listeners for pen selection table
-            function setupPenSelectionListeners() {
-                // Select all checkbox
-                const selectAllCheckbox = document.getElementById('select_all_pens');
-                if (selectAllCheckbox) {
-                    selectAllCheckbox.addEventListener('change', function() {
-                        const penCheckboxes = document.querySelectorAll('.pen-checkbox');
-                        penCheckboxes.forEach(checkbox => {
-                            checkbox.checked = this.checked;
-                            togglePenInputs(checkbox);
-                        });
-                        calculateTotals();
-                    });
-                }
-
-                // Individual pen checkboxes
-                const penCheckboxes = document.querySelectorAll('.pen-checkbox');
-                penCheckboxes.forEach(checkbox => {
-                    checkbox.addEventListener('change', function() {
-                        togglePenInputs(this);
-                        calculateTotals();
-                    });
-                });
-
-                // Quantity and weight inputs
-                const quantityInputs = document.querySelectorAll('.quantity-input');
-
-                quantityInputs.forEach(input => {
-                    input.addEventListener('input', function() {
-                        const maxQuantity = parseInt(this.getAttribute('max'));
-                        const currentValue = parseInt(this.value);
-
-                        // ตรวจสอบว่ากรอกเกินจำนวนที่มีหรือไม่
-                        if (currentValue > maxQuantity) {
-                            this.value = maxQuantity;
-                            showSnackbar(`จำนวนหมูที่ขายต้องไม่เกิน ${maxQuantity} ตัว`);
-                        }
-
-                        // ตรวจสอบว่าน้อยกว่า 1 หรือไม่
-                        if (currentValue < 1 && this.value !== '') {
-                            this.value = 1;
-                            showSnackbar('จำนวนหมูต้องมากกว่า 0');
-                        }
-
-                        calculateTotals();
-                    });
-                });
-            }
-
-            // Toggle enable/disable inputs based on checkbox
-            function togglePenInputs(checkbox) {
-                const penId = checkbox.dataset.penId;
-                const quantityInput = document.querySelector(`.quantity-input[data-pen-id="${penId}"]`);
-
-                if (checkbox.checked) {
-                    quantityInput.disabled = false;
-                    quantityInput.focus();
-                } else {
-                    quantityInput.disabled = true;
-                    quantityInput.value = '';
-                }
-            }
-
-            // Calculate totals from selected pens
-            function calculateTotals() {
-                let totalQuantity = 0;
-
-                // Sum up all selected pens
-                const penCheckboxes = document.querySelectorAll('.pen-checkbox:checked');
-                penCheckboxes.forEach(checkbox => {
-                    const penId = checkbox.dataset.penId;
-                    const quantityInput = document.querySelector(`.quantity-input[data-pen-id="${penId}"]`);
-
-                    const quantity = parseFloat(quantityInput.value) || 0;
-                    totalQuantity += quantity;
-                });
-
-                // Update summary display
-                const summaryQuantity = document.getElementById('summary_total_quantity');
-                if (summaryQuantity) summaryQuantity.textContent = totalQuantity.toLocaleString();
-
-                // Update hidden input
-                const hiddenQuantity = document.getElementById('hidden_total_quantity');
-                if (hiddenQuantity) hiddenQuantity.value = totalQuantity;
-
-                // Calculate prices (use weight from input field instead)
-                calculatePrices();
-            }
-
-            // Calculate total price and net total
+            // Calculate total price and net total from weight and price inputs
             function calculatePrices() {
                 const totalWeightInput = document.getElementById('total_weight_input');
                 const pricePerKgInput = document.getElementById('price_per_kg_input');
@@ -1199,9 +1045,9 @@
                 const pricePerKg = parseFloat(pricePerKgInput?.value) || 0;
                 const shippingCost = parseFloat(shippingCostInput?.value) || 0;
 
-                // Calculate (หักค่าขนส่ง)
+                // Calculate
                 const totalPrice = totalWeight * pricePerKg;
-                const netTotal = totalPrice - shippingCost; // เปลี่ยนจาก + เป็น -
+                const netTotal = totalPrice - shippingCost;
 
                 // Update summary display
                 if (summaryWeight) summaryWeight.textContent = totalWeight.toLocaleString('th-TH', {
@@ -1227,7 +1073,7 @@
                 if (hiddenNetTotal) hiddenNetTotal.value = netTotal.toFixed(2);
             }
 
-            // Listen to weight, price and shipping changes
+            // Add event listeners for weight, price, and shipping inputs
             const totalWeightInput = document.getElementById('total_weight_input');
             const pricePerKgInput = document.getElementById('price_per_kg_input');
             const shippingCostInput = document.getElementById('shipping_cost_input');
@@ -1235,73 +1081,18 @@
             if (totalWeightInput) {
                 totalWeightInput.addEventListener('input', calculatePrices);
             }
-
             if (pricePerKgInput) {
                 pricePerKgInput.addEventListener('input', calculatePrices);
             }
-
             if (shippingCostInput) {
                 shippingCostInput.addEventListener('input', calculatePrices);
             }
 
-            // Form validation before submit
-            const pigSellForm = document.getElementById('pigSellForm');
-            if (pigSellForm) {
-                pigSellForm.addEventListener('submit', function(e) {
-                    let hasError = false;
-                    const quantityInputs = document.querySelectorAll('.quantity-input:not([disabled])');
-
-                    quantityInputs.forEach(input => {
-                        const maxQuantity = parseInt(input.getAttribute('max'));
-                        const currentValue = parseInt(input.value);
-
-                        if (currentValue > maxQuantity) {
-                            e.preventDefault();
-                            hasError = true;
-                            showSnackbar(
-                                `จำนวนหมูในบางคอกเกินจำนวนที่มี (สูงสุด ${maxQuantity} ตัว)`);
-                            input.focus();
-                            return false;
-                        }
-
-                        if (currentValue < 1 && input.value !== '') {
-                            e.preventDefault();
-                            hasError = true;
-                            showSnackbar('จำนวนหมูต้องมากกว่า 0');
-                            input.focus();
-                            return false;
-                        }
-                    });
-
-                    if (hasError) {
-                        return false;
-                    }
-                });
+            // Snackbar helper
+            function showSnackbar(message) {
+                // Simple alert or toast notification
+                console.log(message);
             }
-        });
-
-        function sortTable(column, order) {
-            const url = new URL(window.location.href);
-            url.searchParams.set('sort_by', column);
-            url.searchParams.set('order', order);
-            window.location.href = url.toString();
-        }
-    </script>
-
+        </script>
+    @endpush
 @endsection
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Auto-submit form on filter change
-            const filterForm = document.getElementById('filterForm');
-            const filterSelects = filterForm.querySelectorAll('select');
-
-            filterSelects.forEach(function(select) {
-                select.addEventListener('change', function() {
-                    filterForm.submit();
-                });
-            });
-        });
-    </script>
-@endpush

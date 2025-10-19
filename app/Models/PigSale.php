@@ -21,7 +21,7 @@ class PigSale extends Model
         'pig_loss_id',
 
         // Sale Details
-        'sell_date',
+        'date',
         'sell_type',
         'quantity',
 
@@ -71,7 +71,7 @@ class PigSale extends Model
     ];
 
     protected $casts = [
-        'sell_date' => 'date',
+        'date' => 'date',
         'cpf_reference_date' => 'date',
         'due_date' => 'date',
         'paid_date' => 'date',

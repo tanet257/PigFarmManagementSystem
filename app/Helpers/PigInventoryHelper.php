@@ -218,7 +218,7 @@ class PigInventoryHelper
             if ($newQuantity > $originalQuantity) {
                 return [
                     'success' => false,
-                    'message' => "⚠️ จำนวนหมูจะเกินจำนวนเริ่มต้น ({$originalQuantity} ตัว)",
+                    'message' => " จำนวนหมูจะเกินจำนวนเริ่มต้น ({$originalQuantity} ตัว)",
                     'data' => null
                 ];
             }
@@ -404,5 +404,67 @@ class PigInventoryHelper
             'percentage_remaining' => $totalOriginal > 0 ? round(($totalCurrent / $totalOriginal) * 100, 2) : 0,
             'pen_details' => $penDetails
         ];
+    }
+
+    /**
+     * ลบรุ่นและคืนค่า allocations ทั้งหมด (เมื่อลบรุ่น)
+     *
+     * @param int $batchId รหัสรุ่น
+     * @return array ['success' => bool, 'message' => string, 'data' => array]
+     */
+    public static function deleteBatchWithAllocations($batchId)
+    {
+        try {
+            DB::beginTransaction();
+
+            $batch = Batch::lockForUpdate()->find($batchId);
+
+            if (!$batch) {
+                return [
+                    'success' => false,
+                    'message' => '❌ ไม่พบรุ่นที่ต้องการลบ',
+                    'data' => null
+                ];
+            }
+
+            // ดึงข้อมูล allocations ทั้งหมดของรุ่นนี้
+            $allocations = BatchPenAllocation::where('batch_id', $batchId)
+                ->lockForUpdate()
+                ->get();
+
+            $deletedCount = 0;
+            $totalAllocations = 0;
+
+            foreach ($allocations as $allocation) {
+                $totalAllocations++;
+                // ลบ BatchPenAllocation records
+                $allocation->delete();
+                $deletedCount++;
+            }
+
+            // ลบ batch record
+            $batch->delete();
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => "✅ ลบรุ่นและคืนค่า allocations เรียบร้อย",
+                'data' => [
+                    'batch_id' => $batchId,
+                    'batch_code' => $batch->batch_code,
+                    'deleted_allocations' => $deletedCount,
+                    'total_allocations' => $totalAllocations
+                ]
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return [
+                'success' => false,
+                'message' => '❌ เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'data' => null
+            ];
+        }
     }
 }

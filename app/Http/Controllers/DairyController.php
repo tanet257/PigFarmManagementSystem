@@ -473,9 +473,9 @@ class DairyController extends Controller
                             if (!$batch) continue;
 
                             $batch->total_death += $deadQuantity;
-                            $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $deadQuantity, 0);
+                            $batch->current_quantity = max(($batch->current_quantity ?? 0) - $deadQuantity, 0);
 
-                            $currentAmount = $batch->total_pig_amount + $deadQuantity;
+                            $currentAmount = $batch->current_quantity + $deadQuantity;
                             $avgWeightPerPig = ($currentAmount > 0 && ($batch->total_pig_weight ?? 0) > 0)
                                 ? $batch->total_pig_weight / $currentAmount
                                 : 0;
@@ -706,9 +706,9 @@ class DairyController extends Controller
             $this->updateNoteAndDate($pigDeath, $validated['note'], 'updated_at', now());
 
             $batch->total_death += $diffQuantity;
-            $batch->total_pig_amount = max(($batch->total_pig_amount ?? 0) - $diffQuantity, 0);
-            $avgWeightPerPig = ($batch->total_pig_amount + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
-                ? $batch->total_pig_weight / ($batch->total_pig_amount + $diffQuantity)
+            $batch->current_quantity = max(($batch->current_quantity ?? 0) - $diffQuantity, 0);
+            $avgWeightPerPig = ($batch->current_quantity + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
+                ? $batch->total_pig_weight / ($batch->current_quantity + $diffQuantity)
                 : 0;
             $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $diffQuantity), 0);
             $batch->save();
@@ -851,7 +851,7 @@ class DairyController extends Controller
 
             // คืนจำนวนหมูให้ batch
             if ($batch) {
-                $batch->total_pig_amount += $death->quantity;
+                $batch->current_quantity += $death->quantity;
                 if ($death->weight) {
                     $batch->total_pig_weight += $death->weight;
                 }

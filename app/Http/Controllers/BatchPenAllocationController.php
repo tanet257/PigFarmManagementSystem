@@ -69,11 +69,13 @@ class BatchPenAllocationController extends Controller
                     'pen_code' => $pen->pen_code,
                     'capacity' => $pen->pig_capacity,
                     'allocated' => $allocations->sum('allocated_pigs'),
+                    'current_quantity' => $allocations->sum('current_quantity'),
                     'batches' => $allocations->map(fn($a) => optional($a->batch)->batch_code)->unique()->values()->all()
                 ];
             })->values(); // แปลงเป็น array
 
             $totalAllocated = $pensInfo->sum('allocated');
+            $totalCurrentQuantity = $pensInfo->sum('current_quantity');
 
             $farmNames = $barn->pens->flatMap(function ($pen) {
                 return $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name);
@@ -89,6 +91,7 @@ class BatchPenAllocationController extends Controller
                 'barn_code' => $barn->barn_code,
                 'capacity' => $barn->pig_capacity,
                 'total_allocated' => $totalAllocated,
+                'total_current_quantity' => $totalCurrentQuantity,
                 'pens' => $pensInfo->toArray(), // แปลงเป็น array
             ];
         })->values(); // แปลง collection เป็น array

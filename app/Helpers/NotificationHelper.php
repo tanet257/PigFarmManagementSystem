@@ -147,7 +147,7 @@ class NotificationHelper
                 'related_user_id' => $reportedBy->id,
                 'title' => 'บันทึกการขายหมู',
                 'message' => "มีการขายหมู {$pigSale->quantity} ตัว\nรุ่น: {$batch->batch_code}\nราคารวม: " . number_format($pigSale->total_price, 2) . " บาท\nวันที่ขาย: {$pigSale->date}",
-                'url' => route('pig_sale.index'),
+                'url' => route('pig_sales.index'),
                 'is_read' => false,
             ]);
         }

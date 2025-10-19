@@ -147,6 +147,9 @@
         background: linear-gradient(to bottom, #FCF9EA, #ffffff) !important;
         border-radius: 0 0 12px 12px !important;
         padding: 25px !important;
+        overflow: visible !important;
+        position: static !important;
+        /* ป้องกันการสร้าง context ใหม่ที่บัง dropdown */
     }
 
     /* Status Summary Cards */
@@ -589,6 +592,16 @@
 
     .card-custom-tertiary:hover {
         box-shadow: 0 8px 20px rgba(254, 205, 166, 0.3);
+    }
+
+    .card-custom-quaternary {
+        background: linear-gradient(to bottom, #FCF9EA, #ffffff) !important;
+        color: var(--text-dark);
+        border: 1px solid #D7D7D7;
+        border-radius: 0 0 12px 12px;
+        padding: 25px;
+        box-shadow: 0 4px 12px rgba(30, 62, 98, 0.2);
+        overflow: visible !important;
     }
 
     .cardTemplateRow {
@@ -1108,6 +1121,15 @@
         /* เงานุ่มนวล */
         overflow: hidden !important;
         /* ให้ border-radius ทำงาน */
+        background: #fff !important;
+    }
+
+    /* Modal body - เนื้อหา modal */
+    .modal-body {
+        background: #fff !important;
+        padding: 1.5rem !important;
+        max-height: calc(100vh - 210px) !important;
+        overflow-y: auto !important;
     }
 
     /* Modal header - หัว modal */
@@ -1268,10 +1290,138 @@
         transition: all 0.2s ease-in-out;
     }
 
+    /* ================= Modal Overflow Fix ================= */
+    .modal,
+    .modal-dialog,
+    .modal-content,
+    .modal-body,
+    .card-body {
+        overflow: visible !important;
+    }
+
+
+    /* ================= Modal + Choices.js Fixes ================= */
+    /* Modal scrolling fixes */
+    .modal {
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    .modal-dialog {
+        margin: 0.5rem auto !important;
+        height: calc(100vh - 1rem) !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .modal-content {
+        height: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+
+    .modal-header {
+        flex: 0 0 auto !important;
+    }
+
+    .modal-body {
+        flex: 1 1 auto !important;
+        overflow-y: auto !important;
+        padding: 1rem !important;
+        min-height: 0 !important;
+    }
+
+    .modal-footer {
+        flex: 0 0 auto !important;
+    }
+
+    /* Keep dropdowns visible */
+    .modal .card-body {
+        overflow: visible !important;
+        position: relative !important;
+    }
+
+    /* Add spacing between cards in modal */
+    .modal .card+.card {
+        margin-top: 1rem !important;
+    }
+
+    /* Modal create styling */
+    /* Modal create specific styles */
+    #createModal .modal-body {
+        padding: 1.25rem !important;
+        background-color: #f8f9fa !important;
+    }
+
+    #createModal .card {
+        margin-bottom: 1rem !important;
+        border: 1px solid rgba(254, 205, 166, 0.15) !important;
+        background-color: #fff !important;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+    }
+
+    #createModal .card-header {
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid rgba(254, 205, 166, 0.15) !important;
+        background-color: rgba(254, 205, 166, 0.05) !important;
+    }
+
+    #createModal .card-body {
+        background-color: #fff !important;
+        padding: 1.25rem !important;
+    }
+
+    #createModal .card-custom-tertiary {
+        padding: 1.25rem !important;
+        background-color: #fff !important;
+    }
+
+    #createModal .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Style dropdowns that are moved to body */
+    .choices-body {
+        position: relative !important;
+    }
+
+    .choices-body-dropdown {
+        position: fixed !important;
+        z-index: 99999 !important;
+        margin-top: 3px !important;
+        background: white !important;
+        border: 1px solid var(--primary-orange) !important;
+        border-radius: 6px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        padding: 6px !important;
+    }
+
+    .choices-body-dropdown .choices__list {
+        max-height: 300px !important;
+    }
+
+    .choices-body-dropdown .choices__item {
+        padding: 8px 12px !important;
+        font-size: 0.9rem !important;
+    }
+
+    .choices-body-dropdown .choices__item--selectable {
+        border-radius: 4px !important;
+    }
+
+    .choices-body-dropdown .choices__item--selectable:hover {
+        background-color: rgba(254, 205, 166, 0.1) !important;
+        color: var(--primary-orange) !important;
+    }
+
     /* ================= Choices.js theme overrides ================= */
     /* Ensure overrides are specific enough to win over choices.min.css */
     .choices {
         --choices-bg: var(--card-bg);
+        position: relative !important;
+        /* ให้ dropdown อ้างอิงตำแหน่งถูก */
+        z-index: 10 !important;
     }
 
     .choices .choices__inner {
@@ -1305,12 +1455,13 @@
         color: var(--text-dark) !important;
     }
 
-    .choices .choices__list--dropdown {
-        background-color: var(--card-bg) !important;
+    .choices__list--dropdown {
+        position: absolute !important;
+        z-index: 99999 !important;
+        background-color: var(--card-bg, #fff) !important;
         border: 1px solid rgba(39, 63, 79, 0.08) !important;
         box-shadow: 0 6px 18px rgba(39, 63, 79, 0.12) !important;
         border-radius: 8px !important;
-        overflow: hidden !important;
         max-height: 320px !important;
     }
 

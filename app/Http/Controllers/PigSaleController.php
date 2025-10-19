@@ -25,6 +25,43 @@ class PigSaleController extends Controller
     //--------------------------------------- AJAX Helpers ------------------------------------------//
 
     /**
+     * ดึงรายการรุ่นที่มีหมูของฟาร์ม
+     */
+    public function getBatchesByFarm($farmId)
+    {
+        try {
+            $batches = DB::table('batches')
+                ->join('batch_pen_allocations', 'batches.id', '=', 'batch_pen_allocations.batch_id')
+                ->where('batches.farm_id', $farmId)
+                ->where('batch_pen_allocations.current_quantity', '>', 0)
+                ->where('batches.status', '!=', 'เสร็จสิ้น')
+                ->select('batches.id', 'batches.batch_code', DB::raw('SUM(batch_pen_allocations.current_quantity) as total_pigs'))
+                ->groupBy('batches.id', 'batches.batch_code')
+                ->get();
+
+            if ($batches->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบรุ่นที่มีหมูในฟาร์มนี้',
+                    'batches' => []
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'พบรุ่นที่มีหมู ' . $batches->count() . ' รุ่น',
+                'batches' => $batches
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'batches' => []
+            ], 500);
+        }
+    }
+
+    /**
      * ดึงรายการเล้า-คอกที่มีหมูของ batch นั้นๆ
      */
     public function getPensByBatch($batchId)
@@ -32,7 +69,7 @@ class PigSaleController extends Controller
         try {
             $pens = PigInventoryHelper::getPigsByBatch($batchId);
 
-            if (!isset($pens['allocations']) || empty($pens['allocations'])) {
+            if (!isset($pens['pigs']) || empty($pens['pigs'])) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบหมูในรุ่นนี้',
@@ -40,8 +77,8 @@ class PigSaleController extends Controller
                 ]);
             }
 
-            // จัดรูปแบบข้อมูลสำหรับ dropdown
-            $penOptions = collect($pens['allocations'])->map(function ($allocation) {
+            // จัดรูปแบบข้อมูลสำหรับ table
+            $penOptions = collect($pens['pigs'])->map(function ($allocation) {
                 return [
                     'pen_id' => $allocation['pen_id'],
                     'barn_name' => $allocation['barn_name'],
@@ -57,7 +94,10 @@ class PigSaleController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $penOptions,
-                'summary' => $pens['summary'] ?? null
+                'summary' => [
+                    'total_available' => $pens['total_available'] ?? 0,
+                    'total_pens' => $pens['total_pens'] ?? 0
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -282,28 +322,28 @@ class PigSaleController extends Controller
             $now = Carbon::now();
             switch ($request->selected_date) {
                 case 'today':
-                    $query->whereDate('sell_date', $now->toDateString());
+                    $query->whereDate('date', $now->toDateString());
                     break;
                 case 'this_week':
-                    $query->whereBetween('sell_date', [$now->startOfWeek(), $now->endOfWeek()]);
+                    $query->whereBetween('date', [$now->startOfWeek(), $now->endOfWeek()]);
                     break;
                 case 'this_month':
-                    $query->whereYear('sell_date', $now->year)->whereMonth('sell_date', $now->month);
+                    $query->whereYear('date', $now->year)->whereMonth('date', $now->month);
                     break;
                 case 'this_year':
-                    $query->whereYear('sell_date', $now->year);
+                    $query->whereYear('date', $now->year);
                     break;
             }
         }
 
         // Sort
-        $sortBy = $request->get('sort_by', 'sell_date');
+        $sortBy = $request->get('sort_by', 'date');
         $sortOrder = $request->get('sort_order', 'desc');
 
-        if (in_array($sortBy, ['sell_date', 'quantity', 'total_price', 'net_total', 'created_at'])) {
+        if (in_array($sortBy, ['date', 'quantity', 'total_price', 'net_total', 'created_at'])) {
             $query->orderBy($sortBy, $sortOrder);
         } else {
-            $query->orderBy('sell_date', 'desc');
+            $query->orderBy('date', 'desc');
         }
 
         // Pagination
@@ -318,6 +358,18 @@ class PigSaleController extends Controller
 
     //--------------------------------------- Create ------------------------------------------//
 
+    //--------------------------------------- Store Sale ------------------------------------------//
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        return $this->create($request);
+    }
+
+    //--------------------------------------- Create Sale ------------------------------------------//
+
     public function create(Request $request)
     {
         DB::beginTransaction();
@@ -328,21 +380,20 @@ class PigSaleController extends Controller
                 'selected_pens' => 'required|array|min:1',
                 'selected_pens.*' => 'required|exists:pens,id',
                 'quantities' => 'required|array',
-                'quantities.*' => 'required|integer|min:1',
-                'pig_loss_id' => 'nullable|exists:pig_deaths,id',
-                'sell_date' => 'required|date',
+                'quantities.*' => 'required|numeric|min:1', // Changed to numeric and min:1
+                'date' => 'required|date',
                 'sell_type' => 'required|string',
                 'total_quantity' => 'required|integer|min:1',
-                'total_weight' => 'required|numeric|min:0',
+                'total_weight' => 'required|numeric|min:0.01',
                 'price_per_kg' => 'required|numeric|min:0',
                 'total_price' => 'required|numeric|min:0',
-                'buyer_name' => 'required|string|max:255',
-                'discount' => 'nullable|numeric|min:0',
-                'shipping_cost' => 'nullable|numeric|min:0',
                 'net_total' => 'required|numeric',
+                'buyer_name' => 'required|string|max:255',
+                'shipping_cost' => 'nullable|numeric|min:0',
                 'cpf_reference_price' => 'nullable|numeric',
                 'cpf_reference_date' => 'nullable|date',
                 'note' => 'nullable|string',
+                'pig_loss_id' => 'nullable|exists:pig_deaths,id',
             ]);
 
             // ลดจำนวนหมูจากหลายคอก และบันทึกรายละเอียด
@@ -371,15 +422,32 @@ class PigSaleController extends Controller
             }
 
             // สร้างการขาย (ใช้คอกแรกเป็นตัวแทน)
-            $validated['date'] = $validated['sell_date'];
-            $validated['pen_id'] = $validated['selected_pens'][0]; // ใช้คอกแรก
-            $validated['quantity'] = $validated['total_quantity'];
-            $validated['payment_status'] = 'รอชำระ';
-            $validated['paid_amount'] = 0;
-            $validated['balance'] = $validated['net_total'];
+            // เตรียมข้อมูลสำหรับบันทึก - เลือกเฉพาะ column ที่มีใน table
+            $saleData = [
+                'farm_id' => $validated['farm_id'],
+                'batch_id' => $validated['batch_id'],
+                'pen_id' => $validated['selected_pens'][0], // ใช้คอกแรก
+                'quantity' => $validated['total_quantity'],
+                'total_weight' => $validated['total_weight'],
+                'price_per_kg' => $validated['price_per_kg'],
+                'total_price' => $validated['total_price'],
+                'net_total' => $validated['net_total'],
+                'shipping_cost' => $validated['shipping_cost'] ?? 0,
+                'cpf_reference_price' => $validated['cpf_reference_price'] ?? null,
+                'cpf_reference_date' => $validated['cpf_reference_date'] ?? null,
+                'payment_status' => 'รอชำระ',
+                'paid_amount' => 0,
+                'balance' => $validated['net_total'],
+                'buyer_name' => $validated['buyer_name'],
+                'note' => $validated['note'] ?? null,
+                'date' => $validated['date'],
+                'sell_type' => $validated['sell_type'],
+                'created_by' => auth()->id(),
+                'status' => 'completed',
+            ];
 
             // Generate sale_number: PS-YYYYMMDD-XXX
-            $date = date('Ymd', strtotime($validated['sell_date']));
+            $date = date('Ymd', strtotime($saleData['date']));
             $prefix = 'PS-' . $date . '-';
 
             // หา running number ล่าสุดของวันนี้
@@ -395,20 +463,17 @@ class PigSaleController extends Controller
                 $runningNumber = 1;
             }
 
-            $validated['sale_number'] = $prefix . str_pad($runningNumber, 3, '0', STR_PAD_LEFT);
+            $saleData['sale_number'] = $prefix . str_pad($runningNumber, 3, '0', STR_PAD_LEFT);
 
             // คำนวณ price_per_pig (ราคาต่อตัว)
             // ใช้ net_total หารด้วย quantity
-            if ($validated['quantity'] > 0) {
-                $validated['price_per_pig'] = $validated['net_total'] / $validated['quantity'];
+            if ($saleData['quantity'] > 0) {
+                $saleData['price_per_pig'] = $saleData['net_total'] / $saleData['quantity'];
             } else {
-                $validated['price_per_pig'] = 0;
+                $saleData['price_per_pig'] = 0;
             }
 
-            // บันทึกชื่อผู้ใช้ที่ล็อกอินอยู่
-            $validated['created_by'] = auth()->user()->name;
-
-            $pigSale = PigSale::create($validated);
+            $pigSale = PigSale::create($saleData);
 
             // บันทึกรายละเอียดแต่ละคอก
             foreach ($detailsData as $detail) {
@@ -692,7 +757,7 @@ class PigSaleController extends Controller
             foreach ($pigSales as $sell) {
                 fputcsv($handle, [
                     $sell->id,
-                    $sell->sell_date ? Carbon::parse($sell->sell_date)->format('d/m/Y') : '-',
+                    $sell->date ? Carbon::parse($sell->date)->format('d/m/Y') : '-',
                     $sell->farm->farm_name ?? '-',
                     $sell->batch->batch_code ?? '-',
                     $sell->sell_type,

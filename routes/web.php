@@ -174,6 +174,9 @@ Route::prefix('pig_sales')->middleware(['auth'])->group(function () {
     //------------------- route AJAX helpers ---------------------//
     Route::get('/pens-by-farm/{farmId}', [PigSaleController::class, 'getPensByFarm'])->name('pig_sales.pens_by_farm');
     Route::get('/pens-by-batch/{batchId}', [PigSaleController::class, 'getPensByBatch'])->name('pig_sales.pens_by_batch');
+    Route::get('/batches-by-farm/{farmId}', [PigSaleController::class, 'getBatchesByFarm'])->name('pig_sales.batches_by_farm');
+    Route::get('/barns-by-farm/{farmId}', [PigSaleController::class, 'getBarnsByFarm'])->name('pig_sales.barns_by_farm');
+    Route::get('/pens-by-barn/{barnId}', [PigSaleController::class, 'getPensByBarn'])->name('pig_sales.pens_by_barn');
 
     //------------------- route export batch ---------------------//
     Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sales.export.csv');

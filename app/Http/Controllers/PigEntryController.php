@@ -97,6 +97,8 @@ class PigEntryController extends Controller
                     'receipt_file'       => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
                 ]);
 
+                DB::beginTransaction();
+
                 // แปลงวันที่
                 $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['pig_entry_date']);
                 $formattedDate = $dt->format('Y-m-d H:i');
@@ -108,8 +110,29 @@ class PigEntryController extends Controller
                 // ตรวจสอบความจุรวมของ barns
                 $totalBarnCapacity = $selectedBarns->sum(fn($barn) => $barn->pig_capacity);
                 if ($totalBarnCapacity < $totalPigs) {
+                    DB::rollBack();
                     return redirect()->back()->with('error', 'จำนวนหมูมากกว่าความจุรวมของ barns ที่เลือก');
                 }
+
+                // บันทึก PigEntryRecord ก่อน เพื่อเอา ID ไปใช้ในการบันทึก details
+                $avgWeight = $validated['total_pig_amount'] > 0
+                    ? $validated['total_pig_weight'] / $validated['total_pig_amount']
+                    : 0;
+                $avgPrice = $validated['total_pig_amount'] > 0
+                    ? $validated['total_pig_price'] / $validated['total_pig_amount']
+                    : 0;
+
+                $pigEntry = PigEntryRecord::create([
+                    'batch_id'               => $batch->id,
+                    'farm_id'                => $batch->farm_id,
+                    'pig_entry_date'         => $formattedDate,
+                    'total_pig_amount'       => $validated['total_pig_amount'],
+                    'total_pig_weight'       => $validated['total_pig_weight'],
+                    'total_pig_price'        => $validated['total_pig_price'],
+                    'average_weight_per_pig' => $avgWeight,
+                    'average_price_per_pig'  => $avgPrice,
+                    'note'                   => $validated['note'] ?? null,
+                ]);
 
                 foreach ($selectedBarns as $barn) {
                     $allocateToBarn = min($barn->pig_capacity, $totalPigs);
@@ -124,6 +147,7 @@ class PigEntryController extends Controller
                         if ($remainingPigs <= 0) break;
 
                         $allocatedInPen = DB::table('batch_pen_allocations')
+                            ->where('batch_id', $batch->id)
                             ->where('pen_id', $pen->id)
                             ->sum('allocated_pigs');
 
@@ -136,24 +160,22 @@ class PigEntryController extends Controller
                         // Use PigInventoryHelper to create/update allocation record
                         $result = PigInventoryHelper::addPigs($batch->id, $barn->id, $pen->id, $allocateToPen);
                         if (!isset($result['success']) || $result['success'] !== true) {
-                            // Bubble up error to outer catch
+                            DB::rollBack();
                             throw new \Exception('ไม่สามารถบันทึก allocation: ' . ($result['message'] ?? 'Unknown error'));
                         }
+
+                        // บันทึกรายละเอียดการแจกจ่าย
+                        \App\Models\PigEntryDetail::create([
+                            'pig_entry_id' => $pigEntry->id,
+                            'batch_id'     => $batch->id,
+                            'barn_id'      => $barn->id,
+                            'pen_id'       => $pen->id,
+                            'quantity'     => $allocateToPen,
+                        ]);
                     }
                 }
 
-                // บันทึก PigEntryRecord
-                $pigEntry = PigEntryRecord::create([
-                    'batch_id'          => $batch->id,
-                    'farm_id'           => $batch->farm_id,
-                    'pig_entry_date'    => $formattedDate,
-                    'total_pig_amount'  => $validated['total_pig_amount'],
-                    'total_pig_weight'  => $validated['total_pig_weight'],
-                    'total_pig_price'   => $validated['total_pig_price'],
-                    'note'              => $validated['note'] ?? null,
-                ]);
-
-                // อัปโหลด Cloudinary
+                // บันทึก receipt file ใน Cost (ไม่เก็บใน pig_entry_records)
                 $uploadedFileUrl = null;
                 if ($request->hasFile('receipt_file')) {
                     $file = $request->file('receipt_file');
@@ -163,25 +185,40 @@ class PigEntryController extends Controller
                             ['folder' => 'receipt_files']
                         )->getSecurePath();
                     } else {
+                        DB::rollBack();
                         return redirect()->back()->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
                     }
                 }
 
-                // สร้าง Cost ลูกหมู
+                // สร้าง Cost ลูกหมู (บันทึก receipt_file ที่นี่)
                 Cost::create([
                     'farm_id'        => $batch->farm_id,
                     'batch_id'       => $batch->id,
                     'date'           => $formattedDate,
                     'cost_type'      => 'piglet',
                     'quantity'       => $validated['total_pig_amount'],
-                    'price_per_unit' => $validated['total_pig_price'] / $validated['total_pig_amount'],
+                    'price_per_unit' => $avgPrice,
                     'total_price'    => $validated['total_pig_price'],
                     'note'           => 'ค่าลูกหมู',
                     'receipt_file'   => $uploadedFileUrl,
-                    'transport_cost' => $validated['transport_cost'] ?? 0,
                 ]);
 
-                // สร้าง Cost น้ำหนักเกิน
+                // สร้าง Cost ค่าขนส่ง (ถ้ามี)
+                if (!empty($validated['transport_cost']) && $validated['transport_cost'] > 0) {
+                    Cost::create([
+                        'farm_id'        => $batch->farm_id,
+                        'batch_id'       => $batch->id,
+                        'date'           => $formattedDate,
+                        'cost_type'      => 'transport',
+                        'quantity'       => 1,
+                        'price_per_unit' => $validated['transport_cost'],
+                        'total_price'    => $validated['transport_cost'],
+                        'note'           => 'ค่าขนส่ง',
+                        'receipt_file'   => $uploadedFileUrl,
+                    ]);
+                }
+
+                // สร้าง Cost น้ำหนักเกิน (ถ้ามี)
                 if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
                     Cost::create([
                         'farm_id'        => $batch->farm_id,
@@ -196,17 +233,13 @@ class PigEntryController extends Controller
                     ]);
                 }
 
-                // อัปเดต totals ของ batch
-                $batch->total_pig_amount = ($batch->total_pig_amount ?? 0) + $validated['total_pig_amount'];
-                $batch->total_pig_weight = ($batch->total_pig_weight ?? 0) + $validated['total_pig_weight'];
-                $batch->total_pig_price  = ($batch->total_pig_price ?? 0)  + $validated['total_pig_price'];
-                $batch->save();
-
+                DB::commit();
                 return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่ายเรียบร้อย');
             } else {
                 throw new \Exception("สถานะไม่ถูกต้อง ต้องเป็นกำลังเลี้ยงเท่านั้น");
             }
         } catch (\Exception $e) {
+            DB::rollBack();
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
@@ -372,14 +405,52 @@ class PigEntryController extends Controller
 
     public function deletePigEntryRecord($id)
     {
-        $pigEntryRecord = PigEntryRecord::find($id);
-        if (!$pigEntryRecord) return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการลบ');
+        try {
+            DB::beginTransaction();
 
-        $pigEntryRecord->delete();
-        return redirect()->route('pig_entry_records.index')->with('success', 'ลบรายการเรียบร้อยแล้ว');
-    }
+            $pigEntryRecord = PigEntryRecord::find($id);
+            if (!$pigEntryRecord) {
+                return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการลบ');
+            }
 
-    //--------------------------------------- EXPORT ------------------------------------------//
+            $batchId = $pigEntryRecord->batch_id;
+
+            // ดึงรายละเอียดการแจกจ่าย
+            $entryDetails = \App\Models\PigEntryDetail::where('pig_entry_id', $id)->get();
+
+            // คืนค่าแต่ละ allocation ตามรายละเอียดที่บันทึกไว้
+            foreach ($entryDetails as $detail) {
+                // ใช้ helper มาลด inventory
+                $result = PigInventoryHelper::reducePigInventory(
+                    $detail->batch_id,
+                    $detail->pen_id,
+                    $detail->quantity,
+                    'pig_entry_deletion'
+                );
+
+                if (!$result['success']) {
+                    DB::rollBack();
+                    return redirect()->back()->with('error', 'ไม่สามารถคืนค่าหมูได้: ' . $result['message']);
+                }
+            }
+
+            // ลบรายละเอียด
+            \App\Models\PigEntryDetail::where('pig_entry_id', $id)->delete();
+
+            // ลบ cost records ที่เกี่ยวข้อง
+            Cost::where('batch_id', $batchId)->delete();
+
+            // ลบ pig entry record
+            $pigEntryRecord->delete();
+
+            DB::commit();
+            return redirect()->route('pig_entry_records.index')
+                ->with('success', 'ลบรายการและคืนหมูเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }    //--------------------------------------- EXPORT ------------------------------------------//
     public function exportPigEntryPdf()
     {
         $farms = Farm::all();
