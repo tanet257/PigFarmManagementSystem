@@ -166,9 +166,11 @@
                             <td class="text-center">{{ $batch->note ?? '-' }}</td>
                             <td class="text-center">{{ $batch->start_date ?? '-' }}</td>
                             <td class="text-center">{{ $batch->end_date ?? '-' }}</td>
-                            <td class="text-center">
-                                <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
-                                    data-bs-target="#editModal{{ $batch->id }}">แก้ไข</button>
+                            <td class="text-end">
+                                @if ($batch->status != 'เสร็จสิ้น')
+                                    <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
+                                        data-bs-target="#editModal{{ $batch->id }}">แก้ไข</button>
+                                @endif
 
                                 <form action="{{ route('batches.delete', $batch->id) }}" method="POST"
                                     style="display:inline-block;">
@@ -181,7 +183,7 @@
                                 {{-- Modal Edit --}}
                                 <div class="modal fade" id="editModal{{ $batch->id }}" tabindex="-1"
                                     aria-hidden="true">
-                                    <div class="modal-dialog modal-lg">
+                                    <div class="modal-dialog">
                                         <div class="modal-content bg-dark text-light">
                                             <div class="modal-header">
                                                 <h5>แก้ไขรุ่นหมู (Batch)</h5>
@@ -192,32 +194,6 @@
                                                 @csrf
                                                 @method('PUT')
                                                 <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label>รหัสรุ่น</label>
-                                                        <input type="text" name="batch_code" class="form-control"
-                                                            value="{{ $batch->batch_code }}" required>
-                                                    </div>
-
-                                                    <div class="mb-3">
-                                                        <label>น้ำหนักรวม (kg)</label>
-                                                        <input type="number" name="total_pig_weight"
-                                                            class="form-control" value="{{ $batch->total_pig_weight }}"
-                                                            required>
-                                                    </div>
-
-                                                    <div class="mb-3">
-                                                        <label>จำนวนรวม</label>
-                                                        <input type="number" name="total_pig_amount"
-                                                            class="form-control" value="{{ $batch->total_pig_amount }}"
-                                                            required>
-                                                    </div>
-
-                                                    <div class="mb-3">
-                                                        <label>ราคารวม (บาท)</label>
-                                                        <input type="number" name="total_pig_price" class="form-control"
-                                                            value="{{ $batch->total_pig_price }}" required>
-                                                    </div>
-
                                                     <div class="mb-3">
                                                         <label>สถานะ</label>
                                                         <select name="status" class="form-select" required>

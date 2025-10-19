@@ -138,6 +138,7 @@ class PigInventoryHelper
             // 3. ลดจำนวนหมูใน batch_pen_allocations
             $newQuantity = $currentQuantity - $quantity;
             $allocation->current_quantity = $newQuantity;
+            $allocation->allocated_pigs = $allocation->allocated_pigs - $quantity;
             $allocation->save();
 
             // 4. ลดจำนวนหมูใน batches

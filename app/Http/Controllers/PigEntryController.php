@@ -15,6 +15,8 @@ use App\Models\Barn;
 use App\Models\Pen;
 use App\Models\Cost;
 use App\Models\PigEntryRecord;
+use App\Models\PigEntryDetail;
+use Illuminate\Support\Facades\Log;
 use App\Helpers\PigInventoryHelper;
 
 class PigEntryController extends Controller
@@ -26,10 +28,33 @@ class PigEntryController extends Controller
         return response()->json($barns);
     }
 
-    public function getBatchesByFarm($farmId)
+    public function getBarnAvailableCapacity($farmId)
     {
-        $batches = Batch::where('farm_id', $farmId)->get(['id', 'batch_code']);
-        return response()->json($batches);
+        try {
+            $barns = Barn::where('farm_id', $farmId)->get();
+
+            $barnData = $barns->map(function ($barn) {
+                // คำนวณ allocated_pigs ทั้งหมดในเล้านี้
+                $allocatedPigs = DB::table('batch_pen_allocations')
+                    ->where('barn_id', $barn->id)
+                    ->sum('current_quantity');
+
+                $availableCapacity = $barn->pig_capacity - $allocatedPigs;
+
+                return [
+                    'id' => $barn->id,
+                    'barn_code' => $barn->barn_code,
+                    'pig_capacity' => $barn->pig_capacity,
+                    'allocated_pigs' => $allocatedPigs,
+                    'available_capacity' => max(0, $availableCapacity),
+                    'is_full' => $availableCapacity <= 0
+                ];
+            });
+
+            return response()->json($barnData);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 
     public function getAvailableBarnsByFarm($farmId)
@@ -57,8 +82,8 @@ class PigEntryController extends Controller
     // หน้าเพิ่ม Pig Entry
     public function pig_entry_record()
     {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $farms = Farm::with('barns')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
         return view('admin.pig_entry_records.record.pig_entry_record', compact('farms', 'batches'));
     }
 
@@ -107,11 +132,20 @@ class PigEntryController extends Controller
                 $totalPigs = $validated['total_pig_amount'];
                 $selectedBarns = Barn::whereIn('id', $validated['barn_id'])->get();
 
-                // ตรวจสอบความจุรวมของ barns
-                $totalBarnCapacity = $selectedBarns->sum(fn($barn) => $barn->pig_capacity);
-                if ($totalBarnCapacity < $totalPigs) {
+                // ตรวจสอบความจุที่เหลือใช้งานจริงของ barns
+                $totalAvailableCapacity = 0;
+                foreach ($selectedBarns as $barn) {
+                    // คำนวณความจุที่ใช้ไปแล้ว
+                    $usedCapacity = DB::table('batch_pen_allocations')
+                        ->where('barn_id', $barn->id)
+                        ->sum('current_quantity');
+                    $availableCapacity = $barn->pig_capacity - $usedCapacity;
+                    $totalAvailableCapacity += max(0, $availableCapacity);
+                }
+
+                if ($totalAvailableCapacity < $totalPigs) {
                     DB::rollBack();
-                    return redirect()->back()->with('error', 'จำนวนหมูมากกว่าความจุรวมของ barns ที่เลือก');
+                    return redirect()->back()->with('error', 'จำนวนหมูมากกว่าความจุที่เหลือของ barns ที่เลือก (เหลือ ' . $totalAvailableCapacity . ' ตัว แต่ต้อง ' . $totalPigs . ' ตัว)');
                 }
 
                 // บันทึก PigEntryRecord ก่อน เพื่อเอา ID ไปใช้ในการบันทึก details
@@ -180,10 +214,11 @@ class PigEntryController extends Controller
                 if ($request->hasFile('receipt_file')) {
                     $file = $request->file('receipt_file');
                     if ($file->isValid()) {
-                        $uploadedFileUrl = Cloudinary::upload(
+                        $uploadResponse = Cloudinary::upload(
                             $file->getRealPath(),
                             ['folder' => 'receipt_files']
-                        )->getSecurePath();
+                        );
+                        $uploadedFileUrl = $uploadResponse['secure_url'] ?? null;
                     } else {
                         DB::rollBack();
                         return redirect()->back()->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
@@ -221,8 +256,8 @@ class PigEntryController extends Controller
 
     public function indexPigEntryRecord(Request $request)
     {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $farms = Farm::with('barns')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
         $barns = Barn::all();
 
         $query = PigEntryRecord::with(['farm', 'batch.costs']);
@@ -373,10 +408,11 @@ class PigEntryController extends Controller
             $batchId = $pigEntryRecord->batch_id;
 
             // ดึงรายละเอียดการแจกจ่าย
-            $entryDetails = \App\Models\PigEntryDetail::where('pig_entry_id', $id)->get();
+            $entryDetails = PigEntryDetail::where('pig_entry_id', $id)->get();
 
             // คืนค่าแต่ละ allocation ตามรายละเอียดที่บันทึกไว้
             foreach ($entryDetails as $detail) {
+
                 // ใช้ helper มาลด inventory
                 $result = PigInventoryHelper::reducePigInventory(
                     $detail->batch_id,
@@ -392,7 +428,7 @@ class PigEntryController extends Controller
             }
 
             // ลบรายละเอียด
-            \App\Models\PigEntryDetail::where('pig_entry_id', $id)->delete();
+            PigEntryDetail::where('pig_entry_id', $id)->delete();
 
             // ลบ cost records ที่เกี่ยวข้อง
             Cost::where('batch_id', $batchId)->delete();

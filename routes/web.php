@@ -69,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
     //------------------- route pig entry helper -----------------//
     Route::get('/get-batches/{farmId}', [PigEntryController::class, 'getBatchesByFarm']);
     Route::get('/get-barns/{farmId}', [PigEntryController::class, 'getBarnsByFarm']);
+    Route::get('/get-barn-capacity/{farmId}', [PigEntryController::class, 'getBarnAvailableCapacity']);
     Route::get('/get-available-barns/{farmId}', [PigEntryController::class, 'getAvailableBarnsByFarm']);
 
     //------------------- route crud pig_entry_record -----------------------//
@@ -110,15 +111,15 @@ Route::middleware(['auth'])->group(function () {
     });
 
     //------------------- route storehouse -----------------------//
-    Route::get('/viewStoreHouseRecord', [AdminController::class, 'viewStoreHouseRecord'])->name('storehouse_records.record');
-    Route::post('/uploadStoreHouseRecord', [AdminController::class, 'uploadStoreHouseRecord'])->name('storehouse_records.upload');
+    Route::get('/viewStoreHouseRecord', [StoreHouseController::class, 'viewStoreHouseRecord'])->name('storehouse_records.record');
+    Route::post('/uploadStoreHouseRecord', [StoreHouseController::class, 'uploadStoreHouseRecord'])->name('storehouse_records.upload');
 
     Route::prefix('storehouse_records')->group(function () {
-        Route::get('/', [StoreHouseController::class, 'index'])->name('storehouse_records.index');
-        Route::post('/create', [StoreHouseController::class, 'create'])->name('storehouse_records.create');
-        Route::get('/{id}/edit', [StoreHouseController::class, 'edit'])->name('storehouse_records.edit');
-        Route::put('/{id}', [StoreHouseController::class, 'update'])->name('storehouse_records.update');
-        Route::delete('/{id}', [StoreHouseController::class, 'delete'])->name('storehouse_records.delete');
+        Route::get('/', [StoreHouseController::class, 'indexStoreHouse'])->name('storehouse_records.index');
+        Route::post('/create', [StoreHouseController::class, 'createStoreHouse'])->name('storehouse_records.create');
+        Route::get('/{id}/edit', [StoreHouseController::class, 'editStoreHouse'])->name('storehouse_records.edit');
+        Route::put('/{id}', [StoreHouseController::class, 'updateStoreHouse'])->name('storehouse_records.update');
+        Route::delete('/{id}', [StoreHouseController::class, 'deleteStoreHouse'])->name('storehouse_records.delete');
         //------------------- route export batch ---------------------//
         Route::get('/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouse_records.export.csv');
         Route::get('/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouse_records.export.pdf');

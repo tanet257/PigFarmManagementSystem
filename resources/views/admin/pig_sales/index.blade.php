@@ -150,7 +150,7 @@
                 </thead>
                 <tbody>
                     @forelse ($pigSales as $sell)
-                        <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $sell->id }}">
+                        <tr data-row-click="#viewModal{{ $sell->id }}" class="clickable-row">
                             <td class="text-center">
                                 <strong>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}</strong>
                             </td>
@@ -239,10 +239,11 @@
                                 @endif
 
                                 <form action="{{ route('pig_sales.cancel', $sell->id) }}" method="POST"
-                                    class="d-inline" onsubmit="return confirm('ต้องการยกเลิกการขายนี้หรือไม่?')">
+                                    class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger">
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="event.stopPropagation(); if(confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) { this.form.submit(); }">
                                         <i class="bi bi-x-circle"></i>
                                     </button>
                                 </form>
@@ -250,7 +251,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="text-center text-danger">❌ ไม่มีข้อมูลการขาย
+                            <td colspan="12" class="text-center text-danger">❌ ไม่มีข้อมูลการขาย
                             </td>
                         </tr>
                     @endforelse
@@ -1093,6 +1094,10 @@
                 // Simple alert or toast notification
                 console.log(message);
             }
+
+            // เรียกใช้ common table click handler
+            setupClickableRows();
         </script>
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

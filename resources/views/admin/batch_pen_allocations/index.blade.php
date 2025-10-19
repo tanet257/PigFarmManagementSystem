@@ -109,7 +109,7 @@
                 </thead>
                 <tbody>
                     @forelse($barnSummaries as $barn)
-                        <tr>
+                        <tr data-row-click="#detailModal{{ $loop->index }}" class="clickable-row">
                             <td class="text-center">{{ $barn['farm_name'] }}</td>
                             <td class="text-center">{{ $barn['batch_code'] }}</td>
                             <td class="text-center">{{ $barn['barn_code'] }}</td>
@@ -123,65 +123,64 @@
                                     data-bs-target="#detailModal{{ $loop->index }}">
                                     <i class="bi bi-eye"></i> ดูรายละเอียด
                                 </button>
-
-                                <!-- Modal View -->
-                                <div class="modal fade" id="detailModal{{ $loop->index }}" tabindex="-1"
-                                    aria-labelledby="detailModalLabel{{ $loop->index }}" aria-hidden="true">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="detailModalLabel{{ $loop->index }}">
-                                                    รายละเอียดคอก (Barn: {{ $barn['barn_code'] }})
-                                                </h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                    aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <table class="table table-sm table-secondary">
-
-                                                    <tr style="background: linear-gradient(135deg, #FF9130, #FECDA6);">
-                                                        <th class="text-center">รหัสรุ่น</th>
-                                                        <th class="text-center">รหัสคอก</th>
-                                                        <th class="text-center">จำนวนหมูที่จุได้</th>
-                                                        <th class="text-center">หมูที่จัดสรร</th>
-                                                        <th class="text-center">หมูคงเหลือ</th>
-                                                    </tr>
-
-
-                                                    @foreach ($barn['pens'] as $pen)
-                                                        <tr>
-                                                            <td class="text-center">
-                                                                @foreach ($pen['batches'] as $batch_code)
-                                                                    <span
-                                                                        class="badge bg-info text-dark">{{ $batch_code }}</span>
-                                                                @endforeach
-                                                            </td>
-                                                            <td class="text-center">{{ $pen['pen_code'] }}</td>
-                                                            <td class="text-center">{{ $pen['capacity'] }}</td>
-                                                            <td class="text-center">
-                                                                <strong>{{ $pen['allocated'] }}</strong>
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <strong>{{ $pen['current_quantity'] }}</strong>
-                                                            </td>
-
-                                                        </tr>
-                                                    @endforeach
-
-                                                </table>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary"
-                                                    data-bs-dismiss="modal">ปิด</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </td>
                         </tr>
+
+                        <!-- Modal View -->
+                        <div class="modal fade" id="detailModal{{ $loop->index }}" tabindex="-1"
+                            aria-labelledby="detailModalLabel{{ $loop->index }}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="detailModalLabel{{ $loop->index }}">
+                                            รายละเอียดคอก (Barn: {{ $barn['barn_code'] }})
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <table class="table table-sm table-secondary">
+
+                                            <tr style="background: linear-gradient(135deg, #FF9130, #FECDA6);">
+                                                <th class="text-center">รหัสรุ่น</th>
+                                                <th class="text-center">รหัสคอก</th>
+                                                <th class="text-center">จำนวนหมูที่จุได้</th>
+                                                <th class="text-center">หมูที่จัดสรร</th>
+                                                <th class="text-center">หมูคงเหลือ</th>
+                                            </tr>
+
+                                            @foreach ($barn['pens'] as $pen)
+                                                <tr>
+                                                    <td class="text-center">
+                                                        @foreach ($pen['batches'] as $batch_code)
+                                                            <span
+                                                                class="badge bg-info text-dark">{{ $batch_code }}</span>
+                                                        @endforeach
+                                                    </td>
+                                                    <td class="text-center">{{ $pen['pen_code'] }}</td>
+                                                    <td class="text-center">{{ $pen['capacity'] }}</td>
+                                                    <td class="text-center">
+                                                        <strong>{{ $pen['allocated'] }}</strong>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <strong>{{ $pen['current_quantity'] }}</strong>
+                                                    </td>
+
+                                                </tr>
+                                            @endforeach
+
+                                        </table>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">ปิด</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center text-danger">❌ ไม่มีข้อมูล</td>
+                            <td colspan="7" class="text-center text-danger">❌ ไม่มีข้อมูล</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -255,7 +254,11 @@
                         filterForm.submit();
                     });
                 });
+
+                // เรียกใช้ common table click handler
+                setupClickableRows();
             });
         </script>
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

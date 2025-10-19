@@ -153,7 +153,7 @@
                 </thead>
                 <tbody>
                     @forelse($pigEntryRecords as $record)
-                        <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $record->id }}">
+                        <tr data-row-click="#viewModal{{ $record->id }}" class="clickable-row">
                             <td class="text-center">{{ $record->pig_entry_date }}</td>
                             <td class="text-center">{{ $record->farm->farm_name ?? '-' }}</td>
                             <td class="text-center">{{ $record->batch->batch_code ?? '-' }}</td>
@@ -199,153 +199,25 @@
                                 @endif
                             </td>
 
-
-                            <td>
-                                {{-- Edit Button --}}
-                                <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
-                                    data-bs-target="#editModal{{ $record->id }}">
-                                    แก้ไข
+                            <td class="text-center">
+                                {{-- View Button --}}
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                    data-bs-target="#viewModal{{ $record->id }}">
+                                    <i class="bi bi-eye"></i>
                                 </button>
+
                                 {{-- Delete Button --}}
                                 <form action="{{ route('pig_entry_records.delete', $record->id) }}" method="POST"
-                                    style="display:inline-block;">
+                                    class="d-inline">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-action btn-danger"
-                                        onclick="return confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')">Delete</button>
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="event.stopPropagation(); if(confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')) { this.form.submit(); }">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 </form>
                             </td>
                         </tr>
-
-                        {{-- Modal Edit --}}
-                        <div class="modal fade" id="editModal{{ $record->id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content bg-dark text-light">
-                                    <div class="modal-header">
-                                        <h5>แก้ไขข้อมูลหมูเข้า</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <form action="{{ route('pig_entry_records.update', $record->id) }}" method="POST"
-                                        enctype="multipart/form-data">
-                                        @csrf
-                                        @method('PUT')
-                                        <div class="modal-body">
-
-                                            <div class="mb-3">
-                                                <label>ฟาร์ม</label>
-                                                <select id="editFarmSelect{{ $record->id }}"
-                                                    class="farmSelect form-select" name="farm_id" required>
-                                                    <option value="">-- เลือกฟาร์ม --</option>
-                                                    @foreach ($farms as $farm)
-                                                        <option value="{{ $farm->id }}"
-                                                            {{ $record->farm_id == $farm->id ? 'selected' : '' }}>
-                                                            {{ $farm->farm_name }}</option>
-                                                    @endforeach
-                                                </select>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label>รุ่น (Batch)</label>
-                                                <select id="editBatchSelect{{ $record->id }}"
-                                                    class="batchSelect form-select" name="batch_id" required>
-                                                    <option value="{{ $record->batch_id }}" selected>
-                                                        {{ $record->batch->batch_code ?? '-' }}</option>
-                                                </select>
-                                                <!-- Hidden backup ให้ form ส่ง batch_id ได้เสมอ -->
-                                                <input type="hidden" name="batch_id_backup"
-                                                    value="{{ $record->batch_id }}">
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>วันที่หมูเข้า</label>
-                                                <input type="text" name="pig_entry_date"
-                                                    class="form-control dateWrapper"
-                                                    value="{{ $record->pig_entry_date }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>จำนวนหมูเข้า (ตัว)</label>
-                                                <input type="number" name="total_pig_amount" class="form-control"
-                                                    value="{{ $record->total_pig_amount }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>น้ำหนักรวม (กก.)</label>
-                                                <input type="number" step="0.01" name="total_pig_weight"
-                                                    class="form-control" value="{{ $record->total_pig_weight }}"
-                                                    required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>ราคารวม (บาท)</label>
-                                                <input type="number" step="0.01" name="total_pig_price"
-                                                    class="form-control" value="{{ $record->total_pig_price }}" required>
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>ค่าน้ำหนักส่วนเกิน</label>
-                                                <input type="number" step="0.01" name="excess_weight_cost"
-                                                    class="form-control"
-                                                    value="{{ $record->batch->costs->sum('excess_weight_cost') ?? 0 }}">
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>ค่าขนส่ง</label>
-                                                <input type="number" step="0.01" name="transport_cost"
-                                                    class="form-control"
-                                                    value="{{ $record->batch->costs->sum('transport_cost') ?? 0 }}">
-                                            </div>
-
-                                            <div class="mb-3">
-                                                <label>โน๊ต</label>
-                                                <textarea name="note" class="form-control">{{ $record->note }}</textarea>
-                                            </div>
-
-                                            <div class="mb-3"> <label>แนบไฟล์ใบเสร็จ (ถ้ามี)</label> <input
-                                                    type="file" name="receipt_file" class="form-control">
-                                                {{-- delete file --}}
-                                                @if ($record->latestCost && $record->latestCost->receipt_file)
-                                                    @php$file = $record->latestCost->receipt_file;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @endphp ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?>
-                                                    ?>
-                                                    ?>
-                                                    ?>
-                                                    ?>
-                                                    <small class="text-muted">ไฟล์ปัจจุบัน:</small>
-                                                    @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
-                                                        <div><img src="{{ $file }}" alt="Receipt"
-                                                                style="max-width:100px;"></div>
-                                                    @else
-                                                        <div><a href="{{ $file }}" target="_blank">Download</div>
-                                                    @endif
-
-                                                    {{-- hidden input กันเคสไม่ได้ติ๊ก checkbox --}}
-                                                    <input type="hidden" name="delete_receipt_file" value="0">
-
-                                                    <div class="form-check mt-1">
-                                                        <input type="checkbox" name="delete_receipt_file" value="1"
-                                                            class="form-check-input"
-                                                            id="deleteReceipt{{ $record->id }}">
-                                                        <label class="form-check-label"
-                                                            for="deleteReceipt{{ $record->id }}">
-                                                            ลบไฟล์ปัจจุบัน
-                                                        </label>
-                                                    </div>
-                                                @endif
-                                            </div>
-
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="submit" class="btn btn-primary">บันทึก</button>
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">ยกเลิก</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-
-                        {{-- End Modal Edit --}}
 
                     @empty
                         <tr>
@@ -373,33 +245,63 @@
             <div class="modal-content bg-dark text-light">
                 <div class="modal-header">
                     <h5>เพิ่มหมูเข้า</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form action="{{ route('pig_entry_records.upload') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
 
+                        {{-- FARM DROPDOWN BUTTON --}}
                         <div class="mb-3">
                             <label>ฟาร์ม</label>
-                            <select name="farm_id" id="createFarmSelect" class="farmSelect form-select" required>
-                                <option value="">-- เลือกฟาร์ม --</option>
-                                @foreach ($farms as $farm)
-                                    <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="dropdown">
+                                <button
+                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                    type="button" id="createFarmDropdownBtn" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <span>เลือกฟาร์ม</span>
+                                </button>
+                                <ul class="dropdown-menu w-100" aria-labelledby="createFarmDropdownBtn"
+                                    id="createFarmDropdownMenu">
+                                    @foreach ($farms as $farm)
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-farm-id="{{ $farm->id }}">
+                                                {{ $farm->farm_name }}
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                                <input type="hidden" name="farm_id" id="createFarmSelect" value="">
+                            </div>
                         </div>
+
+                        {{-- BATCH DROPDOWN BUTTON --}}
                         <div class="mb-3">
                             <label>รุ่น (Batch)</label>
-                            <select name="batch_id" id="createBatchSelect" class="batchSelect form-select" required>
-                                <option value="">-- เลือกรุ่น --</option>
-                            </select>
+                            <div class="dropdown">
+                                <button
+                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                    type="button" id="createBatchDropdownBtn" data-bs-toggle="dropdown"
+                                    aria-expanded="false">
+                                    <span>เลือกรุ่น</span>
+                                </button>
+                                <ul class="dropdown-menu w-100" aria-labelledby="createBatchDropdownBtn"
+                                    id="createBatchDropdownMenu">
+                                    <!-- จะ populate เมื่อเลือกฟาร์ม -->
+                                </ul>
+                                <input type="hidden" name="batch_id" id="createBatchSelect" value="">
+                            </div>
                         </div>
+
+                        {{-- BARN CHECKBOXES --}}
                         <div class="mb-3">
-                            <label>เล้า (Barn)</label>
-                            <select name="barn_id[]" id="createBarnSelect" class="barnSelect form-select" multiple
-                                required>
-                                <option value="">-- เลือกเล้า --</option>
-                            </select>
+                            <label>เล้า (Barn) - สามารถเลือกได้หลายตัว</label>
+                            <div class="border rounded p-3"
+                                style="background-color: #495057; max-height: 150px; overflow-y: auto;">
+                                <div id="createBarnCheckboxContainer">
+                                    <!-- จะ populate เมื่อเลือกฟาร์ม -->
+                                </div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -479,196 +381,123 @@
         {{-- JS สำหรับ fetch barns + batches --}}
 
         <script>
-            function initFarmBatchBarnChoices(farmSelect, batchSelect, barnSelect) {
-                const farmChoice = new Choices(farmSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false
-                });
-                const batchChoice = new Choices(batchSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false,
-                    removeItemButton: true,
-                    placeholderValue: '-- เลือกรุ่น --'
-                });
-                const barnChoice = new Choices(barnSelect, {
-                    searchEnabled: false,
-                    itemSelectText: '',
-                    shouldSort: false,
-                    removeItemButton: true,
-                    placeholderValue: '-- เลือกเล้า --'
-                });
-                farmSelect.addEventListener('change', function() {
-                    const farmId = this.value;
+            document.addEventListener('DOMContentLoaded', function() {
+                const batches = @json($batches);
+                const farms = @json($farms);
 
-                    // Immediately reset batch and barn to placeholder so stale values aren't shown
-                    batchChoice.clearChoices();
-                    batchChoice.setChoices([{
-                        value: '',
-                        label: '-- เลือกรุ่น --',
-                        selected: true,
-                        disabled: true
-                    }]);
+                // Elements
+                const farmDropdownBtn = document.getElementById('createFarmDropdownBtn');
+                const farmDropdownMenu = document.getElementById('createFarmDropdownMenu');
+                const farmSelect = document.getElementById('createFarmSelect');
 
-                    barnChoice.clearChoices();
-                    barnChoice.setChoices([{
-                        value: '',
-                        label: '-- เลือกเล้า --',
-                        selected: true,
-                        disabled: true
-                    }]);
+                const batchDropdownBtn = document.getElementById('createBatchDropdownBtn');
+                const batchDropdownMenu = document.getElementById('createBatchDropdownMenu');
+                const batchSelect = document.getElementById('createBatchSelect');
 
-                    // If farm cleared, nothing more to do
-                    if (!farmId) return;
+                const barnCheckboxContainer = document.getElementById('createBarnCheckboxContainer');
 
-                    // Show loading states
-                    batchChoice.clearChoices();
-                    batchChoice.setChoices([{
-                        value: '',
-                        label: 'กำลังโหลด...',
-                        selected: true,
-                        disabled: true
-                    }]);
+                // FARM DROPDOWN HANDLER
+                farmDropdownMenu.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('dropdown-item')) {
+                        e.preventDefault();
+                        const farmId = e.target.getAttribute('data-farm-id');
+                        const farmName = e.target.textContent.trim();
 
-                    barnChoice.clearChoices();
-                    barnChoice.setChoices([{
-                        value: '',
-                        label: 'กำลังโหลดเล้า...',
-                        selected: true,
-                        disabled: true
-                    }]);
+                        farmDropdownBtn.querySelector('span').textContent = farmName;
+                        farmSelect.value = farmId;
 
-                    // Fetch batches with improved error handling
-                    fetch('{{ url('get-batches') }}/' + farmId)
-                        .then(res => {
-                            if (!res.ok) {
-                                // Try to read body for extra debug info
-                                return res.text().then(body => {
-                                    const err = new Error('Failed to load batches: HTTP ' + res.status +
-                                        ' - ' + body);
-                                    err.status = res.status;
-                                    throw err;
-                                });
-                            }
-                            return res.json();
-                        })
-                        .then(data => {
-                            const choices = [{
-                                value: '',
-                                label: '-- เลือกรุ่น --',
-                                selected: true,
-                                disabled: true
-                            }];
-                            if (Array.isArray(data) && data.length > 0) {
-                                data.forEach(batch => choices.push({
-                                    value: batch.id,
-                                    label: batch.batch_code
-                                }));
-                            } else if (Array.isArray(data) && data.length === 0) {
-                                // no batches for this farm
-                                choices.push({
-                                    value: '',
-                                    label: '❌ ไม่พบรุ่นสำหรับฟาร์มนี้',
-                                    disabled: true
-                                });
-                            }
-                            batchChoice.clearChoices();
-                            batchChoice.setChoices(choices, 'value', 'label', true);
-                            try {
-                                batchChoice.setChoiceByValue('');
-                            } catch (e) {}
-                        })
-                        .catch(err => {
-                            console.error('Error loading batches:', err);
-                            batchChoice.clearChoices();
-                            batchChoice.setChoices([{
-                                value: '',
-                                label: '❌ ไม่สามารถโหลดรุ่น',
-                                selected: true,
-                                disabled: true
-                            }]);
+                        // Reset batch
+                        batchDropdownBtn.querySelector('span').textContent = 'เลือกรุ่น';
+                        batchSelect.value = '';
+                        batchDropdownMenu.innerHTML = '';
+
+                        // Populate batches
+                        const farmBatches = batches.filter(b => b.farm_id === parseInt(farmId));
+                        farmBatches.forEach(batch => {
+                            const li = document.createElement('li');
+                            const a = document.createElement('a');
+                            a.className = 'dropdown-item';
+                            a.href = '#';
+                            a.setAttribute('data-batch-id', batch.id);
+                            a.textContent = batch.batch_code;
+                            li.appendChild(a);
+                            batchDropdownMenu.appendChild(li);
                         });
 
-                    // Fetch barns with improved error handling (use absolute url)
-                    fetch('{{ url('get-available-barns') }}/' + farmId)
-                        .then(res => {
-                            if (!res.ok) {
-                                return res.text().then(body => {
-                                    const err = new Error('Failed to load barns: HTTP ' + res.status +
-                                        ' - ' + body);
-                                    err.status = res.status;
-                                    throw err;
-                                });
-                            }
-                            return res.json();
-                        })
-                        .then(data => {
-                            const choices = [{
-                                value: '',
-                                label: '-- เลือกเล้า --',
-                                selected: true,
-                                disabled: true
-                            }];
-                            if (Array.isArray(data) && data.length > 0) {
-                                data.forEach(barn => choices.push({
-                                    value: barn.id,
-                                    label: barn.barn_code + ' (เหลือ ' + (barn.remaining ?? 0) + ' ตัว)'
-                                }));
-                            } else if (Array.isArray(data) && data.length === 0) {
-                                choices.push({
-                                    value: '',
-                                    label: '❌ ไม่พบเล้าที่มีที่ว่างในฟาร์มนี้',
-                                    disabled: true
-                                });
-                            }
-                            barnChoice.clearChoices();
-                            barnChoice.setChoices(choices, 'value', 'label', true);
-                            try {
-                                barnChoice.setChoiceByValue('');
-                            } catch (e) {}
-                        })
-                        .catch(err => {
-                            console.error('Error loading barns:', err);
-                            barnChoice.clearChoices();
-                            barnChoice.setChoices([{
-                                value: '',
-                                label: '❌ ไม่สามารถโหลดเล้า',
-                                selected: true,
-                                disabled: true
-                            }]);
-                        });
-                });
+                        // Populate barns checkboxes
+                        const farm = farms.find(f => f.id === parseInt(farmId));
+                        if (farm && farm.barns) {
+                            barnCheckboxContainer.innerHTML = '';
 
-                // mark this farm select as initialized so we don't double-init
-                try {
-                    farmSelect.choicesInstance = true;
-                } catch (e) {
-                    // ignore
-                }
-            }
+                            // Fetch barn capacity data
+                            fetch('/get-barn-capacity/' + farmId)
+                                .then(res => res.json())
+                                .then(barnData => {
+                                    farm.barns.forEach(barn => {
+                                        const capacityInfo = barnData.find(b => b.id === barn.id);
+                                        const available = capacityInfo ? capacityInfo
+                                            .available_capacity : 0;
+                                        const isFull = capacityInfo ? capacityInfo.is_full : false;
 
-            // Create modal
-            document.addEventListener('shown.bs.modal', function(event) {
-                if (event.target.id === 'createModal') {
-                    const farm = document.getElementById('createFarmSelect');
-                    const batch = document.getElementById('createBatchSelect');
-                    const barn = document.getElementById('createBarnSelect');
-                    if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
-                }
-            });
+                                        const div = document.createElement('div');
+                                        div.className = 'form-check';
 
-            // Edit modals (for each record)
-            @foreach ($pigEntryRecords as $record)
-                document.addEventListener('shown.bs.modal', function(event) {
-                    if (event.target.id === 'editModal{{ $record->id }}') {
-                        const farm = document.getElementById('editFarmSelect{{ $record->id }}');
-                        const batch = document.getElementById('editBatchSelect{{ $record->id }}');
-                        const barn = document.getElementById('editBarnSelect{{ $record->id }}');
-                        if (!farm.choicesInstance) initFarmBatchBarnChoices(farm, batch, barn);
+                                        const isDisabled = isFull ? 'disabled' : '';
+                                        const statusText = isFull ?
+                                            `<span class="text-danger"> ❌ เต็มแล้ว</span>` :
+                                            `<span class="text-success"> (เหลือ ${available} ตัว)</span>`;
+
+                                        div.innerHTML = `
+                                            <input type="checkbox" class="form-check-input barn-checkbox"
+                                                name="barn_id[]" value="${barn.id}" id="createBarn_${barn.id}" ${isDisabled}>
+                                            <label class="form-check-label" for="createBarn_${barn.id}">
+                                                ${barn.barn_code} ${statusText}
+                                            </label>
+                                        `;
+                                        barnCheckboxContainer.appendChild(div);
+                                    });
+                                })
+                                .catch(err => console.error('Error fetching barn capacity:', err));
+                        }
                     }
                 });
-            @endforeach
+
+                // BATCH DROPDOWN HANDLER
+                batchDropdownMenu.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('dropdown-item')) {
+                        e.preventDefault();
+                        const batchId = e.target.getAttribute('data-batch-id');
+                        const batchCode = e.target.textContent.trim();
+
+                        batchDropdownBtn.querySelector('span').textContent = batchCode;
+                        batchSelect.value = batchId;
+                    }
+                });
+
+                // FORM VALIDATION
+                document.querySelector('#createModal form').addEventListener('submit', function(e) {
+                    const farmId = farmSelect.value;
+                    const batchId = batchSelect.value;
+                    const barnCheckboxes = document.querySelectorAll(
+                        '#createBarnCheckboxContainer .barn-checkbox:checked');
+
+                    if (!farmId) {
+                        e.preventDefault();
+                        showSnackbar('กรุณาเลือกฟาร์ม');
+                        return false;
+                    }
+                    if (!batchId) {
+                        e.preventDefault();
+                        showSnackbar('กรุณาเลือกรุ่น');
+                        return false;
+                    }
+                    if (barnCheckboxes.length === 0) {
+                        e.preventDefault();
+                        showSnackbar('กรุณาเลือกเล้าอย่างน้อยหนึ่งตัว');
+                        return false;
+                    }
+                });
+            });
         </script>
 
 
@@ -742,7 +571,11 @@
                         });
                     }
                 });
+
+                // เรียกใช้ common table click handler
+                setupClickableRows();
             });
         </script>
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

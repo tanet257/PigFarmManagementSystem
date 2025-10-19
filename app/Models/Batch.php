@@ -102,8 +102,16 @@ class Batch extends Model
     {
         parent::boot();
 
-        // ลบ batch_pen_allocations
+        // ลบ batch_pen_allocations และปรับ current_quantity ให้เป็น 0 ก่อนลบ
         static::deleting(function ($batch) {
+            // อัปเดต current_quantity ให้เป็น 0 ก่อนลบ
+            BatchPenAllocation::where('batch_id', $batch->id)
+                ->update(['current_quantity' => 0]);
+
+            BatchPenAllocation::where('batch_id', $batch->id)
+                ->update(['allocated_pigs' => 0]);
+
+            // ลบ batch_pen_allocations
             BatchPenAllocation::where('batch_id', $batch->id)->delete();
         });
 

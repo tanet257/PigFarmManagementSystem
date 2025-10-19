@@ -18,7 +18,10 @@ class BatchPenAllocationController extends Controller
     public function index(Request $request)
     {
         $farms   = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        // ดึงเฉพาะ batch ที่ยังมี batch_pen_allocations record
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->whereHas('batchPenAllocations')
+            ->get();
 
         $farmId  = $request->get('farm_id');
         $batchId = $request->get('batch_id');
@@ -29,7 +32,7 @@ class BatchPenAllocationController extends Controller
         $page    = $request->get('page', 1);
 
         // base query barns -> pens -> allocations
-        $barnsQuery = Barn::with(['pens.batchPenAllocations' => function ($query) use ($request) {
+        $barnsQuery = Barn::with(['farm', 'pens.batchPenAllocations' => function ($query) use ($request) {
             // Date Filter on BatchPenAllocations
             if ($request->filled('selected_date')) {
                 $date = Carbon::now();
@@ -77,16 +80,15 @@ class BatchPenAllocationController extends Controller
             $totalAllocated = $pensInfo->sum('allocated');
             $totalCurrentQuantity = $pensInfo->sum('current_quantity');
 
-            $farmNames = $barn->pens->flatMap(function ($pen) {
-                return $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name);
-            })->filter()->unique()->values()->all();
+            // ดึง farm_name จาก barn object โดยตรง แทนที่จะดึงจาก allocations
+            $farmName = optional($barn->farm)->farm_name ?? '-';
 
             $batchCodes = $barn->pens->flatMap(function ($pen) {
                 return $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code);
             })->filter()->unique()->values()->all();
 
             return [
-                'farm_name' => implode(', ', $farmNames),
+                'farm_name' => $farmName,
                 'batch_code' => implode(', ', $batchCodes),
                 'barn_code' => $barn->barn_code,
                 'capacity' => $barn->pig_capacity,

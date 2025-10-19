@@ -177,15 +177,8 @@ class BatchController extends Controller
         $batch = Batch::findOrFail($id);
 
         $validated = $request->validate([
-            'batch_code' => [
-                'required',
-                'string',
-                'max:255',
-                Rule::unique('batches', 'batch_code')->where(fn($q) => $q->where('farm_id', $request->input('farm_id')))->ignore($batch->id),
-            ],
             'status'     => 'required|string',
             'note'       => 'nullable|string',
-            'start_date' => 'nullable|date',
         ]);
 
         // เช็คการเปลี่ยนสถานะ

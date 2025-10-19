@@ -194,7 +194,7 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-xl">
                             <li>
-                                <a class="dropdown-item" href="{{ route('store_house_record.record') }}">
+                                <a class="dropdown-item" href="{{ route('storehouse_records.record') }}">
                                     <i class="bi bi-journal-text me-1"></i> อัปเดทสต็อกสินค้า
                                 </a>
                             </li>
@@ -228,7 +228,8 @@
                 </thead>
                 <tbody>
                     @forelse ($storehouses as $item)
-                        <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $item->id }}">
+                        <tr data-row-click="#viewModal{{ $item->id }}" class="clickable-row">
+
                             <td class="text-center">
                                 <strong>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</strong>
                             </td>
@@ -265,15 +266,16 @@
                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
                                     data-bs-target="#editModal{{ $item->id }}">
                                     <i class="bi bi-pencil-square"></i>
-
-                                    <form action="{{ route('storehouse_records.delete', $item->id) }}" method="POST"
-                                        class="d-inline" onsubmit="return confirm('ต้องการลบสินค้านี้หรือไม่?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                </button>
+                                <form action="{{ route('storehouse_records.delete', $item->id) }}" method="POST"
+                                    class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="event.stopPropagation(); if(confirm('ต้องการลบสินค้านี้หรือไม่?')) { this.form.submit(); }">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @empty
@@ -524,6 +526,6 @@
     @endforeach
 
     @push('scripts')
-        <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

@@ -30,8 +30,8 @@ class StoreHouseController extends Controller
         // farms
         $farms = Farm::all();
 
-        // batches
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        // batches (กรองเฉพาะ batch ที่ยังไม่เสร็จสิ้น)
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
 
         // storehouses
         $storehouses = StoreHouse::all();
@@ -72,7 +72,7 @@ class StoreHouseController extends Controller
         //dd($storehouses->groupBy('item_type')->map(fn($g) => $g->pluck('unit')->unique()->values()));
 
         return view(
-            'admin.storehouses.record.store_house_record',
+            'admin.storehouses.record.storehouse_record',
             compact('farms', 'batches', 'storehouses', 'storehousesByTypeAndBatch', 'unitsByType')
         );
     }
@@ -250,7 +250,7 @@ class StoreHouseController extends Controller
     //--------------------------------------- Index ------------------------------------------//
 
     // Index Storehouse
-    public function indexStorehouse(Request $request)
+    public function indexStoreHouse(Request $request)
     {
         $farms = Farm::all();
         $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
@@ -463,7 +463,7 @@ class StoreHouseController extends Controller
         }
 
         $storehouse->delete();
-        return redirect()->route('storehouses.index')->with('success', 'ลบรายการเรียบร้อยแล้ว');
+        return redirect()->route('storehouse_records.index')->with('success', 'ลบรายการเรียบร้อยแล้ว');
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//

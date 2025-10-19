@@ -41,6 +41,7 @@ class DairyController extends Controller
         // batches (มี relation ไปยัง farm เอาไว้ filter ใน JS)
         $batches = Batch::with('farm:id,farm_name')
             ->select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'เสร็จสิ้น')
             ->get();
 
         // barns (ผูกกับ farm_id เอาไว้ filter)
@@ -80,7 +81,7 @@ class DairyController extends Controller
     public function indexDairy(Request $request)
     {
         $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
         $barns = Barn::all();
 
         $query = DairyRecord::with([

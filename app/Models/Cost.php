@@ -20,6 +20,7 @@ class Cost extends Model
         'unit',
         'price_per_unit',
         'transport_cost',
+        'excess_weight_cost',
         'total_price',
         'receipt_file',
         'note',

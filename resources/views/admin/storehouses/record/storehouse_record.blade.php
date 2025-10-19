@@ -10,7 +10,7 @@
                 <h4 class="mb-0">บันทึกสินค้าเข้าคลัง (Store House Record)</h4>
             </div>
             <div class=" card-body">
-                <form action="{{ route('store_house_record.upload') }}" method="post" enctype="multipart/form-data">
+                <form action="{{ route('storehouse_records.upload') }}" method="post" enctype="multipart/form-data">
                     @csrf
 
                     <div class="card card-custom-secondary">

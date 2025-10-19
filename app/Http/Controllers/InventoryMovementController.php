@@ -19,7 +19,7 @@ class InventoryMovementController extends Controller
     public function index(Request $request)
     {
         $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
         $barns = Barn::all();
         $dairy_records = DairyRecord::all();
 
