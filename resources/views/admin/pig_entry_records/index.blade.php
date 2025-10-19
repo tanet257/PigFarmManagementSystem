@@ -66,16 +66,16 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item {{ request('sort') == 'name_asc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}">ชื่อ
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}">ชื่อ
                                 (ก-ฮ)</a></li>
                         <li><a class="dropdown-item {{ request('sort') == 'name_desc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}">ชื่อ
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}">ชื่อ
                                 (ฮ-ก)</a></li>
                         <li><a class="dropdown-item {{ request('sort') == 'quantity_asc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'quantity_asc'])) }}">จำนวนน้อย
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'quantity_asc'])) }}">จำนวนน้อย
                                 → มาก</a></li>
                         <li><a class="dropdown-item {{ request('sort') == 'quantity_desc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'quantity_desc'])) }}">จำนวนมาก
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'quantity_desc'])) }}">จำนวนมาก
                                 → น้อย</a></li>
                     </ul>
                 </div>
@@ -165,15 +165,16 @@
 
                             {{-- คำนวณจาก batch->costs --}}
                             <td class="text-center">
-                                {{ number_format($record->batch->costs->where('cost_type', 'excess_weight')->sum('total_price') ?? 0, 2) }}
+                                {{ number_format($record->batch->costs->sum('excess_weight_cost') ?? 0, 2) }}
                                 ฿
                             </td>
                             <td class="text-center">
-                                {{ number_format($record->batch->costs->sum('transport_cost') ?? 0, 2) }} ฿</td>
+                                {{ number_format($record->batch->costs->sum('transport_cost') ?? 0, 2) }}
+                                ฿</td>
                             <td class="text-center">
                                 <strong>{{ number_format(
-                                    ($record->total_pig_price ?? 0) +
-                                        ($record->excess_weight_cost ?? 0) +
+                                    $record->total_pig_price +
+                                        ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
                                         ($record->batch->costs->sum('transport_cost') ?? 0),
                                     2,
                                 ) }}
@@ -249,6 +250,9 @@
                                                     <option value="{{ $record->batch_id }}" selected>
                                                         {{ $record->batch->batch_code ?? '-' }}</option>
                                                 </select>
+                                                <!-- Hidden backup ให้ form ส่ง batch_id ได้เสมอ -->
+                                                <input type="hidden" name="batch_id_backup"
+                                                    value="{{ $record->batch_id }}">
                                             </div>
 
                                             <div class="mb-3">
@@ -281,7 +285,7 @@
                                                 <label>ค่าน้ำหนักส่วนเกิน</label>
                                                 <input type="number" step="0.01" name="excess_weight_cost"
                                                     class="form-control"
-                                                    value="{{ $record->batch->costs->where('cost_type', 'excess_weight')->sum('total_price') ?? 0 }}">
+                                                    value="{{ $record->batch->costs->sum('excess_weight_cost') ?? 0 }}">
                                             </div>
 
                                             <div class="mb-3">
@@ -301,7 +305,10 @@
                                                 {{-- delete file --}}
                                                 @if ($record->latestCost && $record->latestCost->receipt_file)
                                                     @php$file = $record->latestCost->receipt_file;
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @endphp ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @endphp ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?> ?>
+                                                    ?>
+                                                    ?>
+                                                    ?>
                                                     ?>
                                                     <small class="text-muted">ไฟล์ปัจจุบัน:</small>
                                                     @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))

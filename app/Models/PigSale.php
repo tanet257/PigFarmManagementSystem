@@ -143,4 +143,22 @@ class PigSale extends Model
     {
         return $this->belongsTo(PigDeath::class);
     }
+
+    /**
+     * Boot method to handle cascading deletes
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // ลบ pig_sale_details เมื่อลบ pig_sale
+        static::deleting(function ($pigSale) {
+            PigSaleDetail::where('pig_sale_id', $pigSale->id)->delete();
+        });
+
+        // ลบ payments เมื่อลบ pig_sale
+        static::deleting(function ($pigSale) {
+            Payment::where('pig_sale_id', $pigSale->id)->delete();
+        });
+    }
 }

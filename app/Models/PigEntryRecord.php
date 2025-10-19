@@ -63,4 +63,17 @@ class PigEntryRecord extends Model
     {
         return $this->hasOne(Cost::class, 'batch_id', 'batch_id')->latestOfMany();
     }
+
+    /**
+     * Boot method to handle cascading deletes
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // ลบ pig_entry_details เมื่อลบ pig_entry_record
+        static::deleting(function ($pigEntry) {
+            PigEntryDetail::where('pig_entry_id', $pigEntry->id)->delete();
+        });
+    }
 }

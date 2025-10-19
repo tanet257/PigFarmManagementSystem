@@ -109,7 +109,7 @@
                         <th class="text-center">น้ำหนักเฉลี่ย/ตัว</th>
                         <th class="text-center">จำนวนหมูรวม</th>
                         <th class="text-center">หมูคงเหลือ</th>
-                        <th class="text-center">ต้นทุนหมูเข้า</th>
+                        <th class="text-center">ราคารวม</th>
                         <th class="text-center">สถานะ</th>
                         <th class="text-center">หมายเหตุ</th>
                         <th class="text-center">วันที่เริ่มต้น</th>
@@ -129,15 +129,31 @@
                             {{-- เลือก pen แรกของ barn --}}
                             <td class="text-center">{{ $batch->farm->barns->first()->pens->count() ?? '-' }}</td>
 
-                            <td class="text-center"><strong>{{ number_format($batch->total_pig_weight ?? 0, 2) }}</strong>
+                            <td class="text-center">
+                                <strong>{{ number_format($batch->pig_entry_records->sum('total_pig_weight') ?? 0, 2) }}</strong>
                                 กก.
                             </td>
-                            <td class="text-center">{{ number_format($batch->avg_pig_weight ?? 0, 2) }} กก.</td>
-                            <td class="text-center"><strong>{{ number_format($batch->total_pig_amount ?? 0) }}</strong>
+                            <td class="text-center">
+                                @php
+                                    $totalWeight = $batch->pig_entry_records->sum('total_pig_weight') ?? 0;
+                                    $totalAmount = $batch->pig_entry_records->sum('total_pig_amount') ?? 0;
+                                    $avgWeight = $totalAmount > 0 ? $totalWeight / $totalAmount : 0;
+                                @endphp
+                                {{ number_format($avgWeight, 2) }} กก.
                             </td>
-                            <td class="text-center"><strong style="color: {{ ($batch->current_quantity ?? $batch->total_pig_amount) > 0 ? '#28a745' : '#dc3545' }}">{{ number_format($batch->current_quantity ?? $batch->total_pig_amount) }}</strong>
+                            <td class="text-center">
+                                <strong>{{ number_format($batch->pig_entry_records->sum('total_pig_amount') ?? 0) }}</strong>
                             </td>
-                            <td class="text-center">{{ number_format($batch->total_pig_price ?? 0, 2) }} ฿</td>
+                            <td class="text-center">
+                                <strong>{{ number_format($batch->current_quantity ?? $batch->total_pig_amount) }}</strong>
+                            </td>
+                            <td class="text-center">
+                                <strong>{{ number_format(
+                                    $batch->costs->sum('total_price') + $batch->costs->sum('excess_weight_cost') + $batch->costs->sum('transport_cost'),
+                                    2,
+                                ) }}
+                                    ฿</strong>
+                            </td>
                             <td class="text-center">
                                 @if ($batch->status == 'กำลังเลี้ยง')
                                     <span class="badge bg-success">กำลังเลี้ยง</span>
@@ -234,7 +250,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="15" class="text-danger">❌ ไม่มีข้อมูล Batch</td>
+                            <td colspan="13" class="text-danger">❌ ไม่มีข้อมูล Batch</td>
                         </tr>
                     @endforelse
                 </tbody>

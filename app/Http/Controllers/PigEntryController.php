@@ -190,48 +190,20 @@ class PigEntryController extends Controller
                     }
                 }
 
-                // สร้าง Cost ลูกหมู (บันทึก receipt_file ที่นี่)
+                // สร้าง Cost ลูกหมู (บันทึก transport_cost และ excess_weight_cost ในคอลัมน์เดียวกัน)
                 Cost::create([
-                    'farm_id'        => $batch->farm_id,
-                    'batch_id'       => $batch->id,
-                    'date'           => $formattedDate,
-                    'cost_type'      => 'piglet',
-                    'quantity'       => $validated['total_pig_amount'],
-                    'price_per_unit' => $avgPrice,
-                    'total_price'    => $validated['total_pig_price'],
-                    'note'           => 'ค่าลูกหมู',
-                    'receipt_file'   => $uploadedFileUrl,
+                    'farm_id'              => $batch->farm_id,
+                    'batch_id'             => $batch->id,
+                    'date'                 => $formattedDate,
+                    'cost_type'            => 'piglet',
+                    'quantity'             => $validated['total_pig_amount'],
+                    'price_per_unit'       => $avgPrice,
+                    'total_price'          => $validated['total_pig_price'],
+                    'transport_cost'       => $validated['transport_cost'] ?? 0,
+                    'excess_weight_cost'   => $validated['excess_weight_cost'] ?? 0,
+                    'note'                 => 'ค่าลูกหมู',
+                    'receipt_file'         => $uploadedFileUrl,
                 ]);
-
-                // สร้าง Cost ค่าขนส่ง (ถ้ามี)
-                if (!empty($validated['transport_cost']) && $validated['transport_cost'] > 0) {
-                    Cost::create([
-                        'farm_id'        => $batch->farm_id,
-                        'batch_id'       => $batch->id,
-                        'date'           => $formattedDate,
-                        'cost_type'      => 'transport',
-                        'quantity'       => 1,
-                        'price_per_unit' => $validated['transport_cost'],
-                        'total_price'    => $validated['transport_cost'],
-                        'note'           => 'ค่าขนส่ง',
-                        'receipt_file'   => $uploadedFileUrl,
-                    ]);
-                }
-
-                // สร้าง Cost น้ำหนักเกิน (ถ้ามี)
-                if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
-                    Cost::create([
-                        'farm_id'        => $batch->farm_id,
-                        'batch_id'       => $batch->id,
-                        'date'           => $formattedDate,
-                        'cost_type'      => 'excess_weight',
-                        'quantity'       => 1,
-                        'price_per_unit' => $validated['excess_weight_cost'],
-                        'total_price'    => $validated['excess_weight_cost'],
-                        'note'           => 'ค่าน้ำหนักส่วนเกิน',
-                        'receipt_file'   => $uploadedFileUrl,
-                    ]);
-                }
 
                 DB::commit();
                 return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่ายเรียบร้อย');
@@ -317,6 +289,11 @@ class PigEntryController extends Controller
     public function updatePigentryrecord(Request $request, $id)
     {
         try {
+            // ถ้า batch_id ว่าง ให้ใช้ batch_id_backup
+            if (empty($request->input('batch_id')) && !empty($request->input('batch_id_backup'))) {
+                $request->merge(['batch_id' => $request->input('batch_id_backup')]);
+            }
+
             $validated = $request->validate([
                 'batch_id' => 'required|exists:batches,id',
                 'pig_entry_date'    => 'required|string',
@@ -366,36 +343,16 @@ class PigEntryController extends Controller
                 ['batch_id' => $batch->id, 'cost_type' => 'piglet'],
                 [
                     'farm_id' => $batch->farm_id,
+                    'date' => $formattedDate,
                     'quantity' => $validated['total_pig_amount'],
                     'price_per_unit' => $validated['total_pig_price'] / max(1, $validated['total_pig_amount']),
                     'total_price' => $validated['total_pig_price'],
+                    'transport_cost' => $validated['transport_cost'] ?? 0,
+                    'excess_weight_cost' => $validated['excess_weight_cost'] ?? 0,
                     'note' => 'ค่าลูกหมู',
                     'receipt_file' => $uploadedFileUrl,
                 ]
             );
-
-            if (!empty($validated['excess_weight_cost']) && $validated['excess_weight_cost'] > 0) {
-                Cost::updateOrCreate(
-                    ['batch_id' => $batch->id, 'cost_type' => 'excess_weight'],
-                    [
-                        'farm_id' => $batch->farm_id,
-                        'quantity' => 1,
-                        'price_per_unit' => $validated['excess_weight_cost'],
-                        'total_price' => $validated['excess_weight_cost'],
-                        'note' => 'ค่าน้ำหนักส่วนเกิน',
-                        'receipt_file' => $uploadedFileUrl,
-                    ]
-                );
-            } else {
-                Cost::where('batch_id', $batch->id)->where('cost_type', 'excess_weight')->delete();
-            }
-
-            Cost::where('batch_id', $batch->id)
-                ->where('cost_type', 'transport')
-                ->update([
-                    'total_price' => $validated['transport_cost'] ?? 0,
-                    'transport_cost' => $validated['transport_cost'] ?? 0
-                ]);
 
             return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
         } catch (\Exception $e) {

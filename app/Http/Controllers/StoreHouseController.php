@@ -25,7 +25,7 @@ class StoreHouseController extends Controller
     //--------------------------------------- VIEW ------------------------------------------//
 
     //view storehouse record
-    public function store_house_record(Request $request)
+    public function viewStoreHouseRecord(Request $request)
     {
         // farms
         $farms = Farm::all();
@@ -78,8 +78,8 @@ class StoreHouseController extends Controller
     }
 
 
-    // upload_store_house_record
-    public function upload_store_house_record(Request $request)
+    // uploadStoreHouseRecord
+    public function uploadStoreHouseRecord(Request $request)
     {
         try {
             $unitsByType = [

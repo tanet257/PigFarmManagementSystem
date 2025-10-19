@@ -29,60 +29,69 @@
                         <a id="navbarDropdownNotifications" href="#" data-toggle="dropdown" aria-haspopup="true"
                             aria-expanded="false" class="nav-link notifications-toggle">
                             <i class="bi bi-bell"></i>
-                            @php
-                                $unreadCount = Auth::user()->unreadNotificationsCount();
-                            @endphp
-                            @if ($unreadCount > 0)
-                                <span class="badge dashbg-2">{{ $unreadCount }}</span>
-                            @endif
-                        </a>
-                        <div aria-labelledby="navbarDropdownNotifications" class="dropdown-menu notifications-list">
-                            <h6 class="dropdown-header">
-                                <i class="bi bi-bell"></i> การแจ้งเตือน
+                            @auth
+                                @php
+                                    $unreadCount = Auth::user()->unreadNotificationsCount();
+                                @endphp
                                 @if ($unreadCount > 0)
-                                    <span class="badge bg-danger ms-2">{{ $unreadCount }}</span>
+                                    <span class="badge dashbg-2">{{ $unreadCount }}</span>
                                 @endif
-                            </h6>
-                            <div class="dropdown-divider"></div>
+                            @else
+                                <span class="badge dashbg-2">0</span>
+                            @endauth
+                        </a>
+                        @auth
+                            <div aria-labelledby="navbarDropdownNotifications" class="dropdown-menu notifications-list">
+                                <h6 class="dropdown-header">
+                                    <i class="bi bi-bell"></i> การแจ้งเตือน
+                                    @php
+                                        $unreadCount = Auth::user()->unreadNotificationsCount();
+                                    @endphp
+                                    @if ($unreadCount > 0)
+                                        <span class="badge bg-danger ms-2">{{ $unreadCount }}</span>
+                                    @endif
+                                </h6>
+                                <div class="dropdown-divider"></div>
 
-                            @php
-                                $recentNotifications = Auth::user()->userNotifications()->latest()->take(5)->get();
-                            @endphp
+                                @php
+                                    $recentNotifications = Auth::user()->userNotifications()->latest()->take(5)->get();
+                                @endphp
 
-                            @forelse($recentNotifications as $notification)
-                                <a href="{{ $notification->url ?? route('notifications.index') }}"
-                                    class="dropdown-item notification-item {{ !$notification->is_read ? 'unread' : '' }}">
-                                    <div class="d-flex align-items-start">
-                                        <div class="notification-content flex-grow-1">
-                                            <div class="d-flex align-items-center mb-1">
-                                                <strong class="me-2">{{ $notification->title }}</strong>
-                                                @if ($notification->type == 'user_registered')
-                                                    <span class="badge bg-info">ใหม่</span>
-                                                @elseif($notification->type == 'user_approved')
-                                                    <span class="badge bg-success">อนุมัติ</span>
-                                                @elseif($notification->type == 'user_rejected')
-                                                    <span class="badge bg-danger">ปฏิเสธ</span>
-                                                @endif
+                                @forelse($recentNotifications as $notification)
+                                    <a href="{{ $notification->url ?? route('notifications.index') }}"
+                                        class="dropdown-item notification-item {{ !$notification->is_read ? 'unread' : '' }}">
+                                        <div class="d-flex align-items-start">
+                                            <div class="notification-content flex-grow-1">
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <strong class="me-2">{{ $notification->title }}</strong>
+                                                    @if ($notification->type == 'user_registered')
+                                                        <span class="badge bg-info">ใหม่</span>
+                                                    @elseif($notification->type == 'user_approved')
+                                                        <span class="badge bg-success">อนุมัติ</span>
+                                                    @elseif($notification->type == 'user_rejected')
+                                                        <span class="badge bg-danger">ปฏิเสธ</span>
+                                                    @endif
+                                                </div>
+                                                <span
+                                                    class="d-block text-secondary small">{{ Str::limit($notification->message, 50) }}</span>
+                                                <small
+                                                    class="text-secondary">{{ $notification->created_at->diffForHumans() }}</small>
                                             </div>
-                                            <span
-                                                class="d-block text-secondary small">{{ Str::limit($notification->message, 50) }}</span>
-                                            <small
-                                                class="text-secondary">{{ $notification->created_at->diffForHumans() }}</small>
                                         </div>
+                                    </a>
+                                @empty
+                                    <div class="dropdown-item text-center text-secondary">
+                                        <i class="bi bi-inbox"></i>
+                                        <p class="mb-0">ไม่มีการแจ้งเตือน</p>
                                     </div>
-                                </a>
-                            @empty
-                                <div class="dropdown-item text-center text-secondary">
-                                    <i class="bi bi-inbox"></i>
-                                    <p class="mb-0">ไม่มีการแจ้งเตือน</p>
-                                </div>
-                            @endforelse
+                                @endforelse
 
-                            <div class="dropdown-divider"></div>
-                            <a href="{{ route('notifications.index') }}" class="dropdown-item text-center">
-                                <strong>ดูการแจ้งเตือนทั้งหมด <i class="fa fa-angle-right"></i></strong>
-                            </a>
-                        </div>
+                                <div class="dropdown-divider"></div>
+                                <a href="{{ route('notifications.index') }}" class="dropdown-item text-center">
+                                    <strong>ดูการแจ้งเตือนทั้งหมด <i class="fa fa-angle-right"></i></strong>
+                                </a>
+                            </div>
+                        @endauth
                     </div>
                 </div>
                 <!-- Notifications end-->

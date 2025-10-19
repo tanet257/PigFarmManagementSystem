@@ -50,10 +50,10 @@
              </li>
 
              <li><a href="#storehouseDropdown" aria-expanded="false" data-toggle="collapse"> <i
-                         class="icon-windows"></i>store house record </a>
+                         class="icon-windows"></i>store house </a>
                  <ul id="storehouseDropdown" class="collapse list-unstyled ">
-                     <li><a href="{{ route('store_house_record.recordview') }}">store house record</a></li>
-                     <li><a href="{{ route('storehouses.index') }}">View store house </a></li>
+                     <li><a href="{{ route('storehouse_records.record') }}">store house record</a></li>
+                     <li><a href="{{ route('storehouse_records.index') }}">View store house </a></li>
                      <li><a href="{{ route('inventory_movements.index') }}">View inventory movement</a></li>
                  </ul>
              </li>

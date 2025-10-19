@@ -57,7 +57,7 @@
 
         {{-- Toolbar --}}
         <div class="card-custom-secondary mb-3">
-            <form method="GET" action="{{ route('storehouses.index') }}"
+            <form method="GET" action="{{ route('storehouse_records.index') }}"
                 class="d-flex align-items-center gap-2 flex-wrap">
 
                 <!-- Farm Card Dropdown -->
@@ -68,11 +68,11 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item"
-                                href="{{ route('storehouses.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a>
                         </li>
                         @foreach ($farms as $farm)
                             <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
-                                    href="{{ route('storehouses.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">
+                                    href="{{ route('storehouse_records.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">
                                     {{ $farm->farm_name }}
                                 </a></li>
                         @endforeach
@@ -97,19 +97,19 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item"
-                                href="{{ route('storehouses.index', array_merge(request()->except('category'), [])) }}">ประเภททั้งหมด</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->except('category'), [])) }}">ประเภททั้งหมด</a>
                         </li>
                         <li><a class="dropdown-item {{ request('category') == 'อาหาร' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'อาหาร'])) }}">อาหาร</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'อาหาร'])) }}">อาหาร</a>
                         </li>
                         <li><a class="dropdown-item {{ request('category') == 'ยา' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'ยา'])) }}">ยา</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'ยา'])) }}">ยา</a>
                         </li>
                         <li><a class="dropdown-item {{ request('category') == 'วัคซีน' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'วัคซีน'])) }}">วัคซีน</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'วัคซีน'])) }}">วัคซีน</a>
                         </li>
                         <li><a class="dropdown-item {{ request('category') == 'อุปกรณ์' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['category' => 'อุปกรณ์'])) }}">อุปกรณ์</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'อุปกรณ์'])) }}">อุปกรณ์</a>
                         </li>
                     </ul>
                 </div>
@@ -130,16 +130,16 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item"
-                                href="{{ route('storehouses.index', array_merge(request()->except('stock_status'), [])) }}">สถานะทั้งหมด</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->except('stock_status'), [])) }}">สถานะทั้งหมด</a>
                         </li>
                         <li><a class="dropdown-item {{ request('stock_status') == 'in_stock' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['stock_status' => 'in_stock'])) }}">มีสินค้า</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['stock_status' => 'in_stock'])) }}">มีสินค้า</a>
                         </li>
                         <li><a class="dropdown-item {{ request('stock_status') == 'low_stock' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['stock_status' => 'low_stock'])) }}">สินค้าใกล้หมด</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['stock_status' => 'low_stock'])) }}">สินค้าใกล้หมด</a>
                         </li>
                         <li><a class="dropdown-item {{ request('stock_status') == 'out_of_stock' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['stock_status' => 'out_of_stock'])) }}">สินค้าหมด</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['stock_status' => 'out_of_stock'])) }}">สินค้าหมด</a>
                         </li>
                     </ul>
                 </div>
@@ -162,16 +162,16 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item {{ request('sort') == 'name_asc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}">ชื่อ
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}">ชื่อ
                                 (ก-ฮ)</a></li>
                         <li><a class="dropdown-item {{ request('sort') == 'name_desc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}">ชื่อ
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}">ชื่อ
                                 (ฮ-ก)</a></li>
                         <li><a class="dropdown-item {{ request('sort') == 'quantity_asc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'quantity_asc'])) }}">จำนวนน้อย
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'quantity_asc'])) }}">จำนวนน้อย
                                 → มาก</a></li>
                         <li><a class="dropdown-item {{ request('sort') == 'quantity_desc' ? 'active' : '' }}"
-                                href="{{ route('storehouses.index', array_merge(request()->all(), ['sort' => 'quantity_desc'])) }}">จำนวนมาก
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['sort' => 'quantity_desc'])) }}">จำนวนมาก
                                 → น้อย</a></li>
                     </ul>
                 </div>
@@ -181,10 +181,10 @@
 
                 <!-- Right side buttons -->
                 <div class="ms-auto d-flex gap-2">
-                    <a class="btn btn-outline-success btn-sm" href="{{ route('storehouses.export.csv') }}">
+                    <a class="btn btn-outline-success btn-sm" href="{{ route('storehouse_records.export.csv') }}">
                         <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
                     </a>
-                    <a class="btn btn-outline-danger btn-sm" href="{{ route('storehouses.export.pdf') }}">
+                    <a class="btn btn-outline-danger btn-sm" href="{{ route('storehouse_records.export.pdf') }}">
                         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                     </a>
                     <div class="btn-group">
@@ -194,7 +194,7 @@
                         </button>
                         <ul class="dropdown-menu dropdown-menu-xl">
                             <li>
-                                <a class="dropdown-item" href="{{ route('store_house_record.recordview') }}">
+                                <a class="dropdown-item" href="{{ route('store_house_record.record') }}">
                                     <i class="bi bi-journal-text me-1"></i> อัปเดทสต็อกสินค้า
                                 </a>
                             </li>
@@ -266,7 +266,7 @@
                                     data-bs-target="#editModal{{ $item->id }}">
                                     <i class="bi bi-pencil-square"></i>
 
-                                    <form action="{{ route('storehouses.delete', $item->id) }}" method="POST"
+                                    <form action="{{ route('storehouse_records.delete', $item->id) }}" method="POST"
                                         class="d-inline" onsubmit="return confirm('ต้องการลบสินค้านี้หรือไม่?')">
                                         @csrf
                                         @method('DELETE')
@@ -374,7 +374,7 @@
     <div class="modal fade" id="createModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <form action="{{ route('storehouses.create') }}" method="POST">
+                <form action="{{ route('storehouse_records.create') }}" method="POST">
                     @csrf
                     <div class="modal-header">
                         <h5 class="modal-title">เพิ่มสินค้าใหม่</h5>
@@ -441,7 +441,7 @@
         <div class="modal fade" id="editModal{{ $item->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
-                    <form action="{{ route('storehouses.update', $item->id) }}" method="POST">
+                    <form action="{{ route('storehouse_records.update', $item->id) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="modal-header">

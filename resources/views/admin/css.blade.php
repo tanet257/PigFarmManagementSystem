@@ -108,6 +108,16 @@
         color: var(--text-dark);
     }
 
+    .bg-F5EFE6 {
+        background-color: #F5EFE6 !important;
+        color: var(--text-dark);
+    }
+
+    .bg-E8DFCA {
+        background-color: #E8DFCA !important;
+        color: var(--text-dark);
+    }
+
 
     body {
         background-color: var(--body-bg);
@@ -1279,8 +1289,8 @@
 
     .list-group-item {
         border: none !important;
-        border-bottom: 1px solid rgba(108, 108, 108, 0.5) !important;
-        border-top: 1px solid rgba(108, 108, 108, 0.5) !important;
+        border-bottom: 1px solid rgba(184, 176, 176, 0.5) !important;
+        border-top: 1px solid rgba(184, 176, 176, 0.5) !important;
     }
 
     .btn-info {

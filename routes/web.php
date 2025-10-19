@@ -13,150 +13,148 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PigSaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\UserApprovalController;
 
 //------------------- route home/admin -------------------------//
 Route::get('/', [HomeController::class, 'my_home'])->name('home.my_home');
 Route::get('/home', [HomeController::class, 'index'])->name('home');
-Route::get('/admin_index', [AdminController::class, 'admin_index'])->name('admin.index');
+
+//------------------- ส่วนที่ต้องเข้าสู่ระบบ (Protected Routes) -----//
+Route::middleware(['auth'])->group(function () {
+    Route::get('/admin_index', [AdminController::class, 'admin_index'])->name('admin.index');
+
+    //------------------- route batch ------------------------------//
+    Route::get('/add_batch', [AdminController::class, 'add_batch'])->name('batch.add');
+    Route::post('/upload_batch', [AdminController::class, 'upload_batch'])->name('batch.upload');
+    Route::get('/view_batch', [AdminController::class, 'view_batch'])->name('batch.view');
+
+    //------------------- route farm ------------------------------//
+    Route::get('/add_farm', [AdminController::class, 'add_farm'])->name('farm.add');
+    Route::post('/upload_farm', [AdminController::class, 'upload_farm'])->name('farm.upload');
+    Route::get('/view_farm', [AdminController::class, 'view_farm'])->name('farm.view');
+
+    //------------------- route barn -----------------------------//
+    Route::get('/add_barn', [AdminController::class, 'add_barn'])->name('barn.add');
+    Route::post('/upload_barn', [AdminController::class, 'upload_barn'])->name('barn.upload');
+    Route::get('/view_barn', [AdminController::class, 'view_barn'])->name('barn.view');
+
+    //------------------- route pen ------------------------------//
+    Route::get('/add_pen', [AdminController::class, 'add_pen'])->name('pen.add');
+    Route::post('/upload_pen', [AdminController::class, 'upload_pen'])->name('pen.upload');
+    Route::get('/view_pen', [AdminController::class, 'view_pen'])->name('pen.view');
+
+    //------------------- route batch treatment ------------------//
+    Route::get('/add_batch_treatment', [AdminController::class, 'add_batch_treatment'])->name('batch_treatment.add');
+    Route::post('/upload_batch_treatment', [AdminController::class, 'upload_batch_treatment'])->name('batch_treatment.upload');
+    Route::get('/view_batch_treatment', [AdminController::class, 'view_batch_treatment'])->name('batch_treatment.view');
+
+    //------------------- route cost -----------------------------//
+    Route::get('/add_cost', [AdminController::class, 'add_cost'])->name('cost.add');
+    Route::post('/upload_cost', [AdminController::class, 'upload_cost'])->name('cost.upload');
+    Route::get('/view_cost', [AdminController::class, 'view_cost'])->name('cost.view');
+
+    //------------------- route feeding --------------------------//
+    Route::get('/add_feed', [AdminController::class, 'add_feed'])->name('feeding.add');
+    Route::post('/upload_feed', [AdminController::class, 'upload_feed'])->name('feeding.upload');
+    Route::get('/view_feed', [AdminController::class, 'view_feed'])->name('feeding.view');
+
+    //------------------- route pig death ------------------------//
+    Route::get('/add_pig_death', [AdminController::class, 'add_pig_death'])->name('pig_death.add');
+    Route::post('/upload_pig_death', [AdminController::class, 'upload_pig_death'])->name('pig_death.upload');
+    Route::get('/view_pig_death', [AdminController::class, 'view_pig_death'])->name('pig_death.view');
+
+    //------------------- route pig entry record -----------------//
+    Route::get('/pig_entry_record', [PigEntryController::class, 'pig_entry_record'])->name('pig_entry_records.record');
+    Route::post('/upload_pig_entry_record', [PigEntryController::class, 'upload_pig_entry_record'])->name('pig_entry_records.upload');
+    //------------------- route pig entry helper -----------------//
+    Route::get('/get-batches/{farmId}', [PigEntryController::class, 'getBatchesByFarm']);
+    Route::get('/get-barns/{farmId}', [PigEntryController::class, 'getBarnsByFarm']);
+    Route::get('/get-available-barns/{farmId}', [PigEntryController::class, 'getAvailableBarnsByFarm']);
+
+    //------------------- route crud pig_entry_record -----------------------//
+    Route::prefix('pigentryrecord')->group(function () {
+        Route::get('/', [PigEntryController::class, 'indexPigEntryRecord'])->name('pig_entry_records.index');
+        Route::post('/create', [PigEntryController::class, 'createPigentryrecord'])->name('pig_entry_records.create');
+        Route::get('/{id}/edit', [PigEntryController::class, 'editPigentryrecord'])->name('pig_entry_records.edit');
+        Route::put('/{id}', [PigEntryController::class, 'updatePigentryrecord'])->name('pig_entry_records.update');
+        Route::delete('/{id}', [PigEntryController::class, 'deletePigentryrecord'])->name('pig_entry_records.delete');
+        //------------------- route export batch ---------------------//
+        Route::get('/export/csv', [PigEntryController::class, 'exportCsv'])->name('pig_entry_records.export.csv');
+        Route::get('/export/pdf', [PigEntryController::class, 'exportPdf'])->name('pig_entry_records.export.pdf');
+    });
+
+    //------------------- route r batch pen allocation -----------------------//
+    Route::prefix('batch_pen_allocations')->group(function () {
+        Route::get('/', [BatchPenAllocationController::class, 'index'])->name('batch_pen_allocations.index');
+        //------------------- route export batch ---------------------//
+        Route::get('/export/csv', [BatchPenAllocationController::class, 'exportCsv'])->name('batch_pen_allocations.export.csv');
+        Route::get('/export/pdf', [BatchPenAllocationController::class, 'exportPdf'])->name('batch_pen_allocations.export.pdf');
+    });
+
+
+    //------------------- route dairy record ---------------------//
+
+    Route::get('/viewDairy', [DairyController::class, 'viewDairy'])->name('dairy_records.record');
+    Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dairy_records.upload');
+
+    //------------------- route crud dairy_record -----------------------//
+    Route::prefix('dairy_records')->group(function () {
+        Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');
+        Route::post('/create', [DairyController::class, 'createDairy'])->name('dairy_records.create');
+        Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
+        Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
+        Route::delete('/{id}', [DairyController::class, 'deleteDairy'])->name('dairy_records.delete');
+        //------------------- route export batch ---------------------//
+        Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
+        Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
+    });
+
+    //------------------- route storehouse -----------------------//
+    Route::get('/viewStoreHouseRecord', [AdminController::class, 'viewStoreHouseRecord'])->name('storehouse_records.record');
+    Route::post('/uploadStoreHouseRecord', [AdminController::class, 'uploadStoreHouseRecord'])->name('storehouse_records.upload');
+
+    Route::prefix('storehouse_records')->group(function () {
+        Route::get('/', [StoreHouseController::class, 'index'])->name('storehouse_records.index');
+        Route::post('/create', [StoreHouseController::class, 'create'])->name('storehouse_records.create');
+        Route::get('/{id}/edit', [StoreHouseController::class, 'edit'])->name('storehouse_records.edit');
+        Route::put('/{id}', [StoreHouseController::class, 'update'])->name('storehouse_records.update');
+        Route::delete('/{id}', [StoreHouseController::class, 'delete'])->name('storehouse_records.delete');
+        //------------------- route export batch ---------------------//
+        Route::get('/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouse_records.export.csv');
+        Route::get('/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouse_records.export.pdf');
+    });
+
+    //------------------- route r inventory movement -----------------------//
+    Route::prefix('inventory_movements')->group(function () {
+        Route::get('/', [InventoryMovementController::class, 'index'])->name('inventory_movements.index');
+        //------------------- route export batch ---------------------//
+        Route::get('/export/csv', [InventoryMovementController::class, 'exportCsv'])->name('inventory_movements.export.csv');
+        Route::get('/export/pdf', [InventoryMovementController::class, 'exportPdf'])->name('inventory_movements.export.pdf');
+    });
+
+    //------------------- route crud batch -----------------------//
+    Route::prefix('batches')->group(function () {
+        Route::get('/', [BatchController::class, 'indexBatch'])->name('batches.index');
+        Route::post('/create', [BatchController::class, 'createBatch'])->name('batches.create');
+        Route::get('/{id}/edit', [BatchController::class, 'editBatch'])->name('batches.edit');
+        Route::put('/{id}', [BatchController::class, 'updateBatch'])->name('batches.update');
+        Route::delete('/{id}', [BatchController::class, 'deleteBatch'])->name('batches.delete');
+        //------------------- route export batch ---------------------//
+        Route::get('/export/csv', [BatchController::class, 'exportCsv'])->name('batches.export.csv');
+        Route::get('/export/pdf', [BatchController::class, 'exportPdf'])->name('batches.export.pdf');
+    });
+
+    Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.dashboard');
+}); // End of auth middleware group
 
 //------------------- route registration pending ---------------//
 Route::get('/registration_pending', function () {
     return view('auth.registration_pending');
 })->name('registration.pending');
-
-//------------------- route batch ------------------------------//
-Route::get('/add_batch', [AdminController::class, 'add_batch'])->name('batch.add');
-Route::post('/upload_batch', [AdminController::class, 'upload_batch'])->name('batch.upload');
-Route::get('/view_batch', [AdminController::class, 'view_batch'])->name('batch.view');
-
-//------------------- route farm ------------------------------//
-Route::get('/add_farm', [AdminController::class, 'add_farm'])->name('farm.add');
-Route::post('/upload_farm', [AdminController::class, 'upload_farm'])->name('farm.upload');
-Route::get('/view_farm', [AdminController::class, 'view_farm'])->name('farm.view');
-
-//------------------- route barn -----------------------------//
-Route::get('/add_barn', [AdminController::class, 'add_barn'])->name('barn.add');
-Route::post('/upload_barn', [AdminController::class, 'upload_barn'])->name('barn.upload');
-Route::get('/view_barn', [AdminController::class, 'view_barn'])->name('barn.view');
-
-//------------------- route pen ------------------------------//
-Route::get('/add_pen', [AdminController::class, 'add_pen'])->name('pen.add');
-Route::post('/upload_pen', [AdminController::class, 'upload_pen'])->name('pen.upload');
-Route::get('/view_pen', [AdminController::class, 'view_pen'])->name('pen.view');
-
-//------------------- route batch treatment ------------------//
-Route::get('/add_batch_treatment', [AdminController::class, 'add_batch_treatment'])->name('batch_treatment.add');
-Route::post('/upload_batch_treatment', [AdminController::class, 'upload_batch_treatment'])->name('batch_treatment.upload');
-Route::get('/view_batch_treatment', [AdminController::class, 'view_batch_treatment'])->name('batch_treatment.view');
-
-//------------------- route cost -----------------------------//
-Route::get('/add_cost', [AdminController::class, 'add_cost'])->name('cost.add');
-Route::post('/upload_cost', [AdminController::class, 'upload_cost'])->name('cost.upload');
-Route::get('/view_cost', [AdminController::class, 'view_cost'])->name('cost.view');
-
-//------------------- route feeding --------------------------//
-Route::get('/add_feed', [AdminController::class, 'add_feed'])->name('feeding.add');
-Route::post('/upload_feed', [AdminController::class, 'upload_feed'])->name('feeding.upload');
-Route::get('/view_feed', [AdminController::class, 'view_feed'])->name('feeding.view');
-
-//------------------- route pig death ------------------------//
-Route::get('/add_pig_death', [AdminController::class, 'add_pig_death'])->name('pig_death.add');
-Route::post('/upload_pig_death', [AdminController::class, 'upload_pig_death'])->name('pig_death.upload');
-Route::get('/view_pig_death', [AdminController::class, 'view_pig_death'])->name('pig_death.view');
-
-//------------------- route pig entry record -----------------//
-Route::get('/pig_entry_record', [PigEntryController::class, 'pig_entry_record'])->name('pig_entry_records.record');
-Route::post('/upload_pig_entry_record', [PigEntryController::class, 'upload_pig_entry_record'])->name('pig_entry_records.upload');
-//------------------- route pig entry helper -----------------//
-Route::get('/get-batches/{farmId}', [PigEntryController::class, 'getBatchesByFarm']);
-Route::get('/get-barns/{farmId}', [PigEntryController::class, 'getBarnsByFarm']);
-Route::get('/get-available-barns/{farmId}', [PigEntryController::class, 'getAvailableBarnsByFarm']);
-
-//------------------- route crud pig_entry_record -----------------------//
-Route::prefix('pigentryrecord')->group(function () {
-    Route::get('/', [PigEntryController::class, 'indexPigEntryRecord'])->name('pig_entry_records.index');
-    Route::post('/create', [PigEntryController::class, 'createPigentryrecord'])->name('pig_entry_records.create');
-    Route::get('/{id}/edit', [PigEntryController::class, 'editPigentryrecord'])->name('pig_entry_records.edit');
-    Route::put('/{id}', [PigEntryController::class, 'updatePigentryrecord'])->name('pig_entry_records.update');
-    Route::delete('/{id}', [PigEntryController::class, 'deletePigentryrecord'])->name('pig_entry_records.delete');
-    //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [PigEntryController::class, 'exportCsv'])->name('pig_entry_records.export.csv');
-    Route::get('/export/pdf', [PigEntryController::class, 'exportPdf'])->name('pig_entry_records.export.pdf');
-});
-
-//------------------- route r batch pen allocation -----------------------//
-Route::prefix('batch_pen_allocations')->group(function () {
-    Route::get('/', [BatchPenAllocationController::class, 'index'])->name('batch_pen_allocations.index');
-    //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [BatchPenAllocationController::class, 'exportCsv'])->name('batch_pen_allocations.export.csv');
-    Route::get('/export/pdf', [BatchPenAllocationController::class, 'exportPdf'])->name('batch_pen_allocations.export.pdf');
-});
-
-
-//------------------- route dairy record ---------------------//
-
-Route::get('/viewDairy', [DairyController::class, 'viewDairy'])->name('dairy_records.record');
-Route::post('/uploadDairy', [DairyController::class, 'uploadDairy'])->name('dairy_records.upload');
-
-//------------------- route crud dairy_record -----------------------//
-
-Route::prefix('dairy_record')->group(function () {
-    Route::get('/', [DairyController::class, 'indexDairy'])->name('dairy_records.index');
-    // Edit Feed
-    Route::put('/{dairyId}/{useId}/{type}/edit-feed', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
-    // Edit Medicine
-    Route::put('/{dairyId}/{btId}/{type}/edit-medicine', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
-    // Edit Pig Death
-    Route::put('/pig-deaths/{id}/{type}/edit', [DairyController::class, 'updatePigDeath'])->name('pig_deaths.update');
-
-    Route::delete('/dairy_storehouse_uses/{id}', [DairyController::class, 'destroyFeed'])->name('dairy_storehouse_uses.destroy');
-    Route::delete('/batch_treatments/{id}', [DairyController::class, 'destroyMedicine'])->name('batch_treatments.destroy');
-    Route::delete('/pig_deaths/{id}', [DairyController::class, 'destroyPigDeath'])->name('pig_deaths.destroy');
-
-    //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
-    Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
-});
-
-//------------------- route storehouse record ---------------------//
-Route::get('/store_house_record', [StoreHouseController::class, 'store_house_record'])->name('store_house_record.recordview');
-Route::post('/upload_store_house_record', [StoreHouseController::class, 'upload_store_house_record'])->name('store_house_record.upload');
-
-//------------------- route crud storehouse -----------------------//
-Route::prefix('storehouses')->group(function () {
-    Route::get('/', [StoreHouseController::class, 'indexStorehouse'])->name('storehouses.index');
-    Route::post('/create', [StoreHouseController::class, 'createItem'])->name('storehouses.create');
-    Route::get('/{id}/edit', [StoreHouseController::class, 'editStorehouse'])->name('storehouses.edit');
-    Route::put('/{id}', [StoreHouseController::class, 'updateStorehouse'])->name('storehouses.update');
-    Route::delete('/{id}', [StoreHouseController::class, 'deleteStorehouse'])->name('storehouses.delete');
-    //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [StoreHouseController::class, 'exportCsv'])->name('storehouses.export.csv');
-    Route::get('/export/pdf', [StoreHouseController::class, 'exportPdf'])->name('storehouses.export.pdf');
-});
-
-//------------------- route r inventory movement -----------------------//
-Route::prefix('inventory_movements')->group(function () {
-    Route::get('/', [InventoryMovementController::class, 'index'])->name('inventory_movements.index');
-    //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [InventoryMovementController::class, 'exportCsv'])->name('inventory_movements.export.csv');
-    Route::get('/export/pdf', [InventoryMovementController::class, 'exportPdf'])->name('inventory_movements.export.pdf');
-});
-
-//------------------- route crud batch -----------------------//
-Route::prefix('batches')->group(function () {
-    Route::get('/', [BatchController::class, 'indexBatch'])->name('batches.index');
-    Route::post('/create', [BatchController::class, 'createBatch'])->name('batches.create');
-    Route::get('/{id}/edit', [BatchController::class, 'editBatch'])->name('batches.edit');
-    Route::put('/{id}', [BatchController::class, 'updateBatch'])->name('batches.update');
-    Route::delete('/{id}', [BatchController::class, 'deleteBatch'])->name('batches.delete');
-    //------------------- route export batch ---------------------//
-    Route::get('/export/csv', [BatchController::class, 'exportCsv'])->name('batches.export.csv');
-    Route::get('/export/pdf', [BatchController::class, 'exportPdf'])->name('batches.export.pdf');
-});
-
-
-Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.dashboard');
-
+//------------------- route registration pending ---------------//
+Route::get('/registration_pending', function () {
+    return view('auth.registration_pending');
+})->name('registration.pending');
 
 //------------------- route pig sales (New System) -----------//
 Route::prefix('pig_sales')->middleware(['auth'])->group(function () {
@@ -188,9 +186,10 @@ Route::prefix('notifications')->middleware(['auth'])->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
     Route::get('/unread_count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
-    Route::post('/{id}/mark_as_read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_read');
+    Route::post('/{id}/mark_as_read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_as_read');
     Route::post('/mark_all_read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_as_read');
     Route::post('/clear_read', [NotificationController::class, 'clearRead'])->name('notifications.clear_read');
+    Route::get('/{id}/mark_and_navigate', [NotificationController::class, 'markAndNavigate'])->name('notifications.mark_and_navigate');
     Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
@@ -206,8 +205,6 @@ Route::prefix('user_management')->middleware(['auth', 'permission:manage_users']
 });
 
 //------------------- route user approval --------------------//
-use App\Http\Controllers\UserApprovalController;
-
 Route::prefix('admin/user_approval')->middleware(['auth', 'permission:manage_users'])->group(function () {
     Route::get('/', [UserApprovalController::class, 'index'])->name('admin.user_approval.index');
     Route::post('/{user}/approve', [UserApprovalController::class, 'approve'])->name('admin.user_approval.approve');

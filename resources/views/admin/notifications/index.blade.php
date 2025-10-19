@@ -4,7 +4,7 @@
     <div class="container-fluid py-4">
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="fa fa-bell mr-2"></i>การแจ้งเตือน</h2>
+            <h2><i class="fa fa-bell mr-2 me-2"></i>การแจ้งเตือน</h2>
             <div>
                 <form method="POST" action="{{ route('notifications.mark_all_as_read') }}" class="d-inline">
                     @csrf
@@ -66,7 +66,7 @@
                 @if ($notifications->count() > 0)
                     <div class="list-group">
                         @foreach ($notifications as $notification)
-                            <div class="list-group-item {{ $notification->is_read ? 'bg-tertiary' : 'bg-secondary' }}">
+                            <div class="list-group-item {{ $notification->is_read ? 'bg-E8DFCA' : 'bg-F5EFE6' }}">
                                 <div class="d-flex w-100 justify-content-between align-items-start">
                                     <div class="flex-grow-1">
                                         <div class="d-flex align-items-center mb-2">
@@ -78,7 +78,7 @@
                                                 @elseif($notification->type == 'user_rejected')
                                                     <i class="fa fa-times-circle text-danger fa-2x"></i>
                                                 @else
-                                                    <i class="fa fa-bell text-info fa-2x"></i>
+                                                    <i class=" text-info fa-2x"></i>
                                                 @endif
                                             </span>
                                             <div>
@@ -96,22 +96,11 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="btn-group">
-                                        @if (!$notification->is_read)
-                                            <form method="POST"
-                                                action="{{ route('notifications.mark_as_read', $notification->id) }}"
-                                                class="d-inline">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-primary"
-                                                    title="ทำเครื่องหมายว่าอ่าน">
-                                                    <i class="fa fa-check"></i>
-                                                </button>
-                                            </form>
-                                        @endif
+                                    <div class="d-flex align-items-center gap-2">
                                         @if ($notification->url)
-                                            <a href="{{ $notification->url }}" class="btn btn-sm btn-info"
-                                                title="ไปยังหน้า">
-                                                <i class="fa fa-external-link"></i>
+                                            <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
+                                                class="btn btn-sm btn-info " title="อ่านแล้วและไปยังหน้า">
+                                                <i class="fa fa-arrow-right"></i> ไปยังหน้า
                                             </a>
                                         @endif
                                         <form method="POST"
