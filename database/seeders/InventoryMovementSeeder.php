@@ -3,35 +3,36 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\InventoryMovement;
+use App\Models\StoreHouse;
+use App\Models\Batch;
 
 class InventoryMovementSeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
-        // ดึง costs ที่มี item_code และ batch_id
-        $costs = DB::table('costs')
-            ->select('batch_id', 'item_code', 'quantity', 'unit', 'note', 'date')
-            ->get();
-
-        foreach ($costs as $cost) {
-            // หา storehouse ที่ item_code ตรงกัน
-            $storehouse = DB::table('storehouses')
-                ->where('item_code', $cost->item_code)
-                ->first();
-
-            if ($storehouse) {
-                DB::table('inventory_movements')->insert([
-                    'storehouse_id' => $storehouse->id,
-                    'batch_id'      => $cost->batch_id,   // ให้ตรงกับ batch_id ใน costs
-                    'change_type'   => 'in',              // สมมติว่าการเพิ่ม stock
-                    'quantity'      => $cost->quantity,
-                    'note'          => 'สร้างจาก cost_id: ' . $cost->batch_id,
-                    'date'          => $cost->date ?? now(),
-                    'created_at'    => now(),
-                    'updated_at'    => now(),
-                ]);
-            }
+        // If there are no storehouses, nothing to do
+        $storehouses = StoreHouse::all();
+        if ($storehouses->isEmpty()) {
+            $this->command->info('No StoreHouse records found, skipping InventoryMovement seeder.');
+            return;
         }
+
+        foreach ($storehouses as $sh) {
+            // Try to pick a batch for the same farm if available
+            $batch = Batch::where('farm_id', $sh->farm_id)->first();
+
+            InventoryMovement::create([
+                'storehouse_id' => $sh->id,
+                'batch_id' => $batch?->id,
+                // change_type field exists on the table (use 'in' for seeded incoming stock)
+                'change_type' => 'in',
+                'quantity' => $sh->stock ?? 0,
+                'note' => 'seed initial balance',
+                'date' => $sh->date ?? now(),
+            ]);
+        }
+
+        $this->command->info('InventoryMovementSeeder completed.');
     }
 }

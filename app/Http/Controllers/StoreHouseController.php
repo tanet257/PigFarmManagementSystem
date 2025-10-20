@@ -38,24 +38,26 @@ class StoreHouseController extends Controller
 
         /**
          * ---------- สำหรับ item_code ----------
-         * group: item_type -> batch_id -> [item_code, item_name]
-         * ใช้ InventoryMovement + storehouse
+         * group: item_type -> farm_id -> [item_code, item_name]
+         * ดึงจาก StoreHouse โดยตรง (DISTINCT เพื่อไม่ให้ซ้ำ)
          */
-        $storehousesByTypeAndBatch = InventoryMovement::with('storehouse')
+        $storehousesByTypeAndBatch = StoreHouse::select('item_type', 'farm_id', 'item_code', 'item_name')
+            ->distinct('item_code')
+            ->orderBy('item_type')
+            ->orderBy('farm_id')
             ->get()
-            ->groupBy(fn($movement) => $movement->storehouse->item_type)
-            ->map(function ($group) {
-                return $group->groupBy('batch_id')->map(function ($batchGroup) {
-                    return $batchGroup->mapWithKeys(function ($movement) {
-                        return [
-                            $movement->storehouse->item_code => [
-                                'item_code' => $movement->storehouse->item_code,
-                                'item_name' => $movement->storehouse->item_name,
-                            ]
-                        ];
+            ->groupBy('item_type')
+            ->map(function ($typeGroup) {
+                return $typeGroup->groupBy('farm_id')->map(function ($farmGroup) {
+                    return $farmGroup->mapWithKeys(function ($item) {
+                        return [$item->item_code => [
+                            'item_code' => $item->item_code,
+                            'item_name' => $item->item_name,
+                        ]];
                     });
                 });
             });
+
 
         /**
          * ---------- สำหรับ unit ----------
@@ -103,19 +105,35 @@ class StoreHouseController extends Controller
 
                     $allowedUnits = $unitsByType[$rowInput['item_type']] ?? [];
                     Log::info("Row input", $rowInput);
+                    Log::info("Date value to validate", ['date' => $rowInput['date'] ?? 'EMPTY', 'type' => $rowInput['item_type'] ?? 'UNKNOWN']);
                     // Validation
                     $validated = validator($rowInput, [
                         'farm_id'   => 'required|exists:farms,id',
                         'batch_id'  => 'required|exists:batches,id',
                         'date' => ['required', function ($attribute, $value, $fail) use ($rowInput) {
                             try {
+                                Log::info("Validating date", ['value' => $value, 'type' => $rowInput['item_type']]);
                                 if (in_array($rowInput['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
-                                    Carbon::createFromFormat('m/Y', $value);
+                                    // Parse month/year format and convert to first day of month
+                                    if (preg_match('/^(\d{1,2})\/(\d{4})$/', $value, $matches)) {
+                                        $month = (int)$matches[1];
+                                        $year = (int)$matches[2];
+                                        if ($month < 1 || $month > 12) {
+                                            $fail('เดือนต้องอยู่ระหว่าง 1-12');
+                                            return;
+                                        }
+                                        $dateStr = sprintf('%04d-%02d-01', $year, $month);
+                                        $dt = Carbon::createFromFormat('Y-m-d', $dateStr);
+                                        if ($dt->isFuture()) $fail('วันที่ต้องไม่อยู่ในอนาคต');
+                                    } else {
+                                        $fail('รูปแบบวันที่ต้องเป็น m/Y (เช่น 6/2025)');
+                                    }
                                 } else {
                                     $dt = Carbon::createFromFormat('d/m/Y H:i', $value);
                                     if ($dt->isFuture()) $fail('วันที่ต้องไม่อยู่ในอนาคต');
                                 }
                             } catch (\Exception $e) {
+                                Log::error("Date validation error", ['value' => $value, 'error' => $e->getMessage()]);
                                 $fail('รูปแบบวันที่ไม่ถูกต้อง');
                             }
                         }],
@@ -174,13 +192,21 @@ class StoreHouseController extends Controller
                     }
 
                     // -------------------
-                    // COST + INVENTORY
+                    // Monthly COST + INVENTORY
                     // -------------------
                     $total = ($validated['stock'] ?? 0) * ($validated['price_per_unit'] ?? 0) + ($validated['transport_cost'] ?? 0);
 
                     if (in_array($validated['item_type'], ['wage', 'electric_bill', 'water_bill'])) {
-                        $dt = Carbon::createFromFormat('m/Y', $validated['date'])->startOfMonth();
+                        // Parse month/year format (e.g., "6/2025" or "06/2025")
+                        if (preg_match('/^(\d{1,2})\/(\d{4})$/', $validated['date'], $matches)) {
+                            $month = (int)$matches[1];
+                            $year = (int)$matches[2];
+                            $dt = Carbon::createFromDate($year, $month, 1);
+                        } else {
+                            throw new \Exception('Invalid date format for monthly record: ' . $validated['date']);
+                        }
                         $formattedDate = $dt->format('Y-m-d');
+
 
                         $existingCost = Cost::where('farm_id', $batch->farm_id)
                             ->where('batch_id', $batch->id)
@@ -201,7 +227,7 @@ class StoreHouseController extends Controller
                                 'item_code'      => null,
                                 'price_per_unit' => $validated['price_per_unit'] ?? 0,
                                 'unit'           => $validated['unit'] ?? null,
-                                'total_price'    => $total,
+                                'total_price'    => $validated['price_per_unit'] ?? 0,
                                 'note'           => $validated['note'] ?? null,
                                 'receipt_file'   => $uploadedFileUrl,
                             ]);

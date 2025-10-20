@@ -10,14 +10,15 @@
                 <h4 class="mb-0">บันทึกสินค้าเข้าคลัง (Store House Record)</h4>
             </div>
             <div class=" card-body">
-                <form action="{{ route('storehouse_records.upload') }}" method="post" enctype="multipart/form-data">
+                <form id="storeHouseForm" action="{{ route('storehouse_records.upload') }}" method="post"
+                    enctype="multipart/form-data">
                     @csrf
 
                     <div class="card card-custom-secondary">
                         <div class="text-dark pb-2 d-flex justify-content-between align-items-center rounded-3 p-3">
 
                             <div class="col-md-5">
-                                <div class="dropdown" >
+                                <div class="dropdown">
                                     <button
                                         class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
                                         type="button" id="farmDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false">
@@ -298,14 +299,18 @@
                                                     aria-expanded="false"><span>-- เลือกประเภทค่าใช้จ่าย --</span></button>
                                                 <ul class="dropdown-menu w-100">
                                                     <li><a class="dropdown-item monthly-type-item" href="#"
-                                                            data-value="monthly">ค่าใช้จ่ายประจำเดือน</a></li>
+                                                            data-value="wage">ค่าแรง</a></li>
+                                                    <li><a class="dropdown-item monthly-type-item" href="#"
+                                                            data-value="electric_bill">ค่าไฟ</a></li>
+                                                    <li><a class="dropdown-item monthly-type-item" href="#"
+                                                            data-value="water_bill">ค่าน้ำ</a></li>
                                                 </ul>
                                                 <input type="hidden" name="monthly[0][item_type]"
                                                     class="monthly-type-hidden" required>
                                             </div>
                                         </div>
                                         <div class="col-md-3">
-                                            <input type="number" name="monthly[0][price]" class="form-control"
+                                            <input type="number" name="monthly[0][price_per_unit]" class="form-control"
                                                 placeholder="จำนวนเงิน" required>
                                         </div>
 
@@ -526,7 +531,7 @@
                 function updateItemCodeOptions(row) {
                     const typeHidden = row.querySelector('.item-type-hidden');
                     const type = typeHidden?.value;
-                    const batchId = parseInt(batchSelect.value);
+                    const farmId = parseInt(farmSelect.value);
                     const itemDropdownMenu = row.querySelector('.item-dropdown-menu');
                     const itemDropdownBtn = row.querySelector('.item-dropdown-btn');
                     if (!itemDropdownMenu || !itemDropdownBtn) return;
@@ -545,8 +550,8 @@
                     }
                     itemDropdownBtn.querySelector('span').textContent = placeholderText;
 
-                    if (type && batchId && storehousesByTypeAndBatch[type]?.[batchId]) {
-                        Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
+                    if (type && farmId && storehousesByTypeAndBatch[type]?.[farmId]) {
+                        Object.values(storehousesByTypeAndBatch[type][farmId]).forEach(item => {
                             const li = document.createElement('li');
                             const a = document.createElement('a');
                             a.className = 'dropdown-item';
@@ -852,6 +857,25 @@
                 attachMonthlyInputEvents(document);
                 ['feedRowsContainer', 'medicineRowsContainer', 'monthlyRowsContainer'].forEach(updateHiddenInputs);
                 document.querySelectorAll('.feed-row, .medicine-row, .monthly-row').forEach(updateRowOptions);
+
+                // ---------------------
+                // FORM SUBMIT - CONVERT MONTHLY DATES
+                // ---------------------
+                document.getElementById('storeHouseForm').addEventListener('submit', function(e) {
+                    // Convert monthly date inputs from YYYY-MM to m/Y format
+                    document.querySelectorAll('.monthly-row input[name*="[date]"]').forEach(input => {
+                        const val = input.dataset.submitValue;
+                        if (val) {
+                            // val is YYYY-MM format, convert to m/Y
+                            const [year, month] = val.split('-');
+                            if (year && month) {
+                                const formatted = `${parseInt(month)}/${year}`;
+                                input.value = formatted;
+                                console.log('Monthly date converted:', val, '→', formatted);
+                            }
+                        }
+                    });
+                });
             });
         </script>
     @endpush

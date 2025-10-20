@@ -79,17 +79,17 @@
                     </ul>
                 </div>
 
-                <!-- Category Dropdown (Orange) -->
+                <!-- Item Type Dropdown (Orange) -->
                 <div class="dropdown">
                     <button class="btn btn-sm btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-tag"></i>
-                        @if (request('category') == 'อาหาร')
+                        @if (request('item_type') == 'อาหาร')
                             อาหาร
-                        @elseif(request('category') == 'ยา')
+                        @elseif(request('item_type') == 'ยา')
                             ยา
-                        @elseif(request('category') == 'วัคซีน')
+                        @elseif(request('item_type') == 'วัคซีน')
                             วัคซีน
-                        @elseif(request('category') == 'อุปกรณ์')
+                        @elseif(request('item_type') == 'อุปกรณ์')
                             อุปกรณ์
                         @else
                             ประเภททั้งหมด
@@ -97,19 +97,19 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item"
-                                href="{{ route('storehouse_records.index', array_merge(request()->except('category'), [])) }}">ประเภททั้งหมด</a>
+                                href="{{ route('storehouse_records.index', array_merge(request()->except('item_type'), [])) }}">ประเภททั้งหมด</a>
                         </li>
-                        <li><a class="dropdown-item {{ request('category') == 'อาหาร' ? 'active' : '' }}"
-                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'อาหาร'])) }}">อาหาร</a>
+                        <li><a class="dropdown-item {{ request('item_type') == 'อาหาร' ? 'active' : '' }}"
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['item_type' => 'อาหาร'])) }}">อาหาร</a>
                         </li>
-                        <li><a class="dropdown-item {{ request('category') == 'ยา' ? 'active' : '' }}"
-                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'ยา'])) }}">ยา</a>
+                        <li><a class="dropdown-item {{ request('item_type') == 'ยา' ? 'active' : '' }}"
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['item_type' => 'ยา'])) }}">ยา</a>
                         </li>
-                        <li><a class="dropdown-item {{ request('category') == 'วัคซีน' ? 'active' : '' }}"
-                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'วัคซีน'])) }}">วัคซีน</a>
+                        <li><a class="dropdown-item {{ request('item_type') == 'วัคซีน' ? 'active' : '' }}"
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['item_type' => 'วัคซีน'])) }}">วัคซีน</a>
                         </li>
-                        <li><a class="dropdown-item {{ request('category') == 'อุปกรณ์' ? 'active' : '' }}"
-                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['category' => 'อุปกรณ์'])) }}">อุปกรณ์</a>
+                        <li><a class="dropdown-item {{ request('item_type') == 'อุปกรณ์' ? 'active' : '' }}"
+                                href="{{ route('storehouse_records.index', array_merge(request()->all(), ['item_type' => 'อุปกรณ์'])) }}">อุปกรณ์</a>
                         </li>
                     </ul>
                 </div>
@@ -235,14 +235,14 @@
                             </td>
                             <td>{{ $item->item_name }}</td>
                             <td class="text-center">
-                                @if ($item->category == 'อาหาร')
+                                @if ($item->item_type == 'อาหาร')
                                     <span class="badge bg-success">อาหาร</span>
-                                @elseif($item->category == 'ยา')
+                                @elseif($item->item_type == 'ยา')
                                     <span class="badge bg-warning">ยา</span>
-                                @elseif($item->category == 'วัคซีน')
+                                @elseif($item->item_type == 'วัคซีน')
                                     <span class="badge bg-info">วัคซีน</span>
                                 @else
-                                    <span class="badge bg-secondary">{{ $item->category }}</span>
+                                    <span class="badge bg-secondary">{{ $item->item_type }}</span>
                                 @endif
                             </td>
                             <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
@@ -323,7 +323,7 @@
                                     </tr>
                                     <tr>
                                         <td><strong>ประเภท:</strong></td>
-                                        <td>{{ $item->category }}</td>
+                                        <td>{{ $item->item_type }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>ฟาร์ม:</strong></td>
