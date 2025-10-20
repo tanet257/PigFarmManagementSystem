@@ -422,6 +422,7 @@
     .table thead {
         background: linear-gradient(135deg, var(--primary-orange), var(--secondary-orange));
         color: white;
+        position: static !important;
     }
 
     .table tbody tr:hover {
@@ -702,7 +703,7 @@
         width: 100%;
         overflow-x: auto;
         overflow-y: auto;
-        max-height: 600px;
+        max-height: fit-content;
         border-radius: 8px;
         box-shadow: var(--shadow-sm);
         background-color: white;
@@ -725,6 +726,30 @@
 
     .table-container::-webkit-scrollbar-thumb:hover {
         background: var(--primary-orange);
+    }
+
+    /* ========== Global Table Size Reduction for All Pages ========== */
+    /* ทำให้ทุก table เล็กลง - เหมือน batch_pen_allocations */
+    .table-responsive table.table-primary thead th {
+        padding: 6px 4px !important;
+        font-size: 0.75rem !important;
+        line-height: 1.1;
+    }
+
+    .table-responsive table.table-primary tbody td {
+        padding: 4px 3px !important;
+        font-size: 0.75rem !important;
+        line-height: 1.1;
+    }
+
+    .table-responsive .btn-sm {
+        padding: 2px 6px !important;
+        font-size: 0.65rem !important;
+    }
+
+    .table-responsive .badge {
+        padding: 2px 4px !important;
+        font-size: 0.65rem !important;
     }
 
     /* ========== Table Primary (Orange Theme) ========== */

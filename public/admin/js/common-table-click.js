@@ -3,25 +3,47 @@
  * ใช้ร่วมกับ class="clickable-row" data-row-click="#modalId"
  */
 
+document.addEventListener('DOMContentLoaded', function() {
+    setupClickableRows();
+});
+
 function setupClickableRows() {
-    // จัดการคลิกแถว
-    document.querySelectorAll(".clickable-row").forEach(function(row) {
+    const rows = document.querySelectorAll(".clickable-row");
+    console.log('Found clickable rows:', rows.length);
+
+    rows.forEach(function(row) {
+        row.style.cursor = 'pointer';
+
         row.addEventListener("click", function(e) {
-            const modalTarget = row.getAttribute("data-row-click");
-            if (modalTarget) {
-                const modal = document.querySelector(modalTarget);
-                if (modal) new bootstrap.Modal(modal).show();
+            // ไม่ทำการคลิก button, a, input
+            const targetTag = e.target.tagName.toUpperCase();
+            if (targetTag === 'BUTTON' || targetTag === 'A' || targetTag === 'INPUT' || targetTag === 'I') {
+                console.log('Clicked on:', targetTag, 'ignoring...');
+                return;
+            }
+
+            const modalId = row.getAttribute("data-row-click");
+            console.log('Row clicked, looking for modal:', modalId);
+
+            if (modalId) {
+                const modal = document.querySelector(modalId);
+                console.log('Modal element:', modal);
+
+                if (modal) {
+                    try {
+                        const bsModal = new bootstrap.Modal(modal);
+                        bsModal.show();
+                        console.log('Modal shown successfully');
+                    } catch (err) {
+                        console.error('Error showing modal:', err);
+                    }
+                } else {
+                    console.warn('Modal not found with selector:', modalId);
+                    console.log('Available modals:', document.querySelectorAll('.modal'));
+                }
             }
         });
     });
-
-    // ป้องกันคลิกปุ่ม/ฟอร์ม/ลิงก์ ภายในแถวไปกระตุ้น modal หลัก
-    document.querySelectorAll(".clickable-row button, .clickable-row a, .clickable-row form").forEach(
-        el => {
-            el.addEventListener("click", e => e.stopImmediatePropagation());
-        }
-    );
 }
 
-// เรียกใช้เมื่อ DOM ready
-document.addEventListener('DOMContentLoaded', setupClickableRows);
+

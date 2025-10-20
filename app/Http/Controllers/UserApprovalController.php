@@ -31,7 +31,7 @@ class UserApprovalController extends Controller
 
         $roles = Role::all();
 
-        return view('admin.user_approval.index', compact('pendingUsers', 'approvedUsers', 'rejectedUsers', 'roles'));
+        return view('admin.user_management.index', compact('pendingUsers', 'approvedUsers', 'rejectedUsers', 'roles'));
     }
 
     /**

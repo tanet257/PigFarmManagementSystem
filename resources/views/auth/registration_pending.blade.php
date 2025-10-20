@@ -17,7 +17,8 @@
             </h2>
 
             <!-- Info alert -->
-            <div style="display:inline-block; background-color:#d1ecf1; color:#0c5460; padding:5px 10px; border-radius:5px; margin-bottom:15px; font-size:0.9rem;">
+            <div
+                style="display:inline-block; background-color:#d1ecf1; color:#0c5460; padding:5px 10px; border-radius:5px; margin-bottom:15px; font-size:0.9rem;">
                 <i class="fas fa-info-circle" style="margin-right:5px;"></i>
                 บัญชีของคุณรอการอนุมัติจาก Admin
             </div>
@@ -25,7 +26,8 @@
             <!-- Status -->
             <p style="color:#6c757d; font-size:0.9rem; margin-bottom:15px;">
                 บัญชีของคุณอยู่ในสถานะ
-                <span style="background-color:#f39c12; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.8rem;">
+                <span
+                    style="background-color:#f39c12; color:#fff; padding:2px 8px; border-radius:10px; font-size:0.8rem;">
                     รอการอนุมัติ
                 </span>
                 <br>
@@ -33,7 +35,8 @@
             </p>
 
             <!-- Steps -->
-            <div style="background-color:#fff8f0; padding:10px 15px; border-radius:5px; text-align:left; font-size:0.88rem; margin-bottom:15px;">
+            <div
+                style="background-color:#fff8f0; padding:10px 15px; border-radius:5px; text-align:left; font-size:0.88rem; margin-bottom:15px;">
                 <h5 style="margin-bottom:5px; font-weight:500;">ขั้นตอนต่อไป:</h5>
                 <ol style="padding-left:20px; margin:0;">
                     <li>Admin ตรวจสอบข้อมูลและกำหนดบทบาท</li>
@@ -48,10 +51,10 @@
                 โดยปกติการอนุมัติใช้เวลา 24-48 ชั่วโมง
             </p>
 
-            <!-- Button -->
-            <a href="{{ route('login') }}"
-               style="display:inline-block; width:100%; background-color:#FF5B22; color:#fff; font-weight:500; text-decoration:none; padding:10px 0; border-radius:5px; font-size:1rem;">
-                <i class="fas fa-home" style="margin-right:5px;"></i>กลับสู่หน้าหลัก
+            <!-- Button (go to login) -->
+            <a href="{{ url('/login') }}"
+                style="display:inline-block; width:100%; background-color:#FF5B22; color:#fff; font-weight:500; text-decoration:none; padding:10px 0; border-radius:5px; font-size:1rem;">
+                <i class="fas fa-sign-in-alt" style="margin-right:5px;"></i>กลับไปหน้าเข้าสู่ระบบ
             </a>
 
         </div>

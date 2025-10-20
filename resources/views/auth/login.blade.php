@@ -12,13 +12,13 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login') }}" autocomplete="off">
             @csrf
 
             <div>
                 <x-label for="email" value="{{ __('Email') }}" />
                 <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required
-                    autofocus autocomplete="username"
+                    autofocus autocomplete="off"
                     style="
             border: 2px solid #FF5B22;      /* สีขอบตามธีมส้ม */
             border-radius: 6px;              /* มุมโค้ง */
@@ -31,7 +31,7 @@
             <div class="mt-4">
                 <x-label for="password" value="{{ __('Password') }}" />
                 <x-input id="password" class="block mt-1 w-full" type="password" name="password" required
-                    autocomplete="current-password"
+                    autocomplete="off"
                     style="
             border: 2px solid #FF5B22;
             border-radius: 6px;

@@ -169,7 +169,7 @@
                 </thead>
                 <tbody>
                     @forelse ($dairyRecords as $index => $record)
-                        <tr class="clickable-row" data-bs-toggle="modal" data-bs-target="#viewModal{{ $record->id }}">
+                        <tr class="clickable-row" data-row-click="#viewModal{{ $record->id }}">
                             <td class="text-center">{{ $dairyRecords->firstItem() + $index }}</td>
                             <td class="text-center">{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</td>
                             <td class="text-center">{{ $record->batch->farm->farm_name ?? '-' }}</td>
@@ -192,11 +192,11 @@
                             <td class="text-center">{{ $record->display_quantity }}</td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                    data-bs-target="#viewModal{{ $record->id }}">
+                                    data-bs-target="#viewModal{{ $record->id }}" onclick="event.stopPropagation()">
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                    data-bs-target="#editModal{{ $record->id }}">
+                                    data-bs-target="#editModal{{ $record->id }}" onclick="event.stopPropagation()">
                                     <i class="bi bi-pencil"></i>
                                 </button>
                             </td>
@@ -228,25 +228,26 @@
             $isFeed = $record->dairy_storehouse_uses->count();
             $isMedicine = $record->batch_treatments->count();
             $isDeath = $record->pig_deaths->count();
-
             $formAction = '#';
+            $methodField = '';
+
             if ($isFeed) {
+                $useId = $record->dairy_storehouse_uses->first()->id ?? 0;
                 $formAction = route('dairy_records.update_feed', [
                     'dairyId' => $record->id,
-                    'useId' => $record->dairy_storehouse_uses->first()->id ?? 0,
+                    'useId' => $useId,
                     'type' => 'food',
                 ]);
             } elseif ($isMedicine) {
+                $btId = $record->batch_treatments->first()->id ?? 0;
                 $formAction = route('dairy_records.update_medicine', [
                     'dairyId' => $record->id,
-                    'btId' => $record->batch_treatments->first()->id ?? 0,
+                    'btId' => $btId,
                     'type' => 'treatment',
                 ]);
             } elseif ($isDeath) {
-                $formAction = route('pig_deaths.update', [
-                    'id' => $record->pig_deaths->first()->id ?? 0,
-                    'type' => 'death',
-                ]);
+                $pigDeathId = $record->pig_deaths->first()->id ?? 0;
+                $formAction = route('dairy_records.update_pigdeath', ['id' => $pigDeathId]);
             }
         @endphp
 
@@ -254,18 +255,22 @@
         <div class="modal fade" id="viewModal{{ $record->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">รายละเอียดบันทึกประจำวัน - {{ $record->id }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-file-earmark-text"></i> รายละเอียดบันทึกประจำวัน
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row">
                             <!-- ข้อมูลหลัก -->
                             <div class="col-md-6">
-                                <h6 class="text-primary">ข้อมูลหลัก</h6>
-                                <table class="table table-secondary table-sm">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle"></i> ข้อมูลทั่วไป
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
                                     <tr>
-                                        <td><strong>วันที่:</strong></td>
+                                        <td width="35%"><strong>วันที่:</strong></td>
                                         <td>{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y H:i') }}</td>
                                     </tr>
                                     <tr>
@@ -289,14 +294,16 @@
 
                             <!-- ข้อมูลเพิ่มเติม / จำนวน / รายละเอียด -->
                             <div class="col-md-6">
-                                <h6 class="text-primary">รายละเอียด</h6>
-                                <table class="table table-secondary table-sm">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-file-text"></i> รายละเอียด
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
                                     <tr>
-                                        <td><strong>จำนวน:</strong></td>
+                                        <td width="35%"><strong>จำนวน:</strong></td>
                                         <td>{{ $record->display_quantity }}</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>รายละเอียด:</strong></td>
+                                        <td><strong>หมายเหตุ:</strong></td>
                                         <td>{{ $record->display_details ?? '-' }}</td>
                                     </tr>
                                 </table>
@@ -304,11 +311,9 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-warning" data-bs-toggle="modal"
-                            data-bs-target="#editModal{{ $record->id }}" data-bs-dismiss="modal">
-                            แก้ไข
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> ปิด
                         </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                     </div>
                 </div>
             </div>
@@ -336,9 +341,8 @@
                                     <label>วันที่</label>
                                     <input type="text" name="date" class="thai-datepicker form-control bg-white"
                                         value="{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y H:i') }}"
-                                        autocomplete="off" placeholder="วัน-เดือน-ปี ชั่วโมง:นาที">
+                                        autocomplete="off" placeholder="วัน-เดือน-ปี ชั่วโมง:นาที" required>
                                 </div>
-
                                 <div class="col-md-4">
                                     <label>ฟาร์ม</label>
                                     <input type="text" class="form-control form-disabled"
@@ -350,6 +354,7 @@
                                         value="{{ $record->batch->batch_code ?? '-' }}" disabled>
                                 </div>
                             </div>
+
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label>เล้า</label>
@@ -362,10 +367,21 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label>จำนวน</label>
-                                    <input type="text" name="quantity" class="form-control"
-                                        value="{{ $record->display_quantity }}">
+                                    <input type="number" name="quantity" class="form-control"
+                                        value="{{ $record->display_quantity }}" min="0" required>
                                 </div>
                             </div>
+
+                            @if ($isMedicine)
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label>สถานะ</label>
+                                        <input type="text" name="status" class="form-control"
+                                            value="{{ $record->batch_treatments->first()->status ?? '' }}">
+                                    </div>
+                                </div>
+                            @endif
+
                             <div class="row mb-3">
                                 <div class="col-md-12">
                                     <label>รายละเอียด</label>
@@ -385,7 +401,6 @@
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                         </div>
                     </form>
-
                 </div>
             </div>
         </div>
@@ -425,7 +440,7 @@
             });
         </script>
 
-        <script src="{{ asset('admin/js/common-dropdowns.js') }}"></script>
+
 
         {{-- Farm to Batch Filter Script --}}
         <script>
@@ -475,5 +490,6 @@
                 }
             });
         </script>
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

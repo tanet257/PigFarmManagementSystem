@@ -201,8 +201,8 @@
 
                             <td class="text-center">
                                 {{-- View Button --}}
-                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                    data-bs-target="#viewModal{{ $record->id }}">
+                                <button type="button" class="btn btn-sm btn-info"
+                                    onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $record->id }}')).show();">
                                     <i class="bi bi-eye"></i>
                                 </button>
 
@@ -360,6 +360,122 @@
     </div>
     </div>
     {{-- End Create Modal --}}
+
+    {{-- View Modals --}}
+    @foreach ($pigEntryRecords as $record)
+        <div class="modal fade" id="viewModal{{ $record->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-box-seam"></i> รายละเอียดการรับเข้าหมู
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle"></i> ข้อมูลทั่วไป
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
+                                    <tr>
+                                        <td width="35%"><strong>วันที่รับเข้า:</strong></td>
+                                        <td>{{ $record->pig_entry_date }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ฟาร์ม:</strong></td>
+                                        <td>{{ $record->farm->farm_name ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>รุ่น:</strong></td>
+                                        <td>{{ $record->batch->batch_code ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>จำนวนหมู:</strong></td>
+                                        <td>
+                                            <strong class="text-success">{{ $record->total_pig_amount }} ตัว</strong>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>น้ำหนักรวม:</strong></td>
+                                        <td>
+                                            <strong>{{ number_format($record->total_pig_weight, 2) }} กก.</strong>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-cash-coin"></i> ราคา
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
+                                    <tr>
+                                        <td width="35%"><strong>ราคาหมู:</strong></td>
+                                        <td>{{ number_format($record->total_pig_price, 2) }} ฿</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>น้ำหนักเกิน:</strong></td>
+                                        <td>{{ number_format($record->batch->costs->sum('excess_weight_cost') ?? 0, 2) }} ฿
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ค่าขนส่ง:</strong></td>
+                                        <td>{{ number_format($record->batch->costs->sum('transport_cost') ?? 0, 2) }} ฿
+                                        </td>
+                                    </tr>
+                                    <tr style="background-color: #e8f5e9;">
+                                        <td><strong>รวมทั้งสิ้น:</strong></td>
+                                        <td>
+                                            <strong
+                                                class="text-success">{{ number_format(
+                                                    $record->total_pig_price +
+                                                        ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
+                                                        ($record->batch->costs->sum('transport_cost') ?? 0),
+                                                    2,
+                                                ) }}
+                                                ฿</strong>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        @if ($record->note)
+                            <hr>
+                            <h6 class="text-primary mb-2">
+                                <i class="bi bi-chat-left-text"></i> หมายเหตุ
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ $record->note }}</p>
+                            </div>
+                        @endif
+                        @if ($record->latestCost && !empty($record->latestCost->receipt_file))
+                            <hr>
+                            <h6 class="text-primary mb-2">
+                                <i class="bi bi-receipt"></i> ใบเสร็จ
+                            </h6>
+                            @php
+                                $file = $record->latestCost->receipt_file;
+                            @endphp
+                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                <img src="{{ $file }}" alt="Receipt" style="max-width:100%; height: auto;"
+                                    class="rounded">
+                            @else
+                                <a href="{{ $file }}" target="_blank" class="btn btn-sm btn-primary"><i
+                                        class="bi bi-download"></i> ดาวน์โหลดใบเสร็จ</a>
+                            @endif
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> ปิด
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
 
     @push('scripts')
         <!--flatpickr-->

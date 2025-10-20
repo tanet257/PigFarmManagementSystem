@@ -571,6 +571,29 @@ class DairyController extends Controller
     //--------------------------------------- EDIT / UPDATE ------------------------------------------//
     //edit_feed_treatment
 
+    // --- Generic Update for All Types ---
+    public function updateDairy(Request $request, $id)
+    {
+        $dairy = DairyRecord::with(['dairy_storehouse_uses', 'batch_treatments', 'pig_deaths'])->findOrFail($id);
+
+        // Determine which type to update based on relationships
+        if ($dairy->dairy_storehouse_uses->count()) {
+            // Feed type
+            $use = $dairy->dairy_storehouse_uses->first();
+            return $this->updateFeed($request, $id, $use->id, 'food');
+        } elseif ($dairy->batch_treatments->count()) {
+            // Medicine type
+            $bt = $dairy->batch_treatments->first();
+            return $this->updateMedicine($request, $id, $bt->id, 'treatment');
+        } elseif ($dairy->pig_deaths->count()) {
+            // Death type
+            $death = $dairy->pig_deaths->first();
+            return $this->updatePigDeath($request, $death->id);
+        } else {
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลที่สัมพันธ์กับบันทึกนี้');
+        }
+    }
+
     public function updateFeed(Request $request, $dairyId, $useId, $type)
     {
         $validated = $request->validate([

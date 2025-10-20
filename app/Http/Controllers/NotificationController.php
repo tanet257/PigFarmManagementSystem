@@ -79,6 +79,20 @@ class NotificationController extends Controller
     }
 
     /**
+     * ดึงจำนวนแจ้งเตือนที่ยังไม่ได้อ่าน
+     */
+    public function getUnreadCount()
+    {
+        $unreadCount = Notification::where('user_id', Auth::id())
+            ->where('is_read', false)
+            ->count();
+
+        return response()->json([
+            'unreadCount' => $unreadCount,
+        ]);
+    }
+
+    /**
      * ดึงข้อมูลแจ้งเตือนสำหรับแสดงใน header dropdown
      */
     public function getRecent()

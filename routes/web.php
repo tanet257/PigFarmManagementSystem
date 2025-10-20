@@ -16,11 +16,16 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\UserApprovalController;
 
 //------------------- route home/admin -------------------------//
-Route::get('/', [HomeController::class, 'my_home'])->name('home.my_home');
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+Route::get('/', [HomeController::class, 'my_home'])->middleware(['prevent.cache'])->name('home.my_home');
+Route::get('/home', [HomeController::class, 'index'])->middleware(['prevent.cache'])->name('home');
+
+// Route สำหรับตรวจสอบ session status
+Route::get('/check-session', function () {
+    return response()->json(['authenticated' => auth()->check()]);
+});
 
 //------------------- ส่วนที่ต้องเข้าสู่ระบบ (Protected Routes) -----//
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'prevent.cache'])->group(function () {
     Route::get('/admin_index', [AdminController::class, 'admin_index'])->name('admin.index');
 
     //------------------- route batch ------------------------------//
@@ -105,10 +110,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
         Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
         Route::delete('/{id}', [DairyController::class, 'deleteDairy'])->name('dairy_records.delete');
+
         //------------------- route export batch ---------------------//
         Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
         Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
+
+        //------------------- เพิ่ม route สำหรับ update feed/medicine/pigDeath ----------------//
+        Route::put('/{dairyId}/{useId}/update-feed/{type}', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
+        Route::put('/{dairyId}/{btId}/update-medicine/{type}', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
+        Route::put('/pig-death/{id}', [DairyController::class, 'updatePigDeath'])->name('dairy_records.update_pigdeath');
     });
+
 
     //------------------- route storehouse -----------------------//
     Route::get('/viewStoreHouseRecord', [StoreHouseController::class, 'viewStoreHouseRecord'])->name('storehouse_records.record');
@@ -158,7 +170,7 @@ Route::get('/registration_pending', function () {
 })->name('registration.pending');
 
 //------------------- route pig sales (New System) -----------//
-Route::prefix('pig_sales')->middleware(['auth'])->group(function () {
+Route::prefix('pig_sales')->middleware(['auth', 'prevent.cache'])->group(function () {
     Route::get('/', [PigSaleController::class, 'index'])->name('pig_sales.index');
     Route::get('/create', [PigSaleController::class, 'create'])->name('pig_sales.create');
     Route::post('/', [PigSaleController::class, 'store'])->name('pig_sales.store');
@@ -183,7 +195,7 @@ Route::prefix('pig_sales')->middleware(['auth'])->group(function () {
 });
 
 //------------------- route notifications --------------------//
-Route::prefix('notifications')->middleware(['auth'])->group(function () {
+Route::prefix('notifications')->middleware(['auth', 'prevent.cache'])->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
     Route::get('/unread_count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
@@ -195,7 +207,7 @@ Route::prefix('notifications')->middleware(['auth'])->group(function () {
 });
 
 //------------------- route user management ------------------//
-Route::prefix('user_management')->middleware(['auth', 'permission:manage_users'])->group(function () {
+Route::prefix('user_management')->middleware(['auth', 'prevent.cache', 'permission:manage_users'])->group(function () {
     Route::get('/', [UserManagementController::class, 'index'])->name('user_management.index');
     Route::get('/pending', [UserManagementController::class, 'pending'])->name('user_management.pending');
     Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('user_management.approve');
@@ -203,16 +215,6 @@ Route::prefix('user_management')->middleware(['auth', 'permission:manage_users']
     Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('user_management.assign_role');
     Route::post('/{id}/update_roles', [UserManagementController::class, 'updateRoles'])->name('user_management.update_roles');
     Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('user_management.destroy');
-});
-
-//------------------- route user approval --------------------//
-Route::prefix('admin/user_approval')->middleware(['auth', 'permission:manage_users'])->group(function () {
-    Route::get('/', [UserApprovalController::class, 'index'])->name('admin.user_approval.index');
-    Route::post('/{user}/approve', [UserApprovalController::class, 'approve'])->name('admin.user_approval.approve');
-    Route::post('/{user}/reject', [UserApprovalController::class, 'reject'])->name('admin.user_approval.reject');
-    Route::post('/{user}/update_roles', [UserApprovalController::class, 'updateRoles'])->name('admin.user_approval.update_roles');
-    Route::post('/{user}/reopen', [UserApprovalController::class, 'reopen'])->name('admin.user_approval.reopen');
-    Route::post('/{user}/suspend', [UserApprovalController::class, 'suspend'])->name('admin.user_approval.suspend');
 });
 
 //------------------- route dashboard ------------------------//

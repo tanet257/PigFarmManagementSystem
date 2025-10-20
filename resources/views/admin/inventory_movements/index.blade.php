@@ -110,7 +110,7 @@
                 </thead>
                 <tbody>
                     @forelse($movements as $movement)
-                        <tr>
+                        <tr class="clickable-row" data-row-click="#viewModal{{ $movement->id }}">
                             <td class="text-center">{{ $movement->date }}</td>
                             <td class="text-center">{{ $movement->storehouse->farm->farm_name ?? '-' }}</td>
                             <td class="text-center">{{ $movement->batch->batch_code ?? '-' }}</td>
@@ -151,6 +151,114 @@
         </div>
     </div>
     </div>
+
+    {{-- View Modal --}}
+    @foreach ($movements as $movement)
+        <div class="modal fade" id="viewModal{{ $movement->id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-box-seam"></i> รายละเอียดความเคลื่อนไหวของสต็อก
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle"></i> ข้อมูลทั่วไป
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
+                                    <tr>
+                                        <td width="40%"><strong>วันที่:</strong></td>
+                                        <td>{{ \Carbon\Carbon::parse($movement->date)->format('d/m/Y') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ฟาร์ม:</strong></td>
+                                        <td>{{ $movement->storehouse->farm->farm_name ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>รุ่น:</strong></td>
+                                        <td>{{ $movement->batch->batch_code ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ประเภทการเปลี่ยน:</strong></td>
+                                        <td>
+                                            @if ($movement->change_type == 'in')
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-arrow-up-right"></i> เข้า
+                                                </span>
+                                            @elseif($movement->change_type == 'out')
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-arrow-down-left"></i> ออก
+                                                </span>
+                                            @else
+                                                <span class="badge bg-dark">-</span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>บันทึกเมื่อ:</strong></td>
+                                        <td>
+                                            <small>
+                                                <i class="bi bi-calendar-event"></i>
+                                                {{ $movement->created_at->format('d/m/Y H:i') }}
+                                            </small>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-box"></i> ข้อมูลสินค้า
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
+                                    <tr>
+                                        <td width="40%"><strong>ประเภท:</strong></td>
+                                        <td>{{ $movement->storehouse->item_type ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>รหัสสินค้า:</strong></td>
+                                        <td>
+                                            <code class="text-info">{{ $movement->storehouse->item_code ?? '-' }}</code>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>ชื่อสินค้า:</strong></td>
+                                        <td>{{ $movement->storehouse->item_name ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>จำนวน:</strong></td>
+                                        <td>
+                                            <strong class="text-success">
+                                                {{ number_format($movement->quantity, 2) }}
+                                                {{ $movement->storehouse->unit ?? 'หน่วย' }}
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        @if ($movement->note)
+                            <hr>
+                            <h6 class="text-primary mb-2 ">
+                                <i class="bi bi-chat-left-text"></i> หมายเหตุ
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ $movement->note }}</p>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> ปิด
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
 
     @push('scripts')
         {{-- Auto-submit filters --}}
@@ -203,5 +311,6 @@
                 });
             });
         </script>
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

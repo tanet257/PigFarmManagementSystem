@@ -6,7 +6,7 @@
 
         <x-validation-errors class="mb-4" />
 
-        <form method="POST" action="{{ route('password.update') }}" autocomplete="off">
+        <form method="POST" action="{{ route('password.update') }}">
             @csrf
 
             <input type="hidden" name="token" value="{{ $request->route('token') }}">
@@ -14,7 +14,7 @@
             <div class="block">
                 <x-label for="email" value="{{ __('Email') }}" />
                 <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)"
-                    required autofocus autocomplete="off" />
+                    required autofocus autocomplete="username" />
             </div>
 
             <div class="mt-4">

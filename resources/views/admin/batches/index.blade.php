@@ -119,7 +119,7 @@
                 </thead>
                 <tbody>
                     @forelse($batches as $batch)
-                        <tr>
+                        <tr class="clickable-row" data-row-click="#viewModal{{ $batch->id }}">
                             <td class="text-center">{{ $batch->farm->farm_name ?? '-' }}</td>
                             <td class="text-center">{{ $batch->batch_code }}</td>
 
@@ -167,9 +167,14 @@
                             <td class="text-center">{{ $batch->start_date ?? '-' }}</td>
                             <td class="text-center">{{ $batch->end_date ?? '-' }}</td>
                             <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-info"
+                                    onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $batch->id }}')).show();">
+                                    <i class="bi bi-eye"></i>
+                                </button>
                                 @if ($batch->status != 'เสร็จสิ้น')
                                     <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
-                                        data-bs-target="#editModal{{ $batch->id }}">แก้ไข</button>
+                                        data-bs-target="#editModal{{ $batch->id }}"
+                                        onclick="event.stopPropagation()">แก้ไข</button>
                                 @endif
 
                                 <form action="{{ route('batches.delete', $batch->id) }}" method="POST"
@@ -179,49 +184,6 @@
                                     <button type="submit" class="btn btn-sm btn-danger"
                                         onclick="return confirm('คุณแน่ใจไหมว่าจะลบรุ่นนี้?')">Delete</button>
                                 </form>
-
-                                {{-- Modal Edit --}}
-                                <div class="modal fade" id="editModal{{ $batch->id }}" tabindex="-1"
-                                    aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content bg-dark text-light">
-                                            <div class="modal-header">
-                                                <h5>แก้ไขรุ่นหมู (Batch)</h5>
-                                                <button type="button" class="btn-close btn-close-white"
-                                                    data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form action="{{ route('batches.update', $batch->id) }}" method="POST">
-                                                @csrf
-                                                @method('PUT')
-                                                <div class="modal-body">
-                                                    <div class="mb-3">
-                                                        <label>สถานะ</label>
-                                                        <select name="status" class="form-select" required>
-                                                            <option value="กำลังเลี้ยง"
-                                                                {{ $batch->status == 'กำลังเลี้ยง' ? 'selected' : '' }}>
-                                                                กำลังเลี้ยง</option>
-                                                            <option value="เสร็จสิ้น"
-                                                                {{ $batch->status == 'เสร็จสิ้น' ? 'selected' : '' }}>
-                                                                เสร็จสิ้น</option>
-                                                        </select>
-                                                    </div>
-
-                                                    <div class="mb-3">
-                                                        <label>โน๊ต</label>
-                                                        <textarea name="note" class="form-control">{{ $batch->note }}</textarea>
-                                                    </div>
-
-                                                    <div class="modal-footer">
-                                                        <button type="submit" class="btn btn-primary">บันทึก</button>
-                                                        <button type="button" class="btn btn-secondary"
-                                                            data-bs-dismiss="modal">ยกเลิก</button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                {{-- End Modal Edit --}}
                             </td>
                         </tr>
                     @empty
@@ -247,6 +209,137 @@
 
     </div>
     </div>
+
+    {{-- Modals (Outside table, Inside loop) --}}
+    @foreach ($batches as $batch)
+        {{-- Modal View --}}
+        <div class="modal fade" id="viewModal{{ $batch->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-layers"></i> รายละเอียดรุ่นหมู - {{ $batch->batch_code }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle"></i> ข้อมูลทั่วไป
+                                </h6>
+                                <table class="table table-secondary table-sm">
+                                    <tr>
+                                        <td width="35%"><strong>ฟาร์ม:</strong></td>
+                                        <td>{{ $batch->farm->farm_name ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>รหัสรุ่น:</strong></td>
+                                        <td><code class="text-info">{{ $batch->batch_code }}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>จำนวนเล้า:</strong></td>
+                                        <td>{{ $batch->farm->barns->count() ?? '-' }} เล้า</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>จำนวนคอก:</strong></td>
+                                        <td>{{ $batch->farm->barns->first()->pens->count() ?? '-' }} คอก</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>สถานะ:</strong></td>
+                                        <td>
+                                            @if ($batch->status == 'กำลังเลี้ยง')
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-hourglass-split"></i> {{ $batch->status }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary">
+                                                    <i class="bi bi-check-circle"></i> {{ $batch->status }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-graph-up"></i> ข้อมูลการเลี้ยง
+                                </h6>
+                                <table class="table table-secondary table-sm">
+                                    <tr>
+                                        <td width="35%"><strong>น้ำหนักรวม:</strong></td>
+                                        <td>
+                                            <strong class="text-success">
+                                                {{ number_format($batch->pig_entry_records->sum('total_pig_weight') ?? 0, 2) }}
+                                                กก.
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>วันเริ่มต้น:</strong></td>
+                                        <td>{{ $batch->start_date ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>วันสิ้นสุด:</strong></td>
+                                        <td>{{ $batch->end_date ?? '-' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        @if ($batch->note)
+                            <hr>
+                            <h6 class="text-primary mb-2">
+                                <i class="bi bi-chat-left-text"></i> หมายเหตุ
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ $batch->note }}</p>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> ปิด
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Modal Edit --}}
+        <div class="modal fade" id="editModal{{ $batch->id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content bg-dark text-light">
+                    <div class="modal-header">
+                        <h5>แก้ไขรุ่นหมู (Batch)</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ route('batches.update', $batch->id) }}" method="POST">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label>สถานะ</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="กำลังเลี้ยง" {{ $batch->status == 'กำลังเลี้ยง' ? 'selected' : '' }}>
+                                        กำลังเลี้ยง</option>
+                                    <option value="เสร็จสิ้น" {{ $batch->status == 'เสร็จสิ้น' ? 'selected' : '' }}>
+                                        เสร็จสิ้น</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label>โน๊ต</label>
+                                <textarea name="note" class="form-control">{{ $batch->note }}</textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="submit" class="btn btn-primary">บันทึก</button>
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
 
     {{-- Modal Create --}}
     <div class="modal fade" id="createModal" tabindex="-1">
@@ -355,5 +448,8 @@
                 });
             @endforeach
         </script>
+
+        {{-- Include Clickable Row Script --}}
+        <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

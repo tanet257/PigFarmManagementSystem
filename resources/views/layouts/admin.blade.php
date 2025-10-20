@@ -30,6 +30,9 @@
 
     @include('admin.js')
 
+    <!-- Script ป้องกันการ back button หลัง logout -->
+    <script src="{{ asset('admin/js/prevent-back-button.js') }}"></script>
+
     {{-- Additional page-specific scripts --}}
     @stack('scripts')
 </body>

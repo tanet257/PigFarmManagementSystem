@@ -3,7 +3,7 @@
 @section('title', 'การจัดสรรหมู')
 
 @section('content')
-    <div class="container my-5">
+    <div class="container my-5" data-page="batch-pen-allocations">
         <div class="card-header">
             <h1 class="text-center">การจัดสรรหมู (Batch Pen Allocations)</h1>
         </div>
@@ -104,7 +104,7 @@
                         <th class="text-center">ความจุเล้า</th>
                         <th class="text-center">จำนวนที่จัดสรร</th>
                         <th class="text-center">หมูคงเหลือ</th>
-                        <th class="text-center"></th>รายละเอียด</th>
+                        <th class="text-center">รายละเอียด</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -119,65 +119,12 @@
                                     style="color: {{ $barn['total_current_quantity'] > 0 ? '#28a745' : '#dc3545' }}">{{ $barn['total_current_quantity'] }}</strong>
                             </td>
                             <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal"
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
                                     data-bs-target="#detailModal{{ $loop->index }}">
-                                    <i class="bi bi-eye"></i> ดูรายละเอียด
+                                    <i class="bi bi-eye"></i>
                                 </button>
                             </td>
                         </tr>
-
-                        <!-- Modal View -->
-                        <div class="modal fade" id="detailModal{{ $loop->index }}" tabindex="-1"
-                            aria-labelledby="detailModalLabel{{ $loop->index }}" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-centered">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="detailModalLabel{{ $loop->index }}">
-                                            รายละเอียดคอก (Barn: {{ $barn['barn_code'] }})
-                                        </h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                            aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <table class="table table-sm table-secondary">
-
-                                            <tr style="background: linear-gradient(135deg, #FF9130, #FECDA6);">
-                                                <th class="text-center">รหัสรุ่น</th>
-                                                <th class="text-center">รหัสคอก</th>
-                                                <th class="text-center">จำนวนหมูที่จุได้</th>
-                                                <th class="text-center">หมูที่จัดสรร</th>
-                                                <th class="text-center">หมูคงเหลือ</th>
-                                            </tr>
-
-                                            @foreach ($barn['pens'] as $pen)
-                                                <tr>
-                                                    <td class="text-center">
-                                                        @foreach ($pen['batches'] as $batch_code)
-                                                            <span
-                                                                class="badge bg-info text-dark">{{ $batch_code }}</span>
-                                                        @endforeach
-                                                    </td>
-                                                    <td class="text-center">{{ $pen['pen_code'] }}</td>
-                                                    <td class="text-center">{{ $pen['capacity'] }}</td>
-                                                    <td class="text-center">
-                                                        <strong>{{ $pen['allocated'] }}</strong>
-                                                    </td>
-                                                    <td class="text-center">
-                                                        <strong>{{ $pen['current_quantity'] }}</strong>
-                                                    </td>
-
-                                                </tr>
-                                            @endforeach
-
-                                        </table>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary"
-                                            data-bs-dismiss="modal">ปิด</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     @empty
                         <tr>
                             <td colspan="7" class="text-center text-danger">❌ ไม่มีข้อมูล</td>
@@ -186,6 +133,7 @@
                 </tbody>
             </table>
         </div>
+
 
         {{-- Pagination --}}
         <div class="d-flex justify-content-between mt-3">
@@ -198,11 +146,63 @@
             </div>
         </div>
     </div>
-    </div>
-    </div>
 
-    </div>
-    </div>
+    {{-- All Modals (Outside Main Container) --}}
+    @foreach ($barnSummaries as $barn)
+        <!-- Modal View -->
+        <div class="modal fade" id="detailModal{{ $loop->index }}" tabindex="-1"
+            aria-labelledby="detailModalLabel{{ $loop->index }}" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="detailModalLabel{{ $loop->index }}">
+                            <i class="bi bi-building"></i> รายละเอียดเล้า - {{ $barn['barn_code'] }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table table-secondary table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="text-center">รหัสรุ่น</th>
+                                    <th class="text-center">รหัสคอก</th>
+                                    <th class="text-center">จำนวนหมูที่จุได้</th>
+                                    <th class="text-center">หมูที่จัดสรร</th>
+                                    <th class="text-center">หมูคงเหลือ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($barn['pens'] as $pen)
+                                    <tr>
+                                        <td class="text-center">
+                                            @foreach ($pen['batches'] as $batch_code)
+                                                <span class="badge bg-info text-light">{{ $batch_code }}</span>
+                                            @endforeach
+                                        </td>
+                                        <td class="text-center">{{ $pen['pen_code'] }}</td>
+                                        <td class="text-center">{{ $pen['capacity'] }}</td>
+                                        <td class="text-center">
+                                            <strong>{{ $pen['allocated'] }}</strong>
+                                        </td>
+                                        <td class="text-center">
+                                            <strong class="text-success">{{ $pen['current_quantity'] }}</strong>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> ปิด
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endforeach
+
 
     @push('scripts')
         <script>

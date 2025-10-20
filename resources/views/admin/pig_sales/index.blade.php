@@ -219,21 +219,22 @@
                                 </small>
                             </td>
                             <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                    data-bs-target="#viewModal{{ $sell->id }}">
+                                <button type="button" class="btn btn-sm btn-info"
+                                    onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $sell->id }}')).show();">
                                     <i class="bi bi-eye"></i>
                                 </button>
 
                                 @if (!$sell->approved_at && auth()->user()->hasPermission('approve_sales'))
-                                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                        data-bs-target="#approveModal{{ $sell->id }}" title="อนุมัติการขาย">
+                                    <button type="button" class="btn btn-sm btn-primary"
+                                        onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('approveModal{{ $sell->id }}')).show();"
+                                        title="อนุมัติการขาย">
                                         <i class="bi bi-check-circle"></i>
                                     </button>
                                 @endif
 
                                 @if ($sell->payment_status != 'ชำระแล้ว')
-                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
-                                        data-bs-target="#paymentModal{{ $sell->id }}">
+                                    <button type="button" class="btn btn-sm btn-success"
+                                        onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('paymentModal{{ $sell->id }}')).show();">
                                         <i class="bi bi-cash"></i>
                                     </button>
                                 @endif
@@ -288,7 +289,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <h6 class="text-primary">ข้อมูลการขาย</h6>
-                                <table class="table table-secondary table-sm">
+                                <table class="table table-secondary table-sm table-hover">
                                     <tr>
                                         <td><strong>เลขที่:</strong></td>
                                         <td>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}
@@ -359,7 +360,7 @@
                             </div>
                             <div class="col-md-6">
                                 <h6 class="text-primary">รายละเอียด</h6>
-                                <table class="table table-secondary table-sm">
+                                <table class="table table-secondary table-sm table-hover">
                                     <tr>
                                         <td><strong>จำนวน:</strong></td>
                                         <td>{{ number_format($sell->quantity) }} ตัว</td>
@@ -401,7 +402,7 @@
                         </div>
                         <hr>
                         <h6 class="text-primary">การชำระเงิน</h6>
-                        <table class="table table-secondary table-sm">
+                        <table class="table table-secondary table-sm table-hover">
                             <tr>
                                 <td><strong>วิธีชำระ:</strong></td>
                                 <td>{{ $sell->payment_method ?? '-' }}</td>
@@ -450,7 +451,7 @@
                                 คุณกำลังจะอนุมัติการขายนี้ กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนอนุมัติ
                             </div>
 
-                            <table class="table table-secondary table-sm table-bordered">
+                            <table class="table table-secondary table-sm table-hover table-bordered">
                                 <tr>
                                     <td class="bg-light" width="40%"><strong>เลขที่การขาย:</strong></td>
                                     <td>{{ $sell->sale_number }}</td>
@@ -690,7 +691,7 @@
                                         <h6 class="card-title text-primary mb-3">
                                             <i class="bi bi-calculator"></i> สรุปการขาย
                                         </h6>
-                                        <table class="table table-secondary table-sm mb-0">
+                                        <table class="table table-secondary table-sm table-hover mb-0">
                                             <tr>
                                                 <td class="text-end"><strong>จำนวนหมูรวม:</strong></td>
                                                 <td class="text-end"><span id="summary_total_quantity">0</span> ตัว

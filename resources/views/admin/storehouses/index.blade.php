@@ -259,12 +259,12 @@
                             </td>
 
                             <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                    data-bs-target="#viewModal{{ $item->id }}">
+                                <button type="button" class="btn btn-sm btn-info"
+                                    onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $item->id }}')).show();">
                                     <i class="bi bi-eye"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                    data-bs-target="#editModal{{ $item->id }}">
+                                    data-bs-target="#editModal{{ $item->id }}" onclick="event.stopPropagation()">
                                     <i class="bi bi-pencil-square"></i>
                                 </button>
                                 <form action="{{ route('storehouse_records.delete', $item->id) }}" method="POST"
@@ -305,17 +305,24 @@
         <div class="modal fade" id="viewModal{{ $item->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">รายละเอียดสินค้า - {{ $item->item_name }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-box"></i> รายละเอียดสินค้า - {{ $item->item_name }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <table class="table table-secondary table-sm">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-info-circle"></i> ข้อมูลทั่วไป
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
                                     <tr>
                                         <td width="40%"><strong>รหัสสินค้า:</strong></td>
-                                        <td>{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
+                                        <td><code
+                                                class="text-info">{{ $item->item_code ?? 'ST-' . str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</code>
+                                        </td>
                                     </tr>
                                     <tr>
                                         <td><strong>ชื่อสินค้า:</strong></td>
@@ -332,10 +339,14 @@
                                 </table>
                             </div>
                             <div class="col-md-6">
-                                <table class="table table-secondary table-sm">
+                                <h6 class="text-primary mb-3">
+                                    <i class="bi bi-graph-up"></i> สต็อก
+                                </h6>
+                                <table class="table table-secondary table-sm table-hover">
                                     <tr>
                                         <td width="40%"><strong>จำนวน:</strong></td>
-                                        <td><strong>{{ number_format($item->stock, 2) }} {{ $item->unit }}</strong>
+                                        <td><strong class="text-success">{{ number_format($item->stock, 2) }}
+                                                {{ $item->unit }}</strong>
                                         </td>
                                     </tr>
                                     <tr>
@@ -348,24 +359,27 @@
                                             @if ($item->expire_date)
                                                 {{ \Carbon\Carbon::parse($item->expire_date)->format('d/m/Y') }}
                                             @else
-                                                -
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
-                                    </tr>
-                                    <tr>
-                                        <td><strong>หมายเหตุ:</strong></td>
-                                        <td>{{ $item->note ?? '-' }}</td>
                                     </tr>
                                 </table>
                             </div>
                         </div>
+                        @if ($item->note)
+                            <hr>
+                            <h6 class="text-primary mb-2">
+                                <i class="bi bi-chat-left-text"></i> หมายเหตุ
+                            </h6>
+                            <div class="bg-light p-3 rounded">
+                                <p class="mb-0">{{ $item->note }}</p>
+                            </div>
+                        @endif
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-warning" data-bs-dismiss="modal" data-bs-toggle="modal"
-                            data-bs-target="#editModal{{ $item->id }}">
-                            <i class="bi bi-pencil-square"></i> แก้ไข
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle"></i> ปิด
                         </button>
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                     </div>
                 </div>
             </div>
