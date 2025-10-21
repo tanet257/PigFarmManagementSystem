@@ -236,7 +236,7 @@ class StoreHouseController extends Controller
                         $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
                         $formattedDate = $dt->format('Y-m-d H:i:s');
 
-                        Cost::create([
+                        $cost = Cost::create([
                             'farm_id'        => $batch->farm_id,
                             'batch_id'       => $batch->id,
                             'date'           => $formattedDate,
@@ -254,6 +254,7 @@ class StoreHouseController extends Controller
                         InventoryMovement::create([
                             'storehouse_id' => $storehouse->id,
                             'batch_id'      => $batch->id,
+                            'cost_id'       => $cost->id,
                             'change_type'   => 'in',
                             'quantity'      => $validated['stock'],
                             'note'          => 'เพิ่มสินค้าเข้าคลังจากการบันทึกค่าใช้จ่าย (Batch: ' . $batch->id . ')',

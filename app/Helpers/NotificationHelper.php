@@ -191,6 +191,73 @@ class NotificationHelper
     }
 
     /**
+     * แจ้งเตือน Admin เมื่อมีการบันทึกการชำระเงิน (Pig Entry Payment)
+     */
+    public static function notifyAdminsPigEntryPaymentRecorded($pigEntryRecord, User $recordedBy)
+    {
+        $admins = User::whereHas('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->get();
+
+        // Load relationship ถ้ายังไม่ได้ load
+        if (!$pigEntryRecord->relationLoaded('batch')) {
+            $pigEntryRecord->load('batch', 'farm');
+        }
+
+        $batch = $pigEntryRecord->batch;
+        $farm = $pigEntryRecord->farm;
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'type' => 'payment_recorded_pig_entry',
+                'user_id' => $admin->id,
+                'related_user_id' => $recordedBy->id,
+                'title' => 'บันทึกการชำระเงินการรับเข้าหมู',
+                'message' => "บันทึกการชำระเงิน\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nวันที่รับเข้า: {$pigEntryRecord->pig_entry_date}\nรอการอนุมัติ",
+                'url' => route('payment_approvals.index'),
+                'is_read' => false,
+                'related_model' => 'PigEntryRecord',
+                'related_model_id' => $pigEntryRecord->id,
+                'approval_status' => 'pending',
+            ]);
+        }
+    }
+
+    /**
+     * แจ้งเตือน Admin เมื่อมีการบันทึกการชำระเงิน (Pig Sale Payment)
+     */
+    public static function notifyAdminsPigSalePaymentRecorded($pigSale, User $recordedBy)
+    {
+        $admins = User::whereHas('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->get();
+
+        // Load relationship ถ้ายังไม่ได้ load
+        if (!$pigSale->relationLoaded('batch')) {
+            $pigSale->load('batch', 'farm', 'customer');
+        }
+
+        $batch = $pigSale->batch;
+        $farm = $pigSale->farm;
+        $customer = $pigSale->customer;
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'type' => 'payment_recorded_pig_sale',
+                'user_id' => $admin->id,
+                'related_user_id' => $recordedBy->id,
+                'title' => 'บันทึกการชำระเงินการขายหมู',
+                'message' => "บันทึกการชำระเงิน\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nผู้ซื้อ: {$pigSale->buyer_name}\nวันที่ขาย: {$pigSale->date}\nรอการอนุมัติ",
+                'url' => route('payment_approvals.index'),
+                'is_read' => false,
+                'related_model' => 'PigSale',
+                'related_model_id' => $pigSale->id,
+                'approval_status' => 'pending',
+            ]);
+        }
+    }
+
+    /**
      * หา Admin ทั้งหมด
      */
     private static function getAdmins()

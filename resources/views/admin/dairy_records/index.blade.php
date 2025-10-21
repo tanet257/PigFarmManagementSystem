@@ -185,7 +185,17 @@
                 <thead class="table-header-custom">
                     <tr>
                         <th class="text-center">ลำดับ</th>
-                        <th class="text-center">วันที่</th>
+                        <th class="text-center">
+                            <a href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort_by' => 'date', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}"
+                                class="text-white text-decoration-none d-flex align-items-center justify-content-center gap-1">
+                                วันที่
+                                @if (request('sort_by') == 'date')
+                                    <i class="bi bi-{{ request('sort_order') == 'asc' ? 'sort-up' : 'sort-down' }}"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up"></i>
+                                @endif
+                            </a>
+                        </th>
                         <th class="text-center">ฟาร์ม</th>
                         <th class="text-center">รุ่น</th>
                         <th class="text-center">เล้า</th>

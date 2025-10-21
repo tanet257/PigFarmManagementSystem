@@ -155,8 +155,28 @@
                         <th class="text-center">ราคารวม</th>
                         <th class="text-center">สถานะ</th>
                         <th class="text-center">หมายเหตุ</th>
-                        <th class="text-center">วันที่เริ่มต้น</th>
-                        <th class="text-center">วันที่สิ้นสุด</th>
+                        <th class="text-center">
+                            <a href="{{ route('batches.index', array_merge(request()->all(), ['sort_by' => 'start_date', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}"
+                                class="text-white text-decoration-none d-flex align-items-center justify-content-center gap-1">
+                                วันที่เริ่มต้น
+                                @if (request('sort_by') == 'start_date')
+                                    <i class="bi bi-{{ request('sort_order') == 'asc' ? 'sort-up' : 'sort-down' }}"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up"></i>
+                                @endif
+                            </a>
+                        </th>
+                        <th class="text-center">
+                            <a href="{{ route('batches.index', array_merge(request()->all(), ['sort_by' => 'end_date', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}"
+                                class="text-white text-decoration-none d-flex align-items-center justify-content-center gap-1">
+                                วันที่สิ้นสุด
+                                @if (request('sort_by') == 'end_date')
+                                    <i class="bi bi-{{ request('sort_order') == 'asc' ? 'sort-up' : 'sort-down' }}"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up"></i>
+                                @endif
+                            </a>
+                        </th>
                         <th class="text-center">จัดการ</th>
                     </tr>
                 </thead>

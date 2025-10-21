@@ -139,7 +139,17 @@
             <table class="table table-primary mb-0">
                 <thead class="table-header-custom">
                     <tr>
-                        <th class="text-center">วันที่</th>
+                        <th class="text-center">
+                            <a href="{{ route('inventory_movements.index', array_merge(request()->all(), ['sort_by' => 'date', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}"
+                                class="text-white text-decoration-none d-flex align-items-center justify-content-center gap-1">
+                                วันที่
+                                @if (request('sort_by') == 'date')
+                                    <i class="bi bi-{{ request('sort_order') == 'asc' ? 'sort-up' : 'sort-down' }}"></i>
+                                @else
+                                    <i class="bi bi-arrow-down-up"></i>
+                                @endif
+                            </a>
+                        </th>
                         <th class="text-center">ชื่อฟาร์ม</th>
                         <th class="text-center">รหัสรุ่น</th>
                         <th class="text-center">ประเภทสินค้า</th>
@@ -148,6 +158,7 @@
                         <th class="text-center">ประเภทการเปลี่ยนแปลง</th>
                         <th class="text-center">จำนวน</th>
                         <th class="text-center">โน้ต</th>
+                        <th class="text-center">ใบเสร็จ</th>
                         <th class="text-center">บันทึกเมื่อ</th>
                     </tr>
                 </thead>
@@ -171,11 +182,34 @@
                             </td>
                             <td class="text-center"><strong>{{ number_format($movement->quantity, 2) }}</strong></td>
                             <td class="text-center">{{ $movement->note ?? '-' }}</td>
+                            <td class="text-center">
+                                @if ($movement->cost && !empty($movement->cost->receipt_file))
+                                    @php
+                                        $file = (string) $movement->cost->receipt_file;
+                                    @endphp
+
+                                    @if (is_string($file) && Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                        <a href="{{ $file }}" target="_blank">
+                                            <img src="{{ $file }}" alt="Receipt"
+                                                style="max-width:100px; max-height:100px; cursor: pointer; border-radius: 4px; object-fit: cover; transition: transform 0.2s;"
+                                                onmouseover="this.style.transform='scale(1.05)'"
+                                                onmouseout="this.style.transform='scale(1)'"
+                                                title="คลิกเพื่อดูภาพในแท็บใหม่">
+                                        </a>
+                                    @else
+                                        <a href="{{ $file }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-download"></i> ดาวน์โหลด
+                                        </a>
+                                    @endif
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
                             <td class="text-center">{{ $movement->created_at->format('d/m/Y H:i') }}</td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="10" class="text-center text-danger">❌ ไม่มีข้อมูลความเคลื่อนไหว</td>
+                            <td colspan="11" class="text-center text-danger">❌ ไม่มีข้อมูลความเคลื่อนไหว</td>
                         </tr>
                     @endforelse
                 </tbody>

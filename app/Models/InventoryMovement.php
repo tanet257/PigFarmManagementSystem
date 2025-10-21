@@ -12,6 +12,7 @@ class InventoryMovement extends Model
         'storehouse_id',
         'batch_id',
         'barn_id',
+        'cost_id',
         'change_type', // in หรือ out
         'quantity',
         'note',
@@ -32,5 +33,10 @@ class InventoryMovement extends Model
     public function barn()
     {
         return $this->belongsTo(Barn::class);
+    }
+
+    public function cost()
+    {
+        return $this->belongsTo(Cost::class);
     }
 }

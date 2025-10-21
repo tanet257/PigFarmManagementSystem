@@ -18,6 +18,7 @@ use App\Models\PigEntryRecord;
 use App\Models\PigEntryDetail;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\PigInventoryHelper;
+use App\Helpers\NotificationHelper;
 
 class PigEntryController extends Controller
 {
@@ -501,50 +502,111 @@ class PigEntryController extends Controller
         try {
             $record = PigEntryRecord::findOrFail($id);
 
-            $validated = $request->validate([
-                'paid_amount' => 'required|numeric|min:0',
-                'payment_method' => 'required|in:เงินสด,โอนเงิน',
-                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-                'note' => 'nullable|string',
-            ]);
+            // Validate input - แยก validation logic เพื่อให้ messages ออกมาชัดเจน
+            try {
+                $validated = $request->validate(
+                    [
+                        'paid_amount' => 'required|numeric|min:0.01',
+                        'payment_method' => 'required|in:เงินสด,โอนเงิน',
+                        'receipt_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+                        'note' => 'nullable|string',
+                    ],
+                    [
+                        'paid_amount.required' => 'จำนวนเงินที่ชำระเป็นบังคับ',
+                        'paid_amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
+                        'paid_amount.min' => 'จำนวนเงินต้องมากกว่า 0',
+                        'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
+                        'payment_method.in' => 'วิธีชำระเงินไม่ถูกต้อง',
+                        'receipt_file.required' => 'กรุณาอัปโหลดหลักฐานการชำระเงิน',
+                        'receipt_file.file' => 'หลักฐานการชำระเงินต้องเป็นไฟล์',
+                        'receipt_file.mimes' => 'ประเภทไฟล์ต้องเป็น jpg, jpeg, png หรือ pdf',
+                        'receipt_file.max' => 'ขนาดไฟล์ต้องไม่เกิน 5 MB',
+                    ]
+                );
+            } catch (\Illuminate\Validation\ValidationException $ve) {
+                // Convert errors array to string
+                $errorMessages = [];
+                foreach ($ve->errors() as $field => $messages) {
+                    $errorMessages = array_merge($errorMessages, $messages);
+                }
+                $errorText = implode("\n", $errorMessages);
+
+                // Return validation errors
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', $errorText);
+            }
 
             DB::beginTransaction();
 
-            // อัปโหลดไฟล์ receipt ถ้ามี
+            // อัปโหลดไฟล์ receipt (ต้องมี)
             $receiptPath = null;
             if ($request->hasFile('receipt_file')) {
                 $file = $request->file('receipt_file');
-                $result = Cloudinary::upload($file->getRealPath(), [
-                    'folder' => 'pig-farm/pig-entry-receipts',
-                    'resource_type' => 'auto',
-                ]);
-                $receiptPath = $result->getSecurePath();
+                if ($file->isValid()) {
+                    try {
+                        $uploadResult = Cloudinary::upload($file->getRealPath(), [
+                            'folder' => 'pig-farm/pig-entry-receipts',
+                            'resource_type' => 'auto',
+                        ]);
+
+                        // CloudinaryEngine::upload() returns the engine instance itself
+                        // Call getSecurePath() to extract the URL from the stored response
+                        $receiptPath = $uploadResult->getSecurePath();
+                        Log::info('Receipt path from getSecurePath: ' . ($receiptPath ?? 'null'));
+                    } catch (\Exception $e) {
+                        Log::error('Cloudinary upload error: ' . $e->getMessage());
+                        DB::rollBack();
+                        return redirect()->back()
+                            ->withInput()
+                            ->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
+                    }
+                } else {
+                    DB::rollBack();
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
+                }
             }
 
-            // สร้าง Cost record เพื่อบันทึกการชำระเงิน
+            // ตรวจสอบว่าอัปโหลดสำเร็จ
+            if (!$receiptPath) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
+            }            // สร้าง Cost record เพื่อบันทึกการชำระเงิน
             $totalAmount = $record->total_pig_price +
                           ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
                           ($record->batch->costs->sum('transport_cost') ?? 0);
 
             Cost::create([
+                'farm_id' => $record->batch->farm_id,
                 'batch_id' => $record->batch_id,
                 'pig_entry_record_id' => $record->id,
-                'expense_type' => 'การรับเข้าหมู',
-                'paid_amount' => $validated['paid_amount'],
+                'cost_type' => 'payment',
+                'amount' => $validated['paid_amount'],
                 'payment_method' => $validated['payment_method'],
                 'receipt_file' => $receiptPath,
-                'note' => $validated['note'] ?? '',
-                'description' => "บันทึกการชำระเงิน - " . $record->batch->batch_code,
+                'payment_status' => 'pending',
+                'paid_date' => now()->toDateString(),
+                'date' => now()->toDateString(),
+                'note' => $validated['note'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
             ]);
+
+            // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน
+            NotificationHelper::notifyAdminsPigEntryPaymentRecorded($record, auth()->user());
 
             DB::commit();
 
             return redirect()->route('pig_entry_records.index')
-                ->with('success', 'บันทึกการชำระเงินเรียบร้อยแล้ว');
+                ->with('success', 'บันทึกการชำระเงินเรียบร้อยแล้ว - รอ admin อนุมัติ');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Payment update error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 }

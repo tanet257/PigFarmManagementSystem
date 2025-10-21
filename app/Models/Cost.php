@@ -30,6 +30,17 @@ class Cost extends Model
         'date',
     ];
 
+    // Cast receipt_file to ensure it's always a string
+    protected $casts = [
+        'receipt_file' => 'string',
+    ];
+
+    // Accessor to ensure receipt_file is always a string
+    public function getReceiptFileAttribute($value)
+    {
+        return (string) $value;
+    }
+
     // ------------ Relationships ------------ //
 
     public function farm()

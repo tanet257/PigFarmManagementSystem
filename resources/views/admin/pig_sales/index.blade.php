@@ -187,6 +187,7 @@
                         </th>
                         <th class="text-center">สถานะชำระ</th>
                         <th class="text-center">สถานะอนุมัติ</th>
+                        <th class="text-center">สลิป</th>
                         <th class="text-center">บันทึกโดย</th>
                         <th class="text-center">จัดการ</th>
                     </tr>
@@ -253,6 +254,29 @@
                                     <span class="badge bg-warning">
                                         <i class="bi bi-clock"></i> รออนุมัติ
                                     </span>
+                                @endif
+                            </td>
+                            <td class="text-center">
+                                @if ($sell->receipt_file)
+                                    @php
+                                        $file = (string) $sell->receipt_file;
+                                    @endphp
+
+                                    @if (is_string($file) && Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                        <a href="{{ $file }}" target="_blank">
+                                            <img src="{{ $file }}" alt="Receipt"
+                                                style="max-width:100px; max-height:100px; cursor: pointer; border-radius: 4px; object-fit: cover; transition: transform 0.2s;"
+                                                onmouseover="this.style.transform='scale(1.05)'"
+                                                onmouseout="this.style.transform='scale(1)'"
+                                                title="คลิกเพื่อดูภาพในแท็บใหม่">
+                                        </a>
+                                    @else
+                                        <a href="{{ $file }}" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-file-earmark-pdf"></i> ดูสลิป
+                                        </a>
+                                    @endif
+                                @else
+                                    <span class="text-muted">-</span>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -462,6 +486,26 @@
                                 <td><strong>คงเหลือ:</strong></td>
                                 <td>{{ number_format($sell->balance, 2) }} บาท</td>
                             </tr>
+                            @if ($sell->receipt_file)
+                                <tr>
+                                    <td><strong>สลิป:</strong></td>
+                                    <td>
+                                        @php
+                                            $file = (string) $sell->receipt_file;
+                                        @endphp
+
+                                        @if (is_string($file) && Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                            <a href="{{ $file }}" target="_blank">
+                                                <img src="{{ $file }}" alt="Receipt" style="max-width: 100%; height: auto; max-height: 200px; border-radius: 4px;">
+                                            </a>
+                                        @else
+                                            <a href="{{ $file }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-file-earmark-pdf"></i> ดูสลิป
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endif
                         </table>
                         @if ($sell->note)
                             <hr>
@@ -843,6 +887,13 @@
 
 
     @push('scripts')
+        <style>
+            .form-check-input-sm {
+                width: 1rem;
+                height: 1rem;
+                margin-top: 0.15rem;
+            }
+        </style>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 // Auto-submit form on filter change (for index page filters)
@@ -966,7 +1017,7 @@
                     });
             }
 
-            // Load pen selection table based on farm and batch
+            // ========= PEN SELECTION TABLE ==========
             function loadPenSelectionTable() {
                 const farmId = farmSelectInput.value;
                 const batchId = batchSelectInput.value;
@@ -990,34 +1041,32 @@
                         if (data.success && data.data && data.data.length > 0) {
                             // Create table
                             let html = `
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-hover align-middle mb-0">
-                                        <thead class="table-light">
+                                <div class="table-responsive mt-3">
+                                    <table class="table table-primary mb-0">
+                                        <thead class="table-header-custom">
                                             <tr>
-                                                <th class="text-center" style="width: 50px;">
-                                                    <input type="checkbox" id="select_all_pens" class="form-check-input">
+                                                <th class="text-center" style="width: 45px;">
+                                                    <input type="checkbox" id="select_all_pens" class="form-check-input form-check-input-sm">
                                                 </th>
-                                                <th style="width: 120px;">เล้า</th>
-                                                <th style="width: 120px;">คอก</th>
-                                                <th>สถานะ</th>
-                                                <th class="text-center" style="width: 120px;">จำนวนหมูที่เหลือ</th>
-                                                <th class="text-center" style="width: 120px;">จำนวนหมูที่ขาย</th>
+                                                <th>เล้า</th>
+                                                <th>คอก</th>
+                                                <th class="text-center">จำนวนหมูที่เหลือ</th>
+                                                <th class="text-center">จำนวนหมูที่ขาย</th>
                                             </tr>
                                         </thead>
                                         <tbody>`;
 
                             data.data.forEach((pen, index) => {
-                                const penId = pen.pen_id; // API ส่ง pen_id
-                                const maxQty = pen.current_quantity || 0; // API ส่ง current_quantity
+                                const penId = pen.pen_id;
+                                const maxQty = pen.current_quantity || 0;
                                 html += `
                                     <tr class="pen-row" data-pen-id="${penId}">
                                         <td class="text-center">
-                                            <input type="checkbox" class="form-check-input pen-checkbox" name="selected_pens[]" value="${penId}" data-pen-id="${penId}" data-max-qty="${maxQty}">
+                                            <input type="checkbox" class="form-check-input form-check-input-sm pen-checkbox" name="selected_pens[]" value="${penId}" data-pen-id="${penId}" data-max-qty="${maxQty}">
                                         </td>
-                                        <td>${pen.barn_name || 'N/A'}</td>
-                                        <td>${pen.pen_name || 'N/A'}</td>
-                                        <td><span class="badge bg-success">มีหมู</span></td>
-                                        <td class="text-center">${maxQty}</td>
+                                        <td>${pen.barn_name || 'ไม่ระบุ'}</td>
+                                        <td>${pen.pen_name || 'ไม่ระบุ'}</td>
+                                        <td class="text-center"><strong>${maxQty}</strong></td>
                                         <td class="text-center">
                                             <input type="number" name="quantities[${penId}]"
                                                 class="form-control form-control-sm quantity-input text-center"

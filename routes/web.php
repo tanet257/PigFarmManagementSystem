@@ -14,6 +14,8 @@ use App\Http\Controllers\PigSaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\UserApprovalController;
+use App\Http\Controllers\PaymentApprovalController;
+use App\Http\Controllers\ProfitController;
 
 //------------------- route home/admin -------------------------//
 Route::get('/', [HomeController::class, 'my_home'])->middleware(['prevent.cache'])->name('home.my_home');
@@ -216,6 +218,22 @@ Route::prefix('user_management')->middleware(['auth', 'prevent.cache', 'permissi
     Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('user_management.assign_role');
     Route::post('/{id}/update_roles', [UserManagementController::class, 'updateRoles'])->name('user_management.update_roles');
     Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('user_management.destroy');
+});
+
+//------------------- route payment approvals ----------------//
+Route::prefix('payment_approvals')->middleware(['auth', 'prevent.cache'])->group(function () {
+    Route::get('/', [PaymentApprovalController::class, 'index'])->name('payment_approvals.index');
+    Route::get('/{notificationId}/detail', [PaymentApprovalController::class, 'detail'])->name('payment_approvals.detail');
+    Route::post('/{notificationId}/approve', [PaymentApprovalController::class, 'approve'])->name('payment_approvals.approve');
+    Route::post('/{notificationId}/reject', [PaymentApprovalController::class, 'reject'])->name('payment_approvals.reject');
+});
+
+//------------------- route profits -------------------------//
+Route::prefix('profits')->middleware(['auth', 'prevent.cache'])->group(function () {
+    Route::get('/', [ProfitController::class, 'index'])->name('profits.index');
+    Route::get('/{id}', [ProfitController::class, 'show'])->name('profits.show');
+    Route::post('/{batchId}/recalculate', [ProfitController::class, 'recalculateBatchProfit'])->name('profits.recalculate');
+    Route::get('/export/pdf', [ProfitController::class, 'exportPdf'])->name('profits.export.pdf');
 });
 
 //------------------- route dashboard ------------------------//

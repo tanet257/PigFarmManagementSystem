@@ -65,6 +65,10 @@
                  </ul>
              </li>
 
+             <li><a href="{{ route('payment_approvals.index') }}"><i class="bi bi-clipboard-check"></i> อนุมัติการชำระเงิน</a></li>
+
+             <li><a href="{{ route('user_management.index') }}"><i class="bi bi-clipboard-check"></i> จัดการผู้ใช้</a></li>
+
              <li><a href="#farmMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Farm / Barn / Pen </a>
                  <ul id="farmMenuDropdown" class="collapse list-unstyled ">

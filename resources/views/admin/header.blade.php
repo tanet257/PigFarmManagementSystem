@@ -65,15 +65,14 @@
                                     style="max-height: 400px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                                     @forelse($recentNotifications as $notification)
                                         <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
-                                            class="dropdown-item px-4 py-3 {{ !$notification->is_read ? 'bg-light' : 'bg-white' }}"
+                                            class="dropdown-item px-4 py-3 {{ !$notification->is_read ? 'bg-white' : 'bg-white' }}"
                                             style="text-decoration: none; transition: all 0.2s ease; border-bottom: 1px solid #e9ecef; display: block;">
                                             <div class="d-flex gap-3 align-items-start">
                                                 <div class="flex-grow-1">
                                                     <div class="d-flex align-items-center gap-2 mb-2">
                                                         <strong class="text-light">{{ $notification->title }}</strong>
                                                         @if (!$notification->is_read)
-                                                            <span class="badge bg-danger rounded-circle"
-                                                                style="width: 8px; height: 8px; padding: 0;"></span>
+                                                            <span class="badge bg-danger" style="font-size: 0.65rem;">NEW</span>
                                                         @endif
                                                     </div>
                                                     <p class="text-light mb-2 small" style="font-size: 0.85rem;">

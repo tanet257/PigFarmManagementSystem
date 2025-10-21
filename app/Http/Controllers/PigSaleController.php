@@ -16,9 +16,11 @@ use App\Models\Pen;
 use App\Models\PigSale;
 use App\Models\PigSaleDetail;
 use App\Models\PigDeath;
+use App\Models\Cost;
 use App\Services\PigPriceService;
 use App\Helpers\PigInventoryHelper;
 use App\Helpers\NotificationHelper;
+use App\Helpers\RevenueHelper;
 
 class PigSaleController extends Controller
 {
@@ -396,17 +398,16 @@ class PigSaleController extends Controller
                 'pig_loss_id' => 'nullable|exists:pig_deaths,id',
             ]);
 
-            // ลดจำนวนหมูจากหลายคอก และบันทึกรายละเอียด
+            // บันทึกรายละเอียดการขายจากหลายคอก (ลด current_quantity แต่ไม่ลด allocated_pigs)
             $detailsData = [];
             foreach ($validated['selected_pens'] as $penId) {
                 $quantity = $validated['quantities'][$penId] ?? 0;
 
                 if ($quantity > 0) {
-                    $result = PigInventoryHelper::reducePigInventory(
+                    $result = PigInventoryHelper::reduceCurrentQuantityOnly(
                         $validated['batch_id'],
                         $penId,
-                        $quantity,
-                        'sale'
+                        $quantity
                     );
 
                     if (!$result['success']) {
@@ -487,6 +488,36 @@ class PigSaleController extends Controller
             // แจ้งเตือน Admin เมื่อมีการขายหมู
             NotificationHelper::notifyAdminsPigSale($pigSale, auth()->user());
 
+            // บันทึกค่าขนส่งลงใน costs table (ถ้ามี)
+            if ($validated['shipping_cost'] && $validated['shipping_cost'] > 0) {
+                Cost::create([
+                    'farm_id'        => $validated['farm_id'],
+                    'batch_id'       => $validated['batch_id'],
+                    'date'           => $validated['date'],
+                    'cost_type'      => 'shipping', // ค่าขนส่ง
+                    'item_code'      => 'PS-' . $pigSale->sale_number, // อ้างอิงจากเลขที่ขายหมู
+                    'quantity'       => 1,
+                    'unit'           => 'ครั้ง',
+                    'transport_cost' => $validated['shipping_cost'],
+                    'total_price'    => $validated['shipping_cost'],
+                    'note'           => 'ค่าขนส่งจากการขายหมู (ขาย ' . $validated['total_quantity'] . ' ตัว)',
+                ]);
+            }
+
+            // บันทึกรายได้จากการขายหมู
+            $revenueResult = RevenueHelper::recordPigSaleRevenue($pigSale);
+
+            if (!$revenueResult['success']) {
+                Log::warning('PigSale - Revenue recording failed: ' . $revenueResult['message']);
+            }
+
+            // คำนวณกำไรและบันทึกลง profit table
+            $profitResult = RevenueHelper::calculateAndRecordProfit($validated['batch_id']);
+
+            if (!$profitResult['success']) {
+                Log::warning('PigSale - Profit calculation failed: ' . $profitResult['message']);
+            }
+
             DB::commit();
 
             return redirect()->route('pig_sales.index')->with('success', 'บันทึกการขายหมูสำเร็จ');
@@ -512,7 +543,8 @@ class PigSaleController extends Controller
 
             // ตรวจสอบไม่ให้อนุมัติการขายที่ตัวเองสร้าง (ยกเว้น Admin)
             $user = auth()->user();
-            if ($pigSale->created_by === $user->name && !$user->hasRole('admin')) {
+            $isAdmin = $user && $user->roles && $user->roles->contains('name', 'admin');
+            if ($pigSale->created_by === $user->name && !$isAdmin) {
                 return redirect()->back()->with('error', 'คุณไม่สามารถอนุมัติการขายที่ตัวเองสร้างได้');
             }
 
@@ -546,7 +578,8 @@ class PigSaleController extends Controller
 
             // ตรวจสอบไม่ให้ปฏิเสธการขายที่ตัวเองสร้าง (ยกเว้น Admin)
             $user = auth()->user();
-            if ($pigSale->created_by === $user->name && !$user->hasRole('admin')) {
+            $isAdmin = $user && $user->roles && $user->roles->contains('name', 'admin');
+            if ($pigSale->created_by === $user->name && !$isAdmin) {
                 return redirect()->back()->with('error', 'คุณไม่สามารถปฏิเสธการขายที่ตัวเองสร้างได้');
             }
 
@@ -572,8 +605,9 @@ class PigSaleController extends Controller
         }
     }
 
-    //--------------------------------------- Upload Receipt ------------------------------------------//
-
+    /**
+     * Upload Receipt for pig sale payment
+     */
     public function uploadReceipt(Request $request, $id)
     {
         DB::beginTransaction();
@@ -583,7 +617,7 @@ class PigSaleController extends Controller
             $validated = $request->validate([
                 'paid_amount' => 'required|numeric|min:0',
                 'payment_method' => 'required|string',
-                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB max
+                'receipt_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120', // 5MB max - ต้องมีไฟล์
             ]);
 
             // ตรวจสอบว่าจำนวนเงินที่ชำระไม่เกินยอดคงเหลือ
@@ -591,13 +625,25 @@ class PigSaleController extends Controller
                 return redirect()->back()->with('error', 'จำนวนเงินที่ชำระเกินยอดคงเหลือ');
             }
 
-            // อัปโหลดไฟล์ (ถ้ามี) หลังจาก validation ผ่านแล้ว
+            // อัปโหลดไฟล์ (ต้องมี)
             $uploadedFileUrl = null;
             if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
-                $uploadedFileUrl = Cloudinary::upload(
-                    $request->file('receipt_file')->getRealPath(),
-                    ['folder' => 'receipt_files']
-                )->getSecurePath();
+                try {
+                    $uploadResult = Cloudinary::upload(
+                        $request->file('receipt_file')->getRealPath(),
+                        ['folder' => 'receipt_files']
+                    );
+                    // CloudinaryEngine::upload() returns the engine instance
+                    $uploadedFileUrl = $uploadResult->getSecurePath();
+                } catch (\Exception $e) {
+                    Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
+                    return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
+                }
+            }
+
+            // ตรวจสอบว่าอัปโหลดสำเร็จ
+            if (!$uploadedFileUrl) {
+                return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
             }
 
             // อัปเดทข้อมูลการชำระเงิน
@@ -612,22 +658,23 @@ class PigSaleController extends Controller
                 $pigSale->payment_status = 'ชำระบางส่วน';
             }
 
-            // บันทึก receipt file (ถ้ามี)
-            if ($uploadedFileUrl) {
-                $pigSale->receipt_file = $uploadedFileUrl;
-            }
+            // บันทึก receipt file (ต้องมี)
+            $pigSale->receipt_file = $uploadedFileUrl;
 
             // บันทึกวิธีชำระเงิน
             $pigSale->payment_method = $validated['payment_method'];
 
             $pigSale->save();
 
+            // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน
+            NotificationHelper::notifyAdminsPigSalePaymentRecorded($pigSale, auth()->user());
+
             DB::commit();
 
             $message = 'บันทึกการชำระเงินสำเร็จ - ';
             $message .= $pigSale->payment_status === 'ชำระแล้ว'
                 ? 'ชำระครบแล้ว'
-                : 'ชำระแล้ว ' . number_format($pigSale->paid_amount, 2) . ' บาท คงเหลือ ' . number_format($pigSale->balance, 2) . ' บาท';
+                : 'ชำระแล้ว ' . number_format((float)$pigSale->paid_amount, 2) . ' บาท คงเหลือ ' . number_format((float)$pigSale->balance, 2) . ' บาท (รอ admin อนุมัติ)';
 
             return redirect()->route('pig_sales.index')->with('success', $message);
         } catch (\Exception $e) {
@@ -645,7 +692,7 @@ class PigSaleController extends Controller
         try {
             $pigSale = PigSale::findOrFail($id);
 
-            // คืนจำนวนหมูกลับทุกคอกตามรายละเอียดที่บันทึกไว้
+            // คืนจำนวนหมู current_quantity กลับทุกคอกตามรายละเอียดที่บันทึกไว้
             $details = PigSaleDetail::where('pig_sale_id', $pigSale->id)->get();
 
             if ($details->isEmpty()) {
@@ -653,7 +700,7 @@ class PigSaleController extends Controller
                 Log::warning("ยกเลิกการขาย ID {$pigSale->id} (ข้อมูลเก่า - ไม่มี pig_sale_details) - คืนหมูแบบ manual");
 
                 if ($pigSale->pen_id && $pigSale->quantity > 0) {
-                    // คืนหมูกลับคอกโดยตรง (ไม่ผ่าน Helper เพื่อหลีกเลี่ยง validation)
+                    // คืนหมูกลับคอกโดยตรง (เฉพาะ current_quantity ไม่เพิ่ม allocated_pigs)
                     $allocation = BatchPenAllocation::where('batch_id', $pigSale->batch_id)
                         ->where('pen_id', $pigSale->pen_id)
                         ->lockForUpdate()
@@ -672,16 +719,26 @@ class PigSaleController extends Controller
                     }
                 }
             } else {
-                // คืนหมูกลับแต่ละคอกตามจำนวนที่ขายไป (ข้อมูลใหม่)
+                // คืนหมู current_quantity กลับแต่ละคอกตามจำนวนที่ขายไป (ข้อมูลใหม่)
                 foreach ($details as $detail) {
-                    $result = PigInventoryHelper::increasePigInventory(
-                        $pigSale->batch_id,
-                        $detail->pen_id,
-                        $detail->quantity
-                    );
+                    // เพิ่ม current_quantity กลับ
+                    $allocation = BatchPenAllocation::where('batch_id', $pigSale->batch_id)
+                        ->where('pen_id', $detail->pen_id)
+                        ->lockForUpdate()
+                        ->first();
 
-                    if (!$result['success']) {
-                        throw new \Exception('ไม่สามารถคืนหมูกลับคอก #' . $detail->pen_id . ' ได้: ' . $result['message']);
+                    if (!$allocation) {
+                        throw new \Exception('ไม่พบข้อมูลหมูในคอก #' . $detail->pen_id);
+                    }
+
+                    $allocation->current_quantity = ($allocation->current_quantity ?? 0) + $detail->quantity;
+                    $allocation->save();
+
+                    // เพิ่ม current_quantity กลับในรุ่น
+                    $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
+                    if ($batch) {
+                        $batch->current_quantity = ($batch->current_quantity ?? 0) + $detail->quantity;
+                        $batch->save();
                     }
                 }
             }

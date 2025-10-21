@@ -93,6 +93,96 @@ class PigInventoryHelper
     }
 
     /**
+     * ลดจำนวนหมู current_quantity เท่านั้น (ไม่ลด allocated_pigs)
+     * ใช้เมื่อบันทึกการขายหมู - ลดจำนวนหมูคงเหลือแต่ไม่ลดจำนวนที่จัดสรรเริ่มต้น
+     *
+     * @param int $batchId รหัสรุ่น
+     * @param int $penId รหัสเล้า-คอก
+     * @param int $quantity จำนวนหมูที่ต้องการลด
+     * @return array ['success' => bool, 'message' => string, 'data' => array]
+     */
+    public static function reduceCurrentQuantityOnly($batchId, $penId, $quantity)
+    {
+        try {
+            DB::beginTransaction();
+
+            // 1. ตรวจสอบข้อมูล batch_pen_allocations
+            $allocation = BatchPenAllocation::where('batch_id', $batchId)
+                ->where('pen_id', $penId)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$allocation) {
+                return [
+                    'success' => false,
+                    'message' => '❌ ไม่พบข้อมูลหมูในเล้า-คอกนี้',
+                    'data' => null
+                ];
+            }
+
+            // 2. ตรวจสอบจำนวนหมูคงเหลือ
+            $currentQuantity = $allocation->current_quantity ?? $allocation->allocated_pigs;
+
+            if ($currentQuantity < $quantity) {
+                return [
+                    'success' => false,
+                    'message' => "❌ หมูในเล้า-คอกไม่เพียงพอ (มีอยู่ {$currentQuantity} ตัว ต้องการ {$quantity} ตัว)",
+                    'data' => [
+                        'available' => $currentQuantity,
+                        'requested' => $quantity,
+                        'shortage' => $quantity - $currentQuantity
+                    ]
+                ];
+            }
+
+            // 3. ลดจำนวนหมู current_quantity เท่านั้น (ไม่ลด allocated_pigs)
+            $newQuantity = $currentQuantity - $quantity;
+            $allocation->current_quantity = $newQuantity;
+            $allocation->save();
+
+            // 4. ลดจำนวนหมูใน batches
+            $batch = Batch::lockForUpdate()->find($batchId);
+
+            if (!$batch) {
+                throw new Exception('ไม่พบข้อมูลรุ่น');
+            }
+
+            $batchCurrentQuantity = $batch->current_quantity ?? $batch->total_pig_amount;
+            $batch->current_quantity = $batchCurrentQuantity - $quantity;
+            $batch->save();
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => "✅ ลดจำนวนหมูเรียบร้อย ({$quantity} ตัว)",
+                'data' => [
+                    'quantity_reduced' => $quantity,
+                    'pen_allocation' => [
+                        'before' => $currentQuantity,
+                        'after' => $newQuantity,
+                        'remaining' => $newQuantity,
+                        'allocated_pigs' => $allocation->allocated_pigs  // ไม่เปลี่ยนแปลง
+                    ],
+                    'batch' => [
+                        'before' => $batchCurrentQuantity,
+                        'after' => $batch->current_quantity,
+                        'remaining' => $batch->current_quantity
+                    ]
+                ]
+            ];
+        } catch (Exception $e) {
+            DB::rollBack();
+
+            return [
+                'success' => false,
+                'message' => '❌ เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'data' => null
+            ];
+        }
+    }
+
+    /**
      * ลดจำนวนหมูจากเล้า-คอกและรุ่น (เมื่อมีการขาย/ตาย/คัดทิ้ง)
      *
      * @param int $batchId รหัสรุ่น
@@ -291,15 +381,15 @@ class PigInventoryHelper
                 $pigs[] = [
                     'allocation_id' => $allocation->id,
                     'pen_id' => $allocation->pen_id,
-                    'pen_name' => $allocation->pen->pen_name ?? 'ไม่ระบุ',
-                    'barn_name' => $allocation->pen->barn->barn_name ?? 'ไม่ระบุ',
+                    'pen_name' => $allocation->pen->pen_code ?? 'ไม่ระบุ',
+                    'barn_name' => $allocation->pen->barn->barn_code ?? 'ไม่ระบุ',
                     'original_quantity' => $allocation->allocated_pigs,
                     'current_quantity' => $currentQuantity,
                     'available' => $currentQuantity,
                     'display_name' => sprintf(
                         '%s - %s (%d ตัว)',
-                        $allocation->pen->barn->barn_name ?? 'ไม่ระบุ',
-                        $allocation->pen->pen_name ?? 'ไม่ระบุ',
+                        $allocation->pen->barn->barn_code ?? 'ไม่ระบุ',
+                        $allocation->pen->pen_code ?? 'ไม่ระบุ',
                         $currentQuantity
                     )
                 ];

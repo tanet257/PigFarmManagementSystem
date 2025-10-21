@@ -4,6 +4,8 @@
 
 @section('content')
     <div class="container my-5">
+
+
         <div class="card-header">
             <h1 class="text-center">บันทึกหมูเข้า (Pig Entry Records)</h1>
         </div>
@@ -228,17 +230,24 @@
                             <td class="text-center">
                                 @if ($record->latestCost && !empty($record->latestCost->receipt_file))
                                     @php
-                                        $file = $record->latestCost->receipt_file;
+                                        $file = (string) $record->latestCost->receipt_file;
                                     @endphp
 
-                                    @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
-                                        <img src="{{ $file }}" alt="Receipt"
-                                            style="max-width:100px; max-height:100px;">
+                                    @if (is_string($file) && Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                                        <a href="{{ $file }}" target="_blank">
+                                            <img src="{{ $file }}" alt="Receipt"
+                                                style="max-width:100px; max-height:100px; cursor: pointer; border-radius: 4px; object-fit: cover; transition: transform 0.2s;"
+                                                onmouseover="this.style.transform='scale(1.05)'"
+                                                onmouseout="this.style.transform='scale(1)'"
+                                                title="คลิกเพื่อดูภาพในแท็บใหม่">
+                                        </a>
                                     @else
-                                        <a href="{{ $file }}" target="_blank">Download</a>
+                                        <a href="{{ $file }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-download"></i> ดาวน์โหลด
+                                        </a>
                                     @endif
                                 @else
-                                    <span class="text-muted">ไม่มีไฟล์</span>
+                                    <span class="text-muted">-</span>
                                 @endif
                             </td>
 
@@ -404,9 +413,9 @@
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
                         </div>
                     </div>
+                </form>
             </div>
         </div>
-    </div>
     </div>
     {{-- End Create Modal --}}
 
@@ -505,9 +514,9 @@
                                 <i class="bi bi-receipt"></i> ใบเสร็จ
                             </h6>
                             @php
-                                $file = $record->latestCost->receipt_file;
+                                $file = (string) $record->latestCost->receipt_file;
                             @endphp
-                            @if (Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
+                            @if (is_string($file) && Str::endsWith($file, ['.jpg', '.jpeg', '.png']))
                                 <img src="{{ $file }}" alt="Receipt" style="max-width:100%; height: auto;"
                                     class="rounded">
                             @else
@@ -525,49 +534,31 @@
             </div>
         </div>
 
-        {{-- Payment/Edit Modal --}}
+        {{-- Payment Modal --}}
         <div class="modal fade" id="paymentModal{{ $record->id }}" tabindex="-1">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <div class="modal-header bg-info text-white">
-                        <h5 class="modal-title">
-                            <i class="bi bi-cash"></i> บันทึกการชำระเงิน - {{ $record->batch->batch_code ?? '-' }}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <div class="modal-header">
+                        <h5 class="modal-title">บันทึกการชำระเงิน</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <form action="{{ route('pig_entry_records.update_payment', $record->id) }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
                         <div class="modal-body">
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i>
-                                <strong>วันที่รับเข้า:</strong> {{ $record->pig_entry_date }}<br>
-                                <strong>จำนวนหมู:</strong> {{ $record->total_pig_amount }} ตัว
-                            </div>
-
                             <div class="mb-3">
                                 <label class="form-label">ยอดที่ต้องชำระ</label>
                                 <input type="text" class="form-control"
-                                    value="{{ number_format(
-                                        $record->total_pig_price +
-                                            ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
-                                            ($record->batch->costs->sum('transport_cost') ?? 0),
-                                        2,
-                                    ) }} บาท"
+                                    value="{{ number_format($record->total_pig_price + ($record->batch->costs->sum('excess_weight_cost') ?? 0) + ($record->batch->costs->sum('transport_cost') ?? 0), 2) }} บาท"
                                     readonly>
                             </div>
-
                             <div class="mb-3">
                                 <label class="form-label">จำนวนเงินที่ชำระ</label>
                                 <input type="number" name="paid_amount" class="form-control" step="0.01"
                                     min="0"
-                                    value="{{ $record->total_pig_price +
-                                        ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
-                                        ($record->batch->costs->sum('transport_cost') ?? 0) }}"
-                                    required>
+                                    value="{{ $record->total_pig_price + ($record->batch->costs->sum('excess_weight_cost') ?? 0) + ($record->batch->costs->sum('transport_cost') ?? 0) }}">
                             </div>
-
                             <div class="mb-3">
                                 <label class="form-label">วิธีชำระเงิน <span class="text-danger">*</span></label>
                                 <div class="dropdown">
@@ -576,43 +567,29 @@
                                         type="button" id="paymentMethodDropdownBtn{{ $record->id }}"
                                         data-bs-toggle="dropdown" aria-expanded="false">
                                         <span>-- เลือกวิธีชำระเงิน --</span>
+
                                     </button>
-                                    <ul class="dropdown-menu w-100">
-                                        <li>
-                                            <a class="dropdown-item" href="#" data-payment-method="เงินสด"
-                                                onclick="updatePaymentMethod(event, {{ $record->id }})">
-                                                เงินสด
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="#" data-payment-method="โอนเงิน"
-                                                onclick="updatePaymentMethod(event, {{ $record->id }})">
-                                                โอนเงิน
-                                            </a>
+                                    <ul class="dropdown-menu w-100" role="listbox">
+                                        <li><a class="dropdown-item" href="#" data-payment-method="เงินสด"
+                                                onclick="updatePaymentMethod(event, {{ $record->id }})">เงินสด</a></li>
+                                        <li><a class="dropdown-item" href="#" data-payment-method="โอนเงิน"
+                                                onclick="updatePaymentMethod(event, {{ $record->id }})">โอนเงิน</a>
                                         </li>
                                     </ul>
                                     <input type="hidden" name="payment_method" id="paymentMethod{{ $record->id }}"
-                                        value="" required>
+                                        value="">
                                 </div>
                             </div>
-
                             <div class="mb-3">
-                                <label class="form-label">อัปโหลดหลักฐานการชำระ (ถ้ามี)</label>
+                                <label class="form-label">อัปโหลดหลักฐานการชำระ <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control" name="receipt_file"
                                     accept="image/*,application/pdf">
                                 <small class="text-muted">รองรับไฟล์: JPG, PNG, PDF (สูงสุด 5MB)</small>
                             </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">หมายเหตุ</label>
-                                <textarea name="note" class="form-control" rows="2"></textarea>
-                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> บันทึกการชำระเงิน
-                            </button>
+                            <button type="submit" class="btn btn-primary" id="paymentSubmitBtn{{ $record->id }}">บันทึก</button>
                         </div>
                     </form>
                 </div>
@@ -620,9 +597,47 @@
         </div>
     @endforeach
 
+
     @push('scripts')
-        <!--flatpickr-->
+        {{-- Auto-submit filters --}}
         <script>
+            // Snackbar notification function
+            function showSnackbar(message, bgColor = "#dc3545") {
+                // Create snackbar element if not exists
+                let sb = document.getElementById("snackbar");
+                if (!sb) {
+                    sb = document.createElement('div');
+                    sb.id = "snackbar";
+                    sb.style.cssText = `
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        background-color: ${bgColor};
+                        color: white;
+                        padding: 15px 20px;
+                        border-radius: 4px;
+                        display: none;
+                        z-index: 9999;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                        font-size: 14px;
+                        font-weight: 500;
+                        white-space: pre-wrap;
+                        word-wrap: break-word;
+                    `;
+                    document.body.appendChild(sb);
+                }
+
+                sb.textContent = message;
+                sb.style.backgroundColor = bgColor;
+                sb.style.display = "block";
+                sb.classList.add("show");
+
+                setTimeout(() => {
+                    sb.classList.remove("show");
+                    sb.style.display = "none";
+                }, 5000);
+            }
+
             // ใช้ class dateWrapper
             document.addEventListener('shown.bs.modal', function(event) {
                 event.target.querySelectorAll('.dateWrapper').forEach(el => {
@@ -635,11 +650,89 @@
                     }
                 });
             });
+
+            // Update payment method dropdown
+            function updatePaymentMethod(event, recordId) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const paymentMethod = event.target.getAttribute('data-payment-method');
+                const methodText = event.target.textContent.trim();
+
+                const btnElement = document.getElementById('paymentMethodDropdownBtn' + recordId);
+                const inputElement = document.getElementById('paymentMethod' + recordId);
+
+                if (btnElement && inputElement) {
+                    btnElement.querySelector('span').textContent = methodText;
+                    inputElement.value = paymentMethod;
+
+                    // ปิด dropdown โดยใช้ Bootstrap
+                    const dropdown = bootstrap.Dropdown.getInstance(btnElement);
+                    if (dropdown) {
+                        dropdown.hide();
+                    }
+                }
+            }
+
+            // Add form submission validation for all payment forms
+            document.addEventListener('DOMContentLoaded', function() {
+                // Find all payment modals and add form validation
+                document.querySelectorAll('[id^="paymentModal"]').forEach(modal => {
+                    const form = modal.querySelector('form');
+                    if (form) {
+                        console.log('Found payment form in modal:', modal.id, 'Form action:', form.action);
+
+                        // Add additional console logging on modal open
+                        const modalBsModal = new bootstrap.Modal(modal);
+                        modal.addEventListener('shown.bs.modal', function() {
+                            const recordId = modal.id.replace('paymentModal', '');
+                            const paymentBtn = document.getElementById('paymentSubmitBtn' + recordId);
+                            console.log('Modal opened:', modal.id, 'Submit button:', paymentBtn?.id, 'Enabled:', !paymentBtn?.disabled);
+                        });
+
+                        form.addEventListener('submit', function(e) {
+                            console.log('Payment form submit triggered for modal:', modal.id);
+                            const recordId = modal.id.replace('paymentModal', '');
+                            const paymentMethodInput = document.getElementById('paymentMethod' + recordId);
+                            const receiptInput = form.querySelector('input[name="receipt_file"]');
+                            const paidAmountInput = form.querySelector('input[name="paid_amount"]');
+
+                            console.log('Validation check:', {
+                                paid_amount: paidAmountInput?.value,
+                                payment_method: paymentMethodInput?.value,
+                                receipt_files: receiptInput?.files?.length,
+                                form_action: form.action
+                            });
+
+                            let errors = [];
+
+                            if (!paidAmountInput.value || parseFloat(paidAmountInput.value) <= 0) {
+                                errors.push('❌ จำนวนเงินที่ชำระต้องมากกว่า 0');
+                            }
+
+                            if (!paymentMethodInput.value) {
+                                errors.push('❌ กรุณาเลือกวิธีชำระเงิน');
+                            }
+
+                            if (!receiptInput.files.length) {
+                                errors.push('❌ กรุณาอัปโหลดหลักฐานการชำระเงิน');
+                            }
+
+                            if (errors.length > 0) {
+                                console.log('Validation errors found:', errors);
+                                e.preventDefault();
+                                showSnackbar(errors.join('\n'));
+                                return false;
+                            } else {
+                                console.log('Validation passed, allowing form submission');
+                            }
+                        });
+                    }
+                });
+            });
         </script>
 
-        {{-- JS สำหรับ fetch barns + batches --}}
-
-        <script>
+        {{-- JS สำหรับ fetch barns + batches --}}        <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const batches = @json($batches);
                 const farms = @json($farms);
@@ -734,28 +827,31 @@
                 });
 
                 // FORM VALIDATION
-                document.querySelector('#createModal form').addEventListener('submit', function(e) {
-                    const farmId = farmSelect.value;
-                    const batchId = batchSelect.value;
-                    const barnCheckboxes = document.querySelectorAll(
-                        '#createBarnCheckboxContainer .barn-checkbox:checked');
+                const createForm = document.querySelector('#createModal form');
+                if (createForm) {
+                    createForm.addEventListener('submit', function(e) {
+                        const farmId = farmSelect.value;
+                        const batchId = batchSelect.value;
+                        const barnCheckboxes = document.querySelectorAll(
+                            '#createBarnCheckboxContainer .barn-checkbox:checked');
 
-                    if (!farmId) {
-                        e.preventDefault();
-                        showSnackbar('กรุณาเลือกฟาร์ม');
-                        return false;
-                    }
-                    if (!batchId) {
-                        e.preventDefault();
-                        showSnackbar('กรุณาเลือกรุ่น');
-                        return false;
-                    }
-                    if (barnCheckboxes.length === 0) {
-                        e.preventDefault();
-                        showSnackbar('กรุณาเลือกเล้าอย่างน้อยหนึ่งตัว');
-                        return false;
-                    }
-                });
+                        if (!farmId) {
+                            e.preventDefault();
+                            showSnackbar('กรุณาเลือกฟาร์ม');
+                            return false;
+                        }
+                        if (!batchId) {
+                            e.preventDefault();
+                            showSnackbar('กรุณาเลือกรุ่น');
+                            return false;
+                        }
+                        if (barnCheckboxes.length === 0) {
+                            e.preventDefault();
+                            showSnackbar('กรุณาเลือกเล้าอย่างน้อยหนึ่งตัว');
+                            return false;
+                        }
+                    });
+                }
             });
         </script>
 
@@ -767,6 +863,14 @@
                 const filterForm = document.getElementById('filterForm');
                 const farmFilter = document.getElementById('farmFilter');
                 const batchFilter = document.getElementById('batchFilter');
+
+                // Null check for elements - if form uses dropdown buttons, skip this script
+                if (!filterForm || !farmFilter || !batchFilter) {
+                    console.log('Filter form is using dropdown buttons, skipping select-based logic');
+                    setupClickableRows(); // still call this
+                    return;
+                }
+
                 const allFilters = filterForm.querySelectorAll('select');
 
                 // เมื่อพยายามเลือก batch โดยที่ยังไม่เลือก farm
