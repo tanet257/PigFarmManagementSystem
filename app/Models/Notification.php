@@ -17,6 +17,11 @@ class Notification extends Model
         'url',
         'is_read',
         'read_at',
+        // Payment approval fields
+        'related_model',
+        'related_model_id',
+        'approval_status',
+        'approval_notes',
     ];
 
     protected $casts = [
