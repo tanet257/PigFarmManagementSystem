@@ -14,35 +14,78 @@
             <form method="GET" action="{{ route('pig_sales.index') }}" class="d-flex align-items-center gap-2 flex-wrap"
                 id="filterForm">
                 <!-- Date Filter (Orange) -->
-                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
-                    </option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
-                    </option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dateFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar-event"></i>
+                        @if (request('selected_date') == 'today')
+                            วันนี้
+                        @elseif(request('selected_date') == 'this_week')
+                            สัปดาห์นี้
+                        @elseif(request('selected_date') == 'this_month')
+                            เดือนนี้
+                        @elseif(request('selected_date') == 'this_year')
+                            ปีนี้
+                        @else
+                            วันที่ทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('selected_date') == '' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
+                        </li>
+                    </ul>
+                </div>
 
                 <!-- Farm Filter -->
-                <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">ฟาร์มทั้งหมด</option>
-                    @foreach ($farms as $farm)
-                        <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
-                            {{ $farm->farm_name }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="farmFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-building"></i>
+                        {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('farm_id') == '' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a>
+                        </li>
+                        @foreach ($farms as $farm)
+                            <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
+                                    href="{{ route('pig_sales.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">{{ $farm->farm_name }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Batch Filter -->
-                <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">รุ่นทั้งหมด</option>
-                    @foreach ($batches as $batch)
-                        <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
-                            {{ $batch->batch_code }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="batchFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-diagram-3"></i>
+                        {{ request('batch_id') ? $batches->find(request('batch_id'))->batch_code ?? 'รุ่น' : 'รุ่นทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('batch_id') == '' ? 'active' : '' }}"
+                                href="{{ route('pig_sales.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a>
+                        </li>
+                        @foreach ($batches as $batch)
+                            <li><a class="dropdown-item {{ request('batch_id') == $batch->id ? 'active' : '' }}"
+                                    href="{{ route('pig_sales.index', array_merge(request()->all(), ['batch_id' => $batch->id])) }}">{{ $batch->batch_code }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Sort Dropdown (Orange) -->
                 <div class="dropdown">
@@ -524,11 +567,25 @@
                                     value="{{ $sell->balance ?? ($sell->net_total ?? $sell->total_price) }}" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">วิธีชำระเงิน</label>
-                                <select name="payment_method" class="form-select" required>
-                                    <option value="เงินสด">เงินสด</option>
-                                    <option value="โอนเงิน">โอนเงิน</option>
-                                </select>
+                                <label class="form-label">วิธีชำระเงิน <span class="text-danger">*</span></label>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="paymentMethodDropdownBtn{{ $sell->id }}"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span>-- เลือกวิธีชำระเงิน --</span>
+
+                                    </button>
+                                    <ul class="dropdown-menu w-100" role="listbox">
+                                        <li><a class="dropdown-item" href="#" data-payment-method="เงินสด"
+                                                onclick="updatePaymentMethod(event, {{ $sell->id }})">เงินสด</a></li>
+                                        <li><a class="dropdown-item" href="#" data-payment-method="โอนเงิน"
+                                                onclick="updatePaymentMethod(event, {{ $sell->id }})">โอนเงิน</a>
+                                        </li>
+                                    </ul>
+                                    <input type="hidden" name="payment_method" id="paymentMethod{{ $sell->id }}"
+                                        value="" required>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">อัปโหลดหลักฐานการชำระ (ถ้ามี)</label>
@@ -567,6 +624,7 @@
                                 <h6 class="mb-0"><i class="bi bi-1-circle me-2"></i>เลือกฟาร์มและรุ่น</h6>
                             </div>
                             <div class="card-custom-quaternary">
+
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">ฟาร์ม <span class="text-danger">*</span></label>
@@ -612,7 +670,7 @@
                             <div class="card-header bg-light">
                                 <h6 class="mb-0"><i class="bi bi-2-circle me-2"></i>เลือกหมูที่จะขาย</h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-custom-quaternary">
                                 <div id="pen_selection_container">
                                     <div class="alert alert-warning">
                                         <i class="bi bi-info-circle"></i> กรุณาเลือกฟาร์มและรุ่นก่อน
@@ -626,7 +684,7 @@
                             <div class="card-header bg-light">
                                 <h6 class="mb-0"><i class="bi bi-3-circle me-2"></i>ข้อมูลการขาย</h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-custom-quaternary">
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">วันที่ขาย <span class="text-danger">*</span></label>
@@ -635,12 +693,33 @@
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">ประเภทการขาย <span class="text-danger">*</span></label>
-                                        <select name="sell_type" class="form-select" required>
-                                            <option value="">-- เลือกประเภท --</option>
-                                            <option value="หมูปกติ" selected>ขายหมูปกติ</option>
-                                            <option value="หมูตาย">ขายหมูตาย</option>
-                                            <option value="หมูคัดทิ้ง">ขายหมูคัดทิ้ง</option>
-                                        </select>
+                                        <div class="dropdown">
+                                            <button
+                                                class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                                type="button" id="sellTypeDropdownBtn" data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                                <span>-- เลือกประเภท --</span>
+                                            </button>
+                                            <ul class="dropdown-menu w-100" id="sellTypeDropdownMenu">
+                                                <li>
+                                                    <a class="dropdown-item" href="#" data-sell-type="หมูปกติ">
+                                                        ขายหมูปกติ
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#" data-sell-type="หมูตาย">
+                                                        ขายหมูตาย
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="#" data-sell-type="หมูคัดทิ้ง">
+                                                        ขายหมูคัดทิ้ง
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                            <input type="hidden" name="sell_type" id="sell_type_select" value="หมูปกติ"
+                                                required>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -687,7 +766,7 @@
 
                                 {{-- สรุปการขาย --}}
                                 <div class="card bg-light">
-                                    <div class="card-body">
+                                    <div class="card-custom-quaternary">
                                         <h6 class="card-title text-primary mb-3">
                                             <i class="bi bi-calculator"></i> สรุปการขาย
                                         </h6>
@@ -788,6 +867,25 @@
             const penSelectionContainer = document.getElementById('pen_selection_container');
             const farmSelect = farmSelectInput;
             const batchSelect = batchSelectInput;
+
+            // ========== SELL TYPE DROPDOWN ==========
+            const sellTypeDropdownMenu = document.getElementById('sellTypeDropdownMenu');
+            const sellTypeDropdownBtn = document.getElementById('sellTypeDropdownBtn');
+            const sellTypeSelect = document.getElementById('sell_type_select');
+
+            if (sellTypeDropdownMenu) {
+                sellTypeDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const sellType = this.getAttribute('data-sell-type');
+                        const sellTypeText = this.textContent.trim();
+
+                        // Update button text and hidden input
+                        sellTypeDropdownBtn.querySelector('span').textContent = sellTypeText;
+                        sellTypeSelect.value = sellType;
+                    });
+                });
+            }
 
             // ========== FARM DROPDOWN ==========
             farmDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
@@ -1094,6 +1192,17 @@
             function showSnackbar(message) {
                 // Simple alert or toast notification
                 console.log(message);
+            }
+
+            // Update payment method dropdown
+            function updatePaymentMethod(event, sellId) {
+                event.preventDefault();
+                const paymentMethod = event.target.getAttribute('data-payment-method');
+                const methodText = event.target.textContent.trim();
+
+                document.getElementById('paymentMethodDropdownBtn' + sellId)
+                    .querySelector('span').textContent = methodText;
+                document.getElementById('paymentMethod' + sellId).value = paymentMethod;
             }
 
             // เรียกใช้ common table click handler

@@ -43,25 +43,71 @@
             <form method="GET" action="{{ route('user_management.index') }}"
                 class="d-flex align-items-center gap-2 flex-wrap" id="filterForm">
                 <!-- Date Filter (Orange) -->
-                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange"
-                    onchange="this.form.submit()">
-                    <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
-                    </option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
-                    </option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dateFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar-event"></i>
+                        @if (request('selected_date') == 'today')
+                            วันนี้
+                        @elseif(request('selected_date') == 'this_week')
+                            สัปดาห์นี้
+                        @elseif(request('selected_date') == 'this_month')
+                            เดือนนี้
+                        @elseif(request('selected_date') == 'this_year')
+                            ปีนี้
+                        @else
+                            วันที่ทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('selected_date') == '' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
+                        </li>
+                    </ul>
+                </div>
 
                 <!-- Status Filter -->
-                <select name="status" class="form-select form-select-sm filter-select-orange"
-                    onchange="this.form.submit()">
-                    <option value="">สถานะทั้งหมด</option>
-                    <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>รอการอนุมัติ</option>
-                    <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>อนุมัติแล้ว</option>
-                    <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>ปฏิเสธแล้ว</option>
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="statusFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-funnel"></i>
+                        @if (request('status') == 'pending')
+                            รอการอนุมัติ
+                        @elseif(request('status') == 'approved')
+                            อนุมัติแล้ว
+                        @elseif(request('status') == 'rejected')
+                            ปฏิเสธแล้ว
+                        @else
+                            สถานะทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('status') == '' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->except('status'), [])) }}">สถานะทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('status') == 'pending' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['status' => 'pending'])) }}">รอการอนุมัติ</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('status') == 'approved' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['status' => 'approved'])) }}">อนุมัติแล้ว</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('status') == 'rejected' ? 'active' : '' }}"
+                                href="{{ route('user_management.index', array_merge(request()->all(), ['status' => 'rejected'])) }}">ปฏิเสธแล้ว</a>
+                        </li>
+                    </ul>
+                </div>
 
                 <!-- Sort Dropdown (Orange) -->
                 <div class="dropdown">
@@ -251,7 +297,7 @@
                                             class="text-danger">*</span></strong></label>
                                 @foreach ($roles as $role)
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="role_ids[]"
+                                        <input class="form-check-input" type="radio" name="selected_role"
                                             value="{{ $role->id }}"
                                             id="role{{ $role->id }}_{{ $user->id }}">
                                         <label class="form-check-label"
@@ -260,13 +306,15 @@
                                         </label>
                                     </div>
                                 @endforeach
+                                <!-- Hidden field to send role_ids as array -->
+                                <input type="hidden" id="role_ids_{{ $user->id }}" name="role_ids[]">
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                 <i class="bi bi-x-circle"></i> ยกเลิก
                             </button>
-                            <button type="submit" class="btn btn-success">
+                            <button type="submit" class="btn btn-success" onclick="return validateRoleSelection(this)">
                                 <i class="bi bi-check-circle"></i> ยืนยันอนุมัติ
                             </button>
                         </div>
@@ -344,7 +392,7 @@
                                             class="text-danger">*</span></strong></label>
                                 @foreach ($roles as $role)
                                     <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="role_ids[]"
+                                        <input class="form-check-input" type="radio" name="selected_role"
                                             value="{{ $role->id }}"
                                             id="updaterole{{ $role->id }}_{{ $user->id }}"
                                             {{ $user->roles->contains($role->id) ? 'checked' : '' }}>
@@ -354,13 +402,16 @@
                                         </label>
                                     </div>
                                 @endforeach
+                                <!-- Hidden field to send role_ids as array -->
+                                <input type="hidden" id="role_ids_update_{{ $user->id }}" name="role_ids[]">
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                 <i class="bi bi-x-circle"></i> ยกเลิก
                             </button>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary"
+                                onclick="return validateUpdateRoleSelection(this)">
                                 <i class="bi bi-check-circle"></i> บันทึก
                             </button>
                         </div>
@@ -460,3 +511,53 @@
         </div>
     @endforeach
 @endsection
+
+<script>
+    function validateRoleSelection(button) {
+        // หาพ่อ form ของปุ่มนี้
+        const form = button.closest('form');
+        // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
+        const selectedRole = form.querySelector('input[name="selected_role"]:checked');
+
+        if (!selectedRole) {
+            alert('⚠️ กรุณาเลือก Role ก่อนอนุมัติ');
+            return false;
+        }
+
+        // หา user id จาก modal
+        const modalId = form.closest('.modal').id;
+        const userId = modalId.replace('approveModal', '');
+
+        // Set hidden field value
+        const hiddenField = form.querySelector(`input[id="role_ids_${userId}"]`);
+        if (hiddenField) {
+            hiddenField.value = selectedRole.value;
+        }
+
+        return true;
+    }
+
+    function validateUpdateRoleSelection(button) {
+        // หาพ่อ form ของปุ่มนี้
+        const form = button.closest('form');
+        // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
+        const selectedRole = form.querySelector('input[name="selected_role"]:checked');
+
+        if (!selectedRole) {
+            alert('⚠️ กรุณาเลือก Role ก่อนบันทึก');
+            return false;
+        }
+
+        // หา user id จาก modal
+        const modalId = form.closest('.modal').id;
+        const userId = modalId.replace('updateRoleModal', '');
+
+        // Set hidden field value
+        const hiddenField = form.querySelector(`input[id="role_ids_update_${userId}"]`);
+        if (hiddenField) {
+            hiddenField.value = selectedRole.value;
+        }
+
+        return true;
+    }
+</script>

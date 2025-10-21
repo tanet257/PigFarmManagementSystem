@@ -13,6 +13,42 @@
         <div class="card-custom-secondary mb-3">
             <form method="GET" action="{{ route('dairy_records.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
 
+                <!-- Date Filter (Calendar) -->
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dateFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar-event"></i>
+                        @if (request('selected_date') == 'today')
+                            วันนี้
+                        @elseif(request('selected_date') == 'this_week')
+                            สัปดาห์นี้
+                        @elseif(request('selected_date') == 'this_month')
+                            เดือนนี้
+                        @elseif(request('selected_date') == 'this_year')
+                            ปีนี้
+                        @else
+                            วันที่ทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('selected_date') == '' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- Farm Dropdown -->
                 <div class="dropdown">
                     <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -105,31 +141,23 @@
                 <div class="dropdown">
                     <button class="btn btn-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
                         <i class="bi bi-sort-down"></i>
-                        @if (request('sort') == 'name_asc')
-                            ชื่อ (ก-ฮ)
-                        @elseif(request('sort') == 'name_desc')
-                            ชื่อ (ฮ-ก)
-                        @elseif(request('sort') == 'quantity_asc')
-                            จำนวนน้อย
-                        @elseif(request('sort') == 'quantity_desc')
-                            จำนวนมาก
+                        @if (request('sort_by') == 'date')
+                            @if (request('sort_order') == 'asc')
+                                วันที่ (เก่า → ใหม่)
+                            @else
+                                วันที่ (ใหม่ → เก่า)
+                            @endif
                         @else
                             เรียงตาม
                         @endif
                     </button>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item {{ request('sort') == 'name_asc' ? 'active' : '' }}"
-                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort' => 'name_asc'])) }}">ชื่อ
-                                (ก-ฮ)</a></li>
-                        <li><a class="dropdown-item {{ request('sort') == 'name_desc' ? 'active' : '' }}"
-                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort' => 'name_desc'])) }}">ชื่อ
-                                (ฮ-ก)</a></li>
-                        <li><a class="dropdown-item {{ request('sort') == 'quantity_asc' ? 'active' : '' }}"
-                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort' => 'quantity_asc'])) }}">จำนวนน้อย
-                                → มาก</a></li>
-                        <li><a class="dropdown-item {{ request('sort') == 'quantity_desc' ? 'active' : '' }}"
-                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort' => 'quantity_desc'])) }}">จำนวนมาก
-                                → น้อย</a></li>
+                        <li><a class="dropdown-item {{ request('sort_by') == 'date' && request('sort_order') == 'desc' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort_by' => 'date', 'sort_order' => 'desc'])) }}">วันที่
+                                (ใหม่ → เก่า)</a></li>
+                        <li><a class="dropdown-item {{ request('sort_by') == 'date' && request('sort_order') == 'asc' ? 'active' : '' }}"
+                                href="{{ route('dairy_records.index', array_merge(request()->all(), ['sort_by' => 'date', 'sort_order' => 'asc'])) }}">วันที่
+                                (เก่า → ใหม่)</a></li>
                     </ul>
                 </div>
 

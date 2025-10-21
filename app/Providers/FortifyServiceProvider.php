@@ -66,10 +66,10 @@ class FortifyServiceProvider extends ServiceProvider
 
         // Override password reset notification
         ResetPasswordNotification::toMailUsing(function ($notifiable, $token) {
-            $resetUrl = url('password/reset/' . $token . '?email=' . urlencode($notifiable->getEmailForPasswordReset()));
+            $resetUrl = url('reset-password/' . $token . '?email=' . urlencode($notifiable->getEmailForPasswordReset()));
 
             return (new MailMessage)
-                ->markdown('emails.reset_password', [
+                ->markdown('emails.reset-password', [
                     'actionUrl' => $resetUrl,
                     'userName' => $notifiable->name ?? $notifiable->email,
                     'expiresAt' => now()->addMinutes(60),
@@ -84,11 +84,11 @@ class FortifyServiceProvider extends ServiceProvider
 
         // Fortify password reset views
         Fortify::requestPasswordResetLinkView(function () {
-            return view('auth.forgot_password');
+            return view('auth.forgot-password');
         });
 
         Fortify::resetPasswordView(function ($request) {
-            return view('auth.reset_password', ['request' => $request]);
+            return view('auth.reset-password', ['request' => $request]);
         });
 
         // Custom login authentication

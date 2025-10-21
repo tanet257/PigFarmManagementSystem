@@ -12,8 +12,8 @@ class Cost extends Model
     protected $fillable = [
         'farm_id',
         'batch_id',
+        'pig_entry_record_id',
         'storehouse_id',
-
         'cost_type',
         'item_code',
         'quantity',
@@ -23,6 +23,9 @@ class Cost extends Model
         'excess_weight_cost',
         'total_price',
         'receipt_file',
+        'payment_method',
+        'paid_date',
+        'payment_status',
         'note',
         'date',
     ];
@@ -42,5 +45,10 @@ class Cost extends Model
     public function storehouse()
     {
         return $this->belongsTo(StoreHouse::class);
+    }
+
+    public function pigEntryRecord()
+    {
+        return $this->belongsTo(PigEntryRecord::class, 'pig_entry_record_id');
     }
 }

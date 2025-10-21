@@ -14,39 +14,82 @@
             <form method="GET" action="{{ route('pig_entry_records.index') }}"
                 class="d-flex align-items-center gap-2 flex-wrap" id="filterForm">
                 <!-- Date Filter (Orange) -->
-                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้
-                    </option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>
-                        สัปดาห์นี้</option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>
-                        เดือนนี้</option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้
-                    </option>
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dateFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar-event"></i>
+                        @if (request('selected_date') == 'today')
+                            วันนี้
+                        @elseif(request('selected_date') == 'this_week')
+                            สัปดาห์นี้
+                        @elseif(request('selected_date') == 'this_month')
+                            เดือนนี้
+                        @elseif(request('selected_date') == 'this_year')
+                            ปีนี้
+                        @else
+                            วันที่ทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('selected_date') == '' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
+                        </li>
+                    </ul>
+                </div>
 
                 <!-- Farm Filter (Dark Blue) -->
-                <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">เลือกฟาร์มก่อน</option>
-                    @foreach ($farms as $farm)
-                        <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
-                            {{ $farm->farm_name }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="farmFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-building"></i>
+                        {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'เลือกฟาร์มก่อน' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('farm_id') == '' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->except('farm_id'), [])) }}">เลือกฟาร์มก่อน</a>
+                        </li>
+                        @foreach ($farms as $farm)
+                            <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
+                                    href="{{ route('pig_entry_records.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">{{ $farm->farm_name }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Batch Filter (Dark Blue) -->
-                <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">รุ่นทั้งหมด</option>
-                    @if (request('farm_id'))
-                        @foreach ($batches as $batch)
-                            <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
-                                {{ $batch->batch_code }}
-                            </option>
-                        @endforeach
-                    @endif
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="batchFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-diagram-3"></i>
+                        {{ request('batch_id') ? $batches->find(request('batch_id'))->batch_code ?? 'รุ่น' : 'รุ่นทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('batch_id') == '' ? 'active' : '' }}"
+                                href="{{ route('pig_entry_records.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a>
+                        </li>
+                        @if (request('farm_id'))
+                            @foreach ($batches as $batch)
+                                <li><a class="dropdown-item {{ request('batch_id') == $batch->id ? 'active' : '' }}"
+                                        href="{{ route('pig_entry_records.index', array_merge(request()->all(), ['batch_id' => $batch->id])) }}">{{ $batch->batch_code }}</a>
+                                </li>
+                            @endforeach
+                        @else
+                            <li><a class="dropdown-item" href="#">(กรุณาเลือกฟาร์มก่อน)</a></li>
+                        @endif
+                    </ul>
+                </div>
 
                 <!-- Sort Dropdown (Orange) -->
                 <div class="dropdown">
@@ -204,6 +247,12 @@
                                 <button type="button" class="btn btn-sm btn-info"
                                     onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $record->id }}')).show();">
                                     <i class="bi bi-eye"></i>
+                                </button>
+
+                                {{-- Payment Button --}}
+                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                    data-bs-target="#paymentModal{{ $record->id }}" onclick="event.stopPropagation();">
+                                    <i class="bi bi-cash"></i>
                                 </button>
 
                                 {{-- Delete Button --}}
@@ -472,6 +521,100 @@
                             <i class="bi bi-x-circle"></i> ปิด
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Payment/Edit Modal --}}
+        <div class="modal fade" id="paymentModal{{ $record->id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-cash"></i> บันทึกการชำระเงิน - {{ $record->batch->batch_code ?? '-' }}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ route('pig_entry_records.update_payment', $record->id) }}" method="POST"
+                        enctype="multipart/form-data">
+                        @csrf
+                        @method('PUT')
+                        <div class="modal-body">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>วันที่รับเข้า:</strong> {{ $record->pig_entry_date }}<br>
+                                <strong>จำนวนหมู:</strong> {{ $record->total_pig_amount }} ตัว
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">ยอดที่ต้องชำระ</label>
+                                <input type="text" class="form-control"
+                                    value="{{ number_format(
+                                        $record->total_pig_price +
+                                            ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
+                                            ($record->batch->costs->sum('transport_cost') ?? 0),
+                                        2,
+                                    ) }} บาท"
+                                    readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">จำนวนเงินที่ชำระ</label>
+                                <input type="number" name="paid_amount" class="form-control" step="0.01"
+                                    min="0"
+                                    value="{{ $record->total_pig_price +
+                                        ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
+                                        ($record->batch->costs->sum('transport_cost') ?? 0) }}"
+                                    required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">วิธีชำระเงิน <span class="text-danger">*</span></label>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="paymentMethodDropdownBtn{{ $record->id }}"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span>-- เลือกวิธีชำระเงิน --</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100">
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-payment-method="เงินสด"
+                                                onclick="updatePaymentMethod(event, {{ $record->id }})">
+                                                เงินสด
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-payment-method="โอนเงิน"
+                                                onclick="updatePaymentMethod(event, {{ $record->id }})">
+                                                โอนเงิน
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    <input type="hidden" name="payment_method" id="paymentMethod{{ $record->id }}"
+                                        value="" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">อัปโหลดหลักฐานการชำระ (ถ้ามี)</label>
+                                <input type="file" class="form-control" name="receipt_file"
+                                    accept="image/*,application/pdf">
+                                <small class="text-muted">รองรับไฟล์: JPG, PNG, PDF (สูงสุด 5MB)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">หมายเหตุ</label>
+                                <textarea name="note" class="form-control" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> บันทึกการชำระเงิน
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

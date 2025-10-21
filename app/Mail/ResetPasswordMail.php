@@ -43,9 +43,9 @@ class ResetPasswordMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.reset_password',
+            view: 'emails.-_html',
             with: [
-                'resetUrl' => url('password/reset/' . $this->token . '?email=' . urlencode($this->email)),
+                'actionUrl' => url('reset-password/' . $this->token . '?email=' . urlencode($this->email)),
                 'userName' => $this->userName,
                 'expiresAt' => now()->addMinutes(60),
             ],

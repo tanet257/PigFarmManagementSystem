@@ -190,6 +190,12 @@ class BatchController extends Controller
         if ($oldStatus != 'เสร็จสิ้น' && $newStatus == 'เสร็จสิ้น') {
             // ถ้าเปลี่ยนจากไม่เสร็จสิ้น → เสร็จสิ้น
             $batch->end_date = now(); // อัปเดตเป็นเวลาปัจจุบัน
+
+            // Reset batch pen allocations เพื่อให้ว่างสำหรับรุ่นใหม่
+            $batch->batchPenAllocations()->update([
+                'allocated_pigs' => 0,
+                'current_quantity' => 0,
+            ]);
         }
 
         $batch->update($validated);

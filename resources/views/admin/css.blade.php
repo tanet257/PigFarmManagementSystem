@@ -132,7 +132,7 @@
         border-radius: 12px !important;
         box-shadow: var(--shadow-sm);
         transition: box-shadow 0.3s ease;
-        overflow: hidden !important;
+        overflow: visible !important;
     }
 
     .card:hover {
@@ -151,6 +151,7 @@
         border-bottom: none !important;
         font-weight: 600;
         padding: 20px 25px !important;
+        overflow: visible !important;
     }
 
     .card-body {
@@ -608,12 +609,29 @@
     .card-custom-quaternary {
         background: linear-gradient(to bottom, #FCF9EA, #ffffff) !important;
         color: var(--text-dark);
-        border: 1px solid #D7D7D7;
+
         border-radius: 0 0 12px 12px;
         padding: 25px;
-        box-shadow: 0 4px 12px rgba(30, 62, 98, 0.2);
+        border: 1px solid #F5EFE6;
+        box-shadow: 0 8px 12px rgba(30, 62, 98, 0.2);
         overflow: visible !important;
+
+        /* เพิ่มความสมดุลแบบ card-body */
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: 1rem;
+        /* เว้นระยะระหว่าง element ด้านใน */
+        margin-top: 0;
+        /* ปรับให้อยู่ชิด card-header */
+        margin-bottom: 1rem;
+        /* ระยะห่างระหว่าง card */
+        transition: all 0.25s ease-in-out;
+        /* เพิ่มความนุ่มเวลา hover */
     }
+
+
+
 
     .cardTemplateRow {
         background-color: #fff;

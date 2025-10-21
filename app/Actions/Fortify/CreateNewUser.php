@@ -48,7 +48,7 @@ class CreateNewUser implements CreatesNewUsers
         // ส่ง notification ไปยัง admin
         $admins = User::where('usertype', 'admin')->get();
         foreach ($admins as $admin) {
-            Notification::create([
+            $notification = Notification::create([
                 'type' => 'user_registration',
                 'user_id' => $admin->id,
                 'related_user_id' => $user->id,
@@ -57,6 +57,9 @@ class CreateNewUser implements CreatesNewUsers
                 'url' => route('user_management.index'),
                 'is_read' => false,
             ]);
+
+            // อัปเดต URL ให้ชี้ไปยัง markAndNavigate route
+            
         }
 
         return $user;

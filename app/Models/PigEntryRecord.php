@@ -21,6 +21,16 @@ class PigEntryRecord extends Model
         'average_weight_per_pig',
         'average_price_per_pig',
         'note',
+        'receipt_file',
+        'payment_method',
+        'payment_term',
+        'payment_status',
+        'paid_amount',
+        'balance',
+        'due_date',
+        'paid_date',
+        'total_cost',
+        'receipt_number',
     ];
 
     protected $casts = [
@@ -30,6 +40,11 @@ class PigEntryRecord extends Model
         'total_pig_price' => 'float',
         'average_weight_per_pig' => 'float',
         'average_price_per_pig' => 'float',
+        'paid_amount' => 'float',
+        'balance' => 'float',
+        'due_date' => 'datetime',
+        'paid_date' => 'datetime',
+        'total_cost' => 'float',
     ];
 
     // ------------ Relationships ------------ //
@@ -47,6 +62,11 @@ class PigEntryRecord extends Model
     public function entryDetails()
     {
         return $this->hasMany(PigEntryDetail::class, 'pig_entry_id');
+    }
+
+    public function costs()
+    {
+        return $this->hasMany(Cost::class, 'pig_entry_record_id');
     }
 
     public function getTransportCostAttribute()

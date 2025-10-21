@@ -407,23 +407,51 @@
                                 <input type="text" class="form-control" name="item_name" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">ประเภท</label>
-                                <select class="form-select" name="item_type" required>
-                                    <option value="">เลือกประเภท</option>
-                                    <option value="อาหาร">อาหาร</option>
-                                    <option value="ยา">ยา</option>
-                                    <option value="วัคซีน">วัคซีน</option>
-                                    <option value="อื่นๆ">อื่นๆ</option>
-                                </select>
+                                <label class="form-label">ประเภท <span class="text-danger">*</span></label>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="storeCreateItemTypeDropdownBtn" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <span>-- เลือกประเภท --</span>
+
+                                    </button>
+                                    <ul class="dropdown-menu w-100" role="listbox">
+                                        <li><a class="dropdown-item" href="#" data-item-type="อาหาร"
+                                                onclick="updateStoreItemType(event)">อาหาร</a></li>
+                                        <li><a class="dropdown-item" href="#" data-item-type="ยา"
+                                                onclick="updateStoreItemType(event)">ยา</a></li>
+                                        <li><a class="dropdown-item" href="#" data-item-type="วัคซีน"
+                                                onclick="updateStoreItemType(event)">วัคซีน</a></li>
+                                        <li><a class="dropdown-item" href="#" data-item-type="อื่นๆ"
+                                                onclick="updateStoreItemType(event)">อื่นๆ</a></li>
+                                    </ul>
+                                    <input type="hidden" name="item_type" id="storeCreateItemType" value=""
+                                        required>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">ฟาร์ม</label>
-                                <select class="form-select" name="farm_id" required>
-                                    <option value="">เลือกฟาร์ม</option>
-                                    @foreach ($farms as $farm)
-                                        <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="form-label">ฟาร์ม <span class="text-danger">*</span></label>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="storeCreateFarmDropdownBtn" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <span>-- เลือกฟาร์ม --</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100" id="storeCreateFarmDropdownMenu">
+                                        @foreach ($farms as $farm)
+                                            <li>
+                                                <a class="dropdown-item" href="#"
+                                                    data-farm-id="{{ $farm->id }}">
+                                                    {{ $farm->farm_name }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                    <input type="hidden" name="farm_id" id="storeCreateFarmSelect" value=""
+                                        required>
+                                </div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">หน่วย</label>
@@ -467,9 +495,9 @@
                         <div class="modal-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">รหัสสินค้า</label>
-                                    <input type="text" class="form-control" name="item_code"
-                                        value="{{ $item->item_code }}" required>
+                                    <label class="form-label">รหัสสินค้า </label>
+                                    <input type="text" class="form-control" value="{{ $item->item_code }}" disabled
+                                        readonly>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">ชื่อสินค้า</label>
@@ -477,30 +505,16 @@
                                         value="{{ $item->item_name }}" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">ประเภท</label>
-                                    <select class="form-select" name="item_type" required>
-                                        <option value="อาหาร" {{ $item->item_type == 'อาหาร' ? 'selected' : '' }}>อาหาร
-                                        </option>
-                                        <option value="ยา" {{ $item->item_type == 'ยา' ? 'selected' : '' }}>ยา
-                                        </option>
-                                        <option value="วัคซีน" {{ $item->item_type == 'วัคซีน' ? 'selected' : '' }}>วัคซีน
-                                        </option>
-                                        <option value="อื่นๆ" {{ $item->item_type == 'อื่นๆ' ? 'selected' : '' }}>อื่นๆ
-                                        </option>
-                                    </select>
+                                    <label class="form-label">ประเภท </label>
+                                    <input type="text" class="form-control" value="{{ $item->item_type }}" disabled
+                                        readonly>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">ฟาร์ม</label>
-                                    <select class="form-select" name="farm_id" required>
-                                        <option value="">เลือกฟาร์ม</option>
-                                        @foreach ($farms as $farm)
-                                            <option value="{{ $farm->id }}"
-                                                {{ $item->farm_id == $farm->id ? 'selected' : '' }}>
-                                                {{ $farm->farm_name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <label class="form-label">ฟาร์ม </label>
+                                    <input type="text" class="form-control"
+                                        value="{{ $farms->find($item->farm_id)->farm_name ?? '' }}" disabled readonly>
                                 </div>
+
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">หน่วย</label>
                                     <input type="text" class="form-control" name="unit"
@@ -514,12 +528,25 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">สถานะ</label>
-                                    <select class="form-select" name="status">
-                                        <option value="available" {{ $item->status == 'available' ? 'selected' : '' }}>
-                                            พร้อมใช้</option>
-                                        <option value="unavailable"
-                                            {{ $item->status == 'unavailable' ? 'selected' : '' }}>หมด</option>
-                                    </select>
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                            type="button" id="storeEditStatusDropdownBtn{{ $item->id }}"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            <span>{{ $item->status == 'available' ? 'พร้อมใช้' : 'หมด' }}</span>
+
+                                        </button>
+                                        <ul class="dropdown-menu w-100" role="listbox">
+                                            <li><a class="dropdown-item" href="#" data-status="available"
+                                                    onclick="updateStoreEditStatus(event, {{ $item->id }})">พร้อมใช้</a>
+                                            </li>
+                                            <li><a class="dropdown-item" href="#" data-status="unavailable"
+                                                    onclick="updateStoreEditStatus(event, {{ $item->id }})">หมด</a>
+                                            </li>
+                                        </ul>
+                                        <input type="hidden" name="status" id="storeEditStatus{{ $item->id }}"
+                                            value="{{ $item->status }}">
+                                    </div>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label">หมายเหตุ</label>
@@ -540,6 +567,50 @@
     @endforeach
 
     @push('scripts')
+        <script>
+            // Farm Dropdown Handler for Storehouse Create Modal
+            document.addEventListener('DOMContentLoaded', function() {
+                const farmDropdownMenu = document.getElementById('storeCreateFarmDropdownMenu');
+                const farmDropdownBtn = document.getElementById('storeCreateFarmDropdownBtn');
+                const farmSelect = document.getElementById('storeCreateFarmSelect');
+
+                if (farmDropdownMenu) {
+                    farmDropdownMenu.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('dropdown-item')) {
+                            e.preventDefault();
+                            const farmId = e.target.getAttribute('data-farm-id');
+                            const farmName = e.target.textContent.trim();
+
+                            // Update button text and hidden input
+                            farmDropdownBtn.querySelector('span').textContent = farmName;
+                            farmSelect.value = farmId;
+                        }
+                    });
+                }
+            });
+
+            // Update item_type for Create Modal
+            function updateStoreItemType(event) {
+                event.preventDefault();
+                const itemType = event.target.getAttribute('data-item-type');
+                const itemTypeText = event.target.textContent.trim();
+
+                document.getElementById('storeCreateItemTypeDropdownBtn')
+                    .querySelector('span').textContent = itemTypeText;
+                document.getElementById('storeCreateItemType').value = itemType;
+            }
+
+            // Update status for Edit Modal
+            function updateStoreEditStatus(event, itemId) {
+                event.preventDefault();
+                const status = event.target.getAttribute('data-status');
+                const statusText = event.target.textContent.trim();
+
+                document.getElementById('storeEditStatusDropdownBtn' + itemId)
+                    .querySelector('span').textContent = statusText;
+                document.getElementById('storeEditStatus' + itemId).value = status;
+            }
+        </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
 @endsection

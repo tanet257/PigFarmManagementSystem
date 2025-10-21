@@ -15,35 +15,78 @@
                 class="d-flex align-items-center gap-2 flex-wrap" id="filterForm">
 
                 <!-- Date Filter (Orange) -->
-                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
-                    </option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
-                    </option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dateFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar-event"></i>
+                        @if (request('selected_date') == 'today')
+                            วันนี้
+                        @elseif(request('selected_date') == 'this_week')
+                            สัปดาห์นี้
+                        @elseif(request('selected_date') == 'this_month')
+                            เดือนนี้
+                        @elseif(request('selected_date') == 'this_year')
+                            ปีนี้
+                        @else
+                            วันที่ทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('selected_date') == '' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
+                        </li>
+                    </ul>
+                </div>
 
                 <!-- Farm Filter (Dark Blue) -->
-                <select name="farm_id" class="form-select form-select-sm filter-select-orange">
-                    <option value="">ฟาร์มทั้งหมด</option>
-                    @foreach ($farms as $farm)
-                        <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
-                            {{ $farm->farm_name }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="farmFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-building"></i>
+                        {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('farm_id') == '' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a>
+                        </li>
+                        @foreach ($farms as $farm)
+                            <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
+                                    href="{{ route('batch_pen_allocations.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">{{ $farm->farm_name }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Batch Filter (Dark Blue) -->
-                <select name="batch_id" class="form-select form-select-sm filter-select-orange">
-                    <option value="">รุ่นทั้งหมด</option>
-                    @foreach ($batches as $batch)
-                        <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
-                            {{ $batch->batch_code }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="batchFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-diagram-3"></i>
+                        {{ request('batch_id') ? $batches->find(request('batch_id'))->batch_code ?? 'รุ่น' : 'รุ่นทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('batch_id') == '' ? 'active' : '' }}"
+                                href="{{ route('batch_pen_allocations.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a>
+                        </li>
+                        @foreach ($batches as $batch)
+                            <li><a class="dropdown-item {{ request('batch_id') == $batch->id ? 'active' : '' }}"
+                                    href="{{ route('batch_pen_allocations.index', array_merge(request()->all(), ['batch_id' => $batch->id])) }}">{{ $batch->batch_code }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Sort Dropdown (Orange) -->
                 <div class="dropdown">

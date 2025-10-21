@@ -134,19 +134,20 @@ class NotificationController extends Controller
      * ทำเครื่องหมายว่าอ่านแล้วและนำทาง
      */
     public function markAndNavigate($id)
-    {
-        $notification = Notification::where('user_id', Auth::id())
-            ->findOrFail($id);
+{
+    $notification = Notification::where('user_id', Auth::id())
+        ->findOrFail($id);
 
-        $notification->markAsRead();
+    $notification->markAsRead();
 
-        // ถ้ามี URL ให้ redirect ไป มิฉะนั้นกลับหน้า home
-        if ($notification->url) {
-            return redirect($notification->url);
-        }
-
-        return redirect()->route('home');
+    // ป้องกัน redirect loop
+    if ($notification->url && !str_contains($notification->url, 'notifications/')) {
+        return redirect($notification->url);
     }
+
+    return redirect()->route('notifications.index');
+}
+
 
     /**
      * ทำเครื่องหมายว่าอ่านแล้วทั้งหมด

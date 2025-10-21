@@ -19,8 +19,6 @@ class RedirectIfAuthenticated
      */
     public function handle(Request $request, Closure $next, ...$guards)
     {
-        // Allow authenticated users to access auth pages (login, register, forgot-password, reset-password)
-        // This middleware should NOT redirect authenticated users away from auth pages
         return $next($request);
     }
 }

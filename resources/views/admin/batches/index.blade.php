@@ -16,35 +16,78 @@
                 id="filterForm">
 
                 <!-- Date Filter (Orange) -->
-                <select name="selected_date" id="dateFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">วันที่ทั้งหมด</option>
-                    <option value="today" {{ request('selected_date') == 'today' ? 'selected' : '' }}>วันนี้</option>
-                    <option value="this_week" {{ request('selected_date') == 'this_week' ? 'selected' : '' }}>สัปดาห์นี้
-                    </option>
-                    <option value="this_month" {{ request('selected_date') == 'this_month' ? 'selected' : '' }}>เดือนนี้
-                    </option>
-                    <option value="this_year" {{ request('selected_date') == 'this_year' ? 'selected' : '' }}>ปีนี้</option>
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="dateFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-calendar-event"></i>
+                        @if (request('selected_date') == 'today')
+                            วันนี้
+                        @elseif(request('selected_date') == 'this_week')
+                            สัปดาห์นี้
+                        @elseif(request('selected_date') == 'this_month')
+                            เดือนนี้
+                        @elseif(request('selected_date') == 'this_year')
+                            ปีนี้
+                        @else
+                            วันที่ทั้งหมด
+                        @endif
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('selected_date') == '' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->except('selected_date'), [])) }}">วันที่ทั้งหมด</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'today' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->all(), ['selected_date' => 'today'])) }}">วันนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_week' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->all(), ['selected_date' => 'this_week'])) }}">สัปดาห์นี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_month' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->all(), ['selected_date' => 'this_month'])) }}">เดือนนี้</a>
+                        </li>
+                        <li><a class="dropdown-item {{ request('selected_date') == 'this_year' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->all(), ['selected_date' => 'this_year'])) }}">ปีนี้</a>
+                        </li>
+                    </ul>
+                </div>
 
                 <!-- Farm Filter (Dark Blue) -->
-                <select name="farm_id" id="farmFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">ฟาร์มทั้งหมด</option>
-                    @foreach ($farms as $farm)
-                        <option value="{{ $farm->id }}" {{ request('farm_id') == $farm->id ? 'selected' : '' }}>
-                            {{ $farm->farm_name }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="farmFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-building"></i>
+                        {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('farm_id') == '' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->except('farm_id'), [])) }}">ฟาร์มทั้งหมด</a>
+                        </li>
+                        @foreach ($farms as $farm)
+                            <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
+                                    href="{{ route('batches.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">{{ $farm->farm_name }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Batch Filter -->
-                <select name="batch_id" id="batchFilter" class="form-select form-select-sm filter-select-orange">
-                    <option value="">รุ่นทั้งหมด</option>
-                    @foreach ($allBatches as $batch)
-                        <option value="{{ $batch->id }}" {{ request('batch_id') == $batch->id ? 'selected' : '' }}>
-                            {{ $batch->batch_code }}
-                        </option>
-                    @endforeach
-                </select>
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="batchFilterBtn"
+                        data-bs-toggle="dropdown">
+                        <i class="bi bi-diagram-3"></i>
+                        {{ request('batch_id') ? $allBatches->find(request('batch_id'))->batch_code ?? 'รุ่น' : 'รุ่นทั้งหมด' }}
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item {{ request('batch_id') == '' ? 'active' : '' }}"
+                                href="{{ route('batches.index', array_merge(request()->except('batch_id'), [])) }}">รุ่นทั้งหมด</a>
+                        </li>
+                        @foreach ($allBatches as $batch)
+                            <li><a class="dropdown-item {{ request('batch_id') == $batch->id ? 'active' : '' }}"
+                                    href="{{ route('batches.index', array_merge(request()->all(), ['batch_id' => $batch->id])) }}">{{ $batch->batch_code }}</a>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
 
                 <!-- Sort Dropdown (Orange) -->
                 <div class="dropdown">
@@ -318,13 +361,31 @@
                         @method('PUT')
                         <div class="modal-body">
                             <div class="mb-3">
-                                <label>สถานะ</label>
-                                <select name="status" class="form-select" required>
-                                    <option value="กำลังเลี้ยง" {{ $batch->status == 'กำลังเลี้ยง' ? 'selected' : '' }}>
-                                        กำลังเลี้ยง</option>
-                                    <option value="เสร็จสิ้น" {{ $batch->status == 'เสร็จสิ้น' ? 'selected' : '' }}>
-                                        เสร็จสิ้น</option>
-                                </select>
+                                <label>สถานะ <span class="text-danger">*</span></label>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="statusDropdownBtn{{ $batch->id }}"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                        <span>{{ $batch->status }}</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100">
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-status="กำลังเลี้ยง"
+                                                onclick="updateStatusDropdown(event, {{ $batch->id }})">
+                                                กำลังเลี้ยง
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" data-status="เสร็จสิ้น"
+                                                onclick="updateStatusDropdown(event, {{ $batch->id }})">
+                                                เสร็จสิ้น
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    <input type="hidden" name="status" id="status{{ $batch->id }}"
+                                        value="{{ $batch->status }}" required>
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label>โน๊ต</label>
@@ -354,13 +415,26 @@
                     <div class="modal-body">
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">ฟาร์ม</label>
-                                <select name="farm_id" class="form-select" required>
-                                    <option value="">เลือกฟาร์ม</option>
-                                    @foreach ($farms as $farm)
-                                        <option value="{{ $farm->id }}">{{ $farm->farm_name }}</option>
-                                    @endforeach
-                                </select>
+                                <label class="form-label">ฟาร์ม <span class="text-danger">*</span></label>
+                                <div class="dropdown">
+                                    <button
+                                        class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center"
+                                        type="button" id="farmDropdownBtn" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <span>-- เลือกฟาร์ม --</span>
+                                    </button>
+                                    <ul class="dropdown-menu w-100" id="farmDropdownMenu">
+                                        @foreach ($farms as $farm)
+                                            <li>
+                                                <a class="dropdown-item" href="#"
+                                                    data-farm-id="{{ $farm->id }}">
+                                                    {{ $farm->farm_name }}
+                                                </a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                    <input type="hidden" name="farm_id" id="farmSelect" value="" required>
+                                </div>
                             </div>
 
                             <div class="col-md-6 mb-3">
@@ -386,6 +460,41 @@
     </div>
 
     @push('scripts')
+        {{-- Status Dropdown Handler for Edit Modal --}}
+        <script>
+            function updateStatusDropdown(event, batchId) {
+                event.preventDefault();
+                const status = event.target.getAttribute('data-status');
+                const statusText = event.target.textContent.trim();
+
+                // Update button text and hidden input
+                document.getElementById('statusDropdownBtn' + batchId).querySelector('span').textContent = statusText;
+                document.getElementById('status' + batchId).value = status;
+            }
+        </script>
+
+        {{-- Farm Dropdown Handler for Create Modal --}}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const farmDropdownMenu = document.getElementById('farmDropdownMenu');
+                const farmDropdownBtn = document.getElementById('farmDropdownBtn');
+                const farmSelect = document.getElementById('farmSelect');
+
+                // Handle farm dropdown clicks
+                farmDropdownMenu.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('dropdown-item')) {
+                        e.preventDefault();
+                        const farmId = e.target.getAttribute('data-farm-id');
+                        const farmName = e.target.textContent.trim();
+
+                        // Update button text and hidden input
+                        farmDropdownBtn.querySelector('span').textContent = farmName;
+                        farmSelect.value = farmId;
+                    }
+                });
+            });
+        </script>
+
         {{-- Auto-submit filter form --}}
         <script>
             document.addEventListener('DOMContentLoaded', function() {

@@ -388,12 +388,18 @@ class StoreHouseController extends Controller
             $validated = $request->validate([
                 'farm_id'   => 'required|exists:farms,id',
                 'item_type' => 'required|string',
-                'item_code' => 'required|string',
+                'item_code' => [
+                    'required',
+                    'string',
+                    Rule::unique('storehouses', 'item_code')
+                        ->where('farm_id', $request->farm_id)
+                ],
                 'item_name' => 'required|string',
                 'unit' => 'required|string',
                 'min_quantity' => 'nullable|numeric|min:0',
                 'note' => 'nullable|string',
-
+            ], [
+                'item_code.unique' => 'รหัสสินค้านี้มีอยู่ในฟาร์มนี้แล้ว กรุณาใช้รหัสอื่น',
             ]);
 
             $data = new StoreHouse;
@@ -428,11 +434,9 @@ class StoreHouseController extends Controller
     //Update storehouse
     public function updateStoreHouse(Request $request, $id)
     {
-
+        $storehouse = StoreHouse::findOrFail($id);
 
         $validated = $request->validate([
-            'farm_id' => 'required|exists:farms,id',
-            'item_code' => 'required|string',
             'item_name' => 'required|string',
             'unit' => 'required|string',
             'min_quantity' => 'nullable|numeric|min:0',
@@ -441,11 +445,8 @@ class StoreHouseController extends Controller
             'delete_receipt_file' => 'sometimes',
         ]);
 
-        $storehouse = StoreHouse::findOrFail($id);
-
-        // อัปเดตฟิลด์อื่น ๆ ของ storehouse
-        $storehouse->farm_id   = $validated['farm_id'];
-        $storehouse->item_code = $validated['item_code'];
+        // อัปเดตเฉพาะ item_name, unit, min_quantity, note เท่านั้น
+        // ห้าม edit: farm_id, item_code, item_type (fixed fields)
         $storehouse->item_name = $validated['item_name'];
         $storehouse->unit      = $validated['unit'];
         $storehouse->min_quantity = $validated['min_quantity'] ?? 0;
@@ -472,8 +473,7 @@ class StoreHouseController extends Controller
             $latestCost->update(['receipt_file' => $uploadedFileUrl]);
         }
 
-
-        return redirect()->back()->with('success', 'แก้ไข StoreHouse และอัปเดตใบเสร็จใน Cost เรียบร้อย');
+        return redirect()->back()->with('success', 'แก้ไข StoreHouse เรียบร้อยแล้ว');
     }
 
 

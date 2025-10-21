@@ -96,7 +96,7 @@ MAIL_FROM_ADDRESS="your-email@outlook.com"
 
 1. `.env` - Email configuration
 2. `app/Mail/ResetPasswordMail.php` - Custom reset password mail class
-3. `resources/views/emails/reset_password.blade.php` - Email template
+3. `resources/views/emails/reset-password.blade.php` - Email template
 4. `app/Providers/FortifyServiceProvider.php` - Override password reset notification
 
 ## Resources

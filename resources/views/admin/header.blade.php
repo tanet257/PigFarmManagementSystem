@@ -41,54 +41,72 @@
                             @endauth
                         </a>
                         @auth
-                            <div aria-labelledby="navbarDropdownNotifications" class="dropdown-menu notifications-list">
-                                <h6 class="dropdown-header">
-                                    <i class="bi bi-bell"></i> การแจ้งเตือน
+                            <div aria-labelledby="navbarDropdownNotifications"
+                                class="dropdown-menu notifications-list shadow-lg"
+                                style="min-width: 340px; border-radius: 12px; border: none; overflow: hidden;">
+                                <div class="d-flex justify-content-between align-items-center py-3 px-4"
+                                    style="background: linear-gradient(135deg, #FF5B22 0%, #FF9130 100%); border-bottom: 1px solid #FF9130;">
+                                    <h6 class="mb-0 fw-bold text-light ">
+                                        <i class="bi bi-bell me-2"></i>การแจ้งเตือน
+                                    </h6>
                                     @php
                                         $unreadCount = Auth::user()->unreadNotificationsCount();
                                     @endphp
                                     @if ($unreadCount > 0)
-                                        <span class="badge bg-danger ms-2">{{ $unreadCount }}</span>
+                                        <span class="badge bg-danger">{{ $unreadCount }}</span>
                                     @endif
-                                </h6>
-                                <div class="dropdown-divider"></div>
+                                </div>
 
                                 @php
                                     $recentNotifications = Auth::user()->userNotifications()->latest()->take(5)->get();
                                 @endphp
 
-                                @forelse($recentNotifications as $notification)
-                                    <a href="{{ $notification->url ?? route('notifications.index') }}"
-                                        class="dropdown-item notification-item {{ !$notification->is_read ? 'unread' : '' }}">
-                                        <div class="d-flex align-items-start">
-                                            <div class="notification-content flex-grow-1">
-                                                <div class="d-flex align-items-center mb-1">
-                                                    <strong class="me-2">{{ $notification->title }}</strong>
+                                <div class="notifications-scroll"
+                                    style="max-height: 400px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
+                                    @forelse($recentNotifications as $notification)
+                                        <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
+                                            class="dropdown-item px-4 py-3 {{ !$notification->is_read ? 'bg-light' : 'bg-white' }}"
+                                            style="text-decoration: none; transition: all 0.2s ease; border-bottom: 1px solid #e9ecef; display: block;">
+                                            <div class="d-flex gap-3 align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                                        <strong class="text-light">{{ $notification->title }}</strong>
+                                                        @if (!$notification->is_read)
+                                                            <span class="badge bg-danger rounded-circle"
+                                                                style="width: 8px; height: 8px; padding: 0;"></span>
+                                                        @endif
+                                                    </div>
+                                                    <p class="text-light mb-2 small" style="font-size: 0.85rem;">
+                                                        {{ Str::limit($notification->message, 60) }}</p>
+                                                    <small
+                                                        class="text-light">{{ $notification->created_at->diffForHumans() }}</small>
+                                                </div>
+                                                <div>
                                                     @if ($notification->type == 'user_registered')
-                                                        <span class="badge bg-info">ใหม่</span>
+                                                        <span class="badge bg-info" style="font-size: 0.7rem;">ใหม่</span>
                                                     @elseif($notification->type == 'user_approved')
-                                                        <span class="badge bg-success">อนุมัติ</span>
+                                                        <span class="badge bg-success"
+                                                            style="font-size: 0.7rem;">อนุมัติ</span>
                                                     @elseif($notification->type == 'user_rejected')
-                                                        <span class="badge bg-danger">ปฏิเสธ</span>
+                                                        <span class="badge bg-danger"
+                                                            style="font-size: 0.7rem;">ปฏิเสธ</span>
                                                     @endif
                                                 </div>
-                                                <span
-                                                    class="d-block text-secondary small">{{ Str::limit($notification->message, 50) }}</span>
-                                                <small
-                                                    class="text-secondary">{{ $notification->created_at->diffForHumans() }}</small>
                                             </div>
+                                        </a>
+                                    @empty
+                                        <div class="dropdown-item text-center py-5">
+                                            <i class="bi bi-inbox text-secondary" style="font-size: 2rem;"></i>
+                                            <p class="text-secondary mt-2 small">ไม่มีการแจ้งเตือน</p>
                                         </div>
-                                    </a>
-                                @empty
-                                    <div class="dropdown-item text-center text-secondary">
-                                        <i class="bi bi-inbox"></i>
-                                        <p class="mb-0">ไม่มีการแจ้งเตือน</p>
-                                    </div>
-                                @endforelse
+                                    @endforelse
+                                </div>
 
-                                <div class="dropdown-divider"></div>
-                                <a href="{{ route('notifications.index') }}" class="dropdown-item text-center">
-                                    <strong>ดูการแจ้งเตือนทั้งหมด <i class="fa fa-angle-right"></i></strong>
+                                <div class="dropdown-divider m-0"></div>
+                                <a href="{{ route('notifications.index') }}"
+                                    class="dropdown-item text-center py-3 fw-semibold small"
+                                    style="text-decoration: none; color: #0d6efd; background: white; transition: background-color 0.2s;">
+                                    ดูการแจ้งเตือนทั้งหมด <i class="bi bi-arrow-right ms-1"></i>
                                 </a>
                             </div>
                         @endauth
@@ -124,3 +142,10 @@
         </div>
     </nav>
 </header>
+
+<style>
+    /* ซ่อน scrollbar แต่ยังคงความสามารถในการ scroll */
+    .notifications-scroll::-webkit-scrollbar {
+        display: none;
+    }
+</style>

@@ -492,4 +492,59 @@ class PigEntryController extends Controller
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv']);
     }
+
+    /**
+     * บันทึกการชำระเงินสำหรับการรับเข้าหมู
+     */
+    public function update_payment(Request $request, $id)
+    {
+        try {
+            $record = PigEntryRecord::findOrFail($id);
+
+            $validated = $request->validate([
+                'paid_amount' => 'required|numeric|min:0',
+                'payment_method' => 'required|in:เงินสด,โอนเงิน',
+                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
+                'note' => 'nullable|string',
+            ]);
+
+            DB::beginTransaction();
+
+            // อัปโหลดไฟล์ receipt ถ้ามี
+            $receiptPath = null;
+            if ($request->hasFile('receipt_file')) {
+                $file = $request->file('receipt_file');
+                $result = Cloudinary::upload($file->getRealPath(), [
+                    'folder' => 'pig-farm/pig-entry-receipts',
+                    'resource_type' => 'auto',
+                ]);
+                $receiptPath = $result->getSecurePath();
+            }
+
+            // สร้าง Cost record เพื่อบันทึกการชำระเงิน
+            $totalAmount = $record->total_pig_price +
+                          ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
+                          ($record->batch->costs->sum('transport_cost') ?? 0);
+
+            Cost::create([
+                'batch_id' => $record->batch_id,
+                'pig_entry_record_id' => $record->id,
+                'expense_type' => 'การรับเข้าหมู',
+                'paid_amount' => $validated['paid_amount'],
+                'payment_method' => $validated['payment_method'],
+                'receipt_file' => $receiptPath,
+                'note' => $validated['note'] ?? '',
+                'description' => "บันทึกการชำระเงิน - " . $record->batch->batch_code,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('pig_entry_records.index')
+                ->with('success', 'บันทึกการชำระเงินเรียบร้อยแล้ว');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Payment update error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
 }

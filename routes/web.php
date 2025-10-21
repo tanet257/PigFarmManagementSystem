@@ -83,6 +83,7 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
         Route::post('/create', [PigEntryController::class, 'createPigentryrecord'])->name('pig_entry_records.create');
         Route::get('/{id}/edit', [PigEntryController::class, 'editPigentryrecord'])->name('pig_entry_records.edit');
         Route::put('/{id}', [PigEntryController::class, 'updatePigentryrecord'])->name('pig_entry_records.update');
+        Route::put('/{id}/payment', [PigEntryController::class, 'update_payment'])->name('pig_entry_records.update_payment');
         Route::delete('/{id}', [PigEntryController::class, 'deletePigentryrecord'])->name('pig_entry_records.delete');
         //------------------- route export batch ---------------------//
         Route::get('/export/csv', [PigEntryController::class, 'exportCsv'])->name('pig_entry_records.export.csv');
