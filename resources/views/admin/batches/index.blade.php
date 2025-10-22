@@ -124,6 +124,16 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
+                <!-- Show Cancelled Batches Checkbox -->
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="showCancelledCheckbox"
+                        {{ request('show_cancelled') ? 'checked' : '' }}
+                        onchange="toggleCancelled()">
+                    <label class="form-check-label" for="showCancelledCheckbox">
+                        <i class="bi bi-eye"></i> แสดงรุ่นที่ยกเลิก
+                    </label>
+                </div>
+
                 <div class="ms-auto d-flex gap-2">
                     <a href="{{ route('batches.export.csv') }}" class="btn btn-sm btn-success">
                         <i class="bi bi-file-earmark-excel"></i> Export CSV
@@ -222,6 +232,8 @@
                                     <span class="badge bg-success">กำลังเลี้ยง</span>
                                 @elseif($batch->status == 'เสร็จสิ้น')
                                     <span class="badge bg-secondary">เสร็จสิ้น</span>
+                                @elseif($batch->status == 'cancelled')
+                                    <span class="badge bg-danger">ยกเลิก</span>
                                 @else
                                     <span class="badge bg-dark">-</span>
                                 @endif
@@ -234,19 +246,28 @@
                                     onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $batch->id }}')).show();">
                                     <i class="bi bi-eye"></i>
                                 </button>
-                                @if ($batch->status != 'เสร็จสิ้น')
+                                @if ($batch->status != 'เสร็จสิ้น' && $batch->status != 'cancelled')
                                     <button class="btn btn-warning btn-sm btn-action" data-bs-toggle="modal"
                                         data-bs-target="#editModal{{ $batch->id }}"
                                         onclick="event.stopPropagation()">แก้ไข</button>
                                 @endif
 
-                                <form action="{{ route('batches.delete', $batch->id) }}" method="POST"
-                                    style="display:inline-block;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-danger"
-                                        onclick="return confirm('คุณแน่ใจไหมว่าจะลบรุ่นนี้?')">Delete</button>
-                                </form>
+                                {{-- Soft Delete: Update Status to 'cancelled' --}}
+                                @if ($batch->status != 'cancelled')
+                                    <form action="{{ route('batches.delete', $batch->id) }}" method="POST"
+                                        style="display:inline-block;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger"
+                                            onclick="return confirm('คุณแน่ใจไหมว่าจะยกเลิกรุ่นนี้?\n(สถานะจะถูกเปลี่ยนเป็น cancelled)')">
+                                            <i class="bi bi-trash"></i> ยกเลิก
+                                        </button>
+                                    </form>
+                                @else
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> ยกเลิกแล้ว
+                                    </span>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -315,10 +336,16 @@
                                                 <span class="badge bg-success">
                                                     <i class="bi bi-hourglass-split"></i> {{ $batch->status }}
                                                 </span>
-                                            @else
+                                            @elseif($batch->status == 'เสร็จสิ้น')
                                                 <span class="badge bg-secondary">
                                                     <i class="bi bi-check-circle"></i> {{ $batch->status }}
                                                 </span>
+                                            @elseif($batch->status == 'cancelled')
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-x-circle"></i> {{ $batch->status }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-dark">-</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -564,6 +591,31 @@
                     }
                 });
             });
+        </script>
+
+        {{-- Flatpickr Script --}}
+        <script>
+            // Toggle Show Cancelled Batches
+            function toggleCancelled() {
+                const checkbox = document.getElementById('showCancelledCheckbox');
+                const form = document.getElementById('filterForm');
+
+                if (checkbox.checked) {
+                    // Add show_cancelled parameter
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'show_cancelled';
+                    input.value = '1';
+                    form.appendChild(input);
+                } else {
+                    // Remove show_cancelled parameter
+                    const input = form.querySelector('input[name="show_cancelled"]');
+                    if (input) {
+                        input.remove();
+                    }
+                }
+                form.submit();
+            }
         </script>
 
         {{-- Flatpickr Script --}}

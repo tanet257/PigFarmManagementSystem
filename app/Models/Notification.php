@@ -47,6 +47,24 @@ class Notification extends Model
     }
 
     /**
+     * Pig Entry Record
+     */
+    public function pigEntry()
+    {
+        return $this->hasOne(PigEntryRecord::class, 'id', 'related_model_id')
+            ->where('related_model', 'PigEntryRecord');
+    }
+
+    /**
+     * Pig Sale
+     */
+    public function pigSale()
+    {
+        return $this->hasOne(PigSale::class, 'id', 'related_model_id')
+            ->where('related_model', 'PigSale');
+    }
+
+    /**
      * ืำเครื่องหมายว่าอ่านแล้ว
      */
 

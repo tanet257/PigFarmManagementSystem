@@ -30,10 +30,13 @@ class User extends Authenticatable
         'password',
         'phone',
         'address',
+        'usertype',
         'status',
         'approved_by',
         'approved_at',
         'rejection_reason',
+        'cancellation_reason',
+        'cancellation_requested_at',
     ];
 
     /**
@@ -56,6 +59,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'approved_at' => 'datetime',
+        'cancellation_requested_at' => 'datetime',
     ];
 
     /**
@@ -105,6 +109,16 @@ class User extends Authenticatable
     public function isRejected()
     {
         return $this->status === 'rejected';
+    }
+
+    public function isCancelled()
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function hasCancellationRequest()
+    {
+        return $this->cancellation_requested_at !== null && $this->status !== 'cancelled';
     }
 
     /**

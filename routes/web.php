@@ -15,6 +15,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\UserApprovalController;
 use App\Http\Controllers\PaymentApprovalController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfitController;
 
 //------------------- route home/admin -------------------------//
@@ -181,6 +182,7 @@ Route::prefix('pig_sales')->middleware(['auth', 'prevent.cache'])->group(functio
     Route::get('/{id}/edit', [PigSaleController::class, 'edit'])->name('pig_sales.edit');
     Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sales.update');
     Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sales.cancel');
+    Route::patch('/{id}/confirm-cancel', [PigSaleController::class, 'confirmCancel'])->name('pig_sales.confirm_cancel');
     Route::post('/{id}/approve', [PigSaleController::class, 'approve'])->name('pig_sales.approve')->middleware('permission:approve_sales');
     Route::post('/{id}/reject', [PigSaleController::class, 'reject'])->name('pig_sales.reject')->middleware('permission:approve_sales');
     Route::post('/{id}/upload_receipt', [PigSaleController::class, 'uploadReceipt'])->name('pig_sales.upload_receipt');
@@ -191,11 +193,17 @@ Route::prefix('pig_sales')->middleware(['auth', 'prevent.cache'])->group(functio
     Route::get('/batches-by-farm/{farmId}', [PigSaleController::class, 'getBatchesByFarm'])->name('pig_sales.batches_by_farm');
     Route::get('/barns-by-farm/{farmId}', [PigSaleController::class, 'getBarnsByFarm'])->name('pig_sales.barns_by_farm');
     Route::get('/pens-by-barn/{barnId}', [PigSaleController::class, 'getPensByBarn'])->name('pig_sales.pens_by_barn');
+    Route::post('/get-status-batch', [PigSaleController::class, 'getStatusBatch'])->name('pig_sales.get_status_batch'); // ✅ Auto-refresh status
 
     //------------------- route export batch ---------------------//
     Route::get('/export/csv', [PigSaleController::class, 'exportCsv'])->name('pig_sales.export.csv');
     Route::get('/export/pdf', [PigSaleController::class, 'exportPdf'])->name('pig_sales.export.pdf');
 });
+
+//------------------- route payments -------//
+Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store')->middleware('auth');
+Route::patch('/payments/{id}/approve', [PaymentController::class, 'approve'])->name('payments.approve')->middleware('auth');
+Route::patch('/payments/{id}/reject', [PaymentController::class, 'reject'])->name('payments.reject')->middleware('auth');
 
 //------------------- route notifications --------------------//
 Route::prefix('notifications')->middleware(['auth', 'prevent.cache'])->group(function () {
@@ -218,14 +226,29 @@ Route::prefix('user_management')->middleware(['auth', 'prevent.cache', 'permissi
     Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('user_management.assign_role');
     Route::post('/{id}/update_roles', [UserManagementController::class, 'updateRoles'])->name('user_management.update_roles');
     Route::delete('/{id}', [UserManagementController::class, 'destroy'])->name('user_management.destroy');
+    Route::post('/{id}/request_cancel', [UserManagementController::class, 'requestCancelRegistration'])->name('user_management.request_cancel');
+    Route::patch('/{id}/approve_cancel', [UserManagementController::class, 'approveCancelRegistration'])->name('user_management.approve_cancel');
+    Route::patch('/{id}/reject_cancel', [UserManagementController::class, 'rejectCancelRegistration'])->name('user_management.reject_cancel');
+    Route::get('/api/user_type_options', [UserManagementController::class, 'getUserTypeOptions'])->name('user_management.user_type_options');
+    Route::get('/api/user_roles/{id}', [UserManagementController::class, 'getUserRoles'])->name('user_management.user_roles');
 });
 
 //------------------- route payment approvals ----------------//
 Route::prefix('payment_approvals')->middleware(['auth', 'prevent.cache'])->group(function () {
     Route::get('/', [PaymentApprovalController::class, 'index'])->name('payment_approvals.index');
     Route::get('/{notificationId}/detail', [PaymentApprovalController::class, 'detail'])->name('payment_approvals.detail');
+
+    // Payment table (pig sale payments)
+    Route::patch('/{paymentId}/approve-payment', [PaymentApprovalController::class, 'approvePayment'])->name('payment_approvals.approve_payment');
+    Route::patch('/{paymentId}/reject-payment', [PaymentApprovalController::class, 'rejectPayment'])->name('payment_approvals.reject_payment');
+
+    // Notification table (pig entry payments)
     Route::post('/{notificationId}/approve', [PaymentApprovalController::class, 'approve'])->name('payment_approvals.approve');
     Route::post('/{notificationId}/reject', [PaymentApprovalController::class, 'reject'])->name('payment_approvals.reject');
+
+    // Cancel sale approval
+    Route::patch('/{notificationId}/approve-cancel-sale', [PaymentApprovalController::class, 'approveCancelSale'])->name('payment_approvals.approve_cancel_sale');
+    Route::patch('/{notificationId}/reject-cancel-sale', [PaymentApprovalController::class, 'rejectCancelSale'])->name('payment_approvals.reject_cancel_sale');
 });
 
 //------------------- route profits -------------------------//

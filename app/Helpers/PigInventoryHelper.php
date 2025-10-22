@@ -498,7 +498,8 @@ class PigInventoryHelper
     }
 
     /**
-     * ลบรุ่นและคืนค่า allocations ทั้งหมด (เมื่อลบรุ่น)
+     * ลบรุ่นโดยอัปเดทสถานะเป็น 'cancelled' (Soft Delete)
+     * ทำตามแนวเดียวกับการอัปเดทสถานะเป็น 'เสร็จสิ้น'
      *
      * @param int $batchId รหัสรุ่น
      * @return array ['success' => bool, 'message' => string, 'data' => array]
@@ -518,34 +519,38 @@ class PigInventoryHelper
                 ];
             }
 
-            // ดึงข้อมูล allocations ทั้งหมดของรุ่นนี้
-            $allocations = BatchPenAllocation::where('batch_id', $batchId)
+            // เก็บข้อมูลเดิมก่อนอัปเดท
+            $oldStatus = $batch->status;
+            $oldAllocations = BatchPenAllocation::where('batch_id', $batchId)
                 ->lockForUpdate()
-                ->get();
+                ->count();
 
-            $deletedCount = 0;
-            $totalAllocations = 0;
+            // 🔥 Soft Delete: อัปเดทสถานะเป็น 'cancelled' แทนการลบจริง ๆ
+            $batch->status = 'cancelled';
+            $batch->save();
 
-            foreach ($allocations as $allocation) {
-                $totalAllocations++;
-                // ลบ BatchPenAllocation records
-                $allocation->delete();
-                $deletedCount++;
-            }
+            // Reset batch pen allocations เพื่อไม่ให้ใช้งาน (เหมือนกับ 'เสร็จสิ้น')
+            BatchPenAllocation::where('batch_id', $batchId)
+                ->lockForUpdate()
+                ->update([
+                    'allocated_pigs' => 0,
+                    'current_quantity' => 0,
+                ]);
 
-            // ลบ batch record
-            $batch->delete();
+            // ลบการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้
+            self::deleteRelatedNotifications($batchId);
 
             DB::commit();
 
             return [
                 'success' => true,
-                'message' => "✅ ลบรุ่นและคืนค่า allocations เรียบร้อย",
+                'message' => "✅ ยกเลิกรุ่นเรียบร้อย (Status: cancelled)",
                 'data' => [
                     'batch_id' => $batchId,
                     'batch_code' => $batch->batch_code,
-                    'deleted_allocations' => $deletedCount,
-                    'total_allocations' => $totalAllocations
+                    'old_status' => $oldStatus,
+                    'new_status' => 'cancelled',
+                    'allocations_reset' => $oldAllocations
                 ]
             ];
         } catch (Exception $e) {
@@ -556,6 +561,49 @@ class PigInventoryHelper
                 'message' => '❌ เกิดข้อผิดพลาด: ' . $e->getMessage(),
                 'data' => null
             ];
+        }
+    }
+
+    /**
+     * ลบการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้
+     * ลบ notification ของ pig entry, pig sale, approval ฯลฯ
+     */
+    private static function deleteRelatedNotifications($batchId)
+    {
+        try {
+            $notificationModel = \App\Models\Notification::class;
+
+            // ลบ notification ของ pig entry ของรุ่นนี้
+            $pigEntryIds = \App\Models\PigEntryRecord::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($pigEntryIds)) {
+                \App\Models\Notification::where('related_model', 'PigEntryRecord')
+                    ->whereIn('related_model_id', $pigEntryIds)
+                    ->delete();
+            }
+
+            // ลบ notification ของ pig sale ของรุ่นนี้
+            $pigSaleIds = \App\Models\PigSale::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($pigSaleIds)) {
+                \App\Models\Notification::where('related_model', 'PigSale')
+                    ->whereIn('related_model_id', $pigSaleIds)
+                    ->delete();
+            }
+
+            // ลบ notification ที่มี batch_id ในข้อมูล data (approval notifications)
+            \App\Models\Notification::where('type', 'like', '%approval%')
+                ->where('related_model', 'Batch')
+                ->where('related_model_id', $batchId)
+                ->delete();
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Error deleting related notifications: ' . $e->getMessage());
+            // ไม่ throw error เพื่อให้ batch deletion ยังคงดำเนินต่อ
         }
     }
 }

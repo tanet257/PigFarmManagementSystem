@@ -30,8 +30,14 @@ class DashboardController extends Controller
     public function dashboard()
     {
         $totalPigs = PigEntryRecord::count();
-        $totalCosts = Cost::sum('total_price');
-        $totalSales = PigSale::sum('total_price');
+
+        // ✅ Exclude cancelled batches (soft delete)
+        $totalCosts = Cost::whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            })->sum('total_price');
+
+        // ✅ Exclude cancelled sales
+        $totalSales = PigSale::where('status', '!=', 'ยกเลิกการขาย')->sum('total_price');
 
         return view('admin.view.dashboard', compact('totalPigs', 'totalCosts', 'totalSales'));
     }

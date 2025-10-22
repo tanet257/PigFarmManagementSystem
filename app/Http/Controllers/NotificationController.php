@@ -134,19 +134,30 @@ class NotificationController extends Controller
      * ทำเครื่องหมายว่าอ่านแล้วและนำทาง
      */
     public function markAndNavigate($id)
-{
-    $notification = Notification::where('user_id', Auth::id())
-        ->findOrFail($id);
+    {
+        $notification = Notification::where('user_id', Auth::id())
+            ->findOrFail($id);
 
-    $notification->markAsRead();
+        $notification->markAsRead();
 
-    // ป้องกัน redirect loop
-    if ($notification->url && !str_contains($notification->url, 'notifications/')) {
-        return redirect($notification->url);
+        // สำหรับ cancel_pig_sale ให้ไป payment_approvals dashboard
+        if ($notification->type === 'cancel_pig_sale') {
+            return redirect()->route('payment_approvals.index');
+        }
+
+        // สำหรับ user_registered, user_approved, user_rejected, user_registration_cancelled
+        // ให้ไป user management dashboard (admin only)
+        if (in_array($notification->type, ['user_registered', 'user_approved', 'user_rejected', 'user_registration_cancelled'])) {
+            return redirect()->route('user_management.index');
+        }
+
+        // ป้องกัน redirect loop
+        if ($notification->url && !str_contains($notification->url, 'notifications/')) {
+            return redirect($notification->url);
+        }
+
+        return redirect()->route('notifications.index');
     }
-
-    return redirect()->route('notifications.index');
-}
 
 
     /**

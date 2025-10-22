@@ -19,6 +19,7 @@ use App\Models\PigEntryDetail;
 use Illuminate\Support\Facades\Log;
 use App\Helpers\PigInventoryHelper;
 use App\Helpers\NotificationHelper;
+use App\Helpers\RevenueHelper;
 
 class PigEntryController extends Controller
 {
@@ -241,6 +242,12 @@ class PigEntryController extends Controller
                     'receipt_file'         => $uploadedFileUrl,
                 ]);
 
+                // คำนวณกำไรใหม่เมื่อเพิ่มต้นทุนลูกหมู
+                $profitResult = RevenueHelper::calculateAndRecordProfit($batch->id);
+                if (!$profitResult['success']) {
+                    Log::warning('PigEntry - Profit calculation failed: ' . $profitResult['message']);
+                }
+
                 DB::commit();
                 return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่ายเรียบร้อย');
             } else {
@@ -262,6 +269,15 @@ class PigEntryController extends Controller
         $barns = Barn::all();
 
         $query = PigEntryRecord::with(['farm', 'batch.costs']);
+
+        // ✅ Exclude cancelled entries (soft delete) - unless show_cancelled is true
+        if (!$request->has('show_cancelled') || !$request->show_cancelled) {
+            // PigEntry ใช้ payment_status ไม่ใช่ status - แต่เปลี่ยนแปลงหลังมาถ้า follow soft delete pattern
+            // จึงตรวจหา batch status = 'cancelled' แทน (batch soft delete)
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+        }
 
         // Search
         if ($request->filled('search')) {
@@ -389,6 +405,12 @@ class PigEntryController extends Controller
                     'receipt_file' => $uploadedFileUrl,
                 ]
             );
+
+            // คำนวณกำไรใหม่เมื่อแก้ไขต้นทุนลูกหมู
+            $profitResult = RevenueHelper::calculateAndRecordProfit($batch->id);
+            if (!$profitResult['success']) {
+                Log::warning('PigEntry - Profit recalculation failed: ' . $profitResult['message']);
+            }
 
             return redirect()->back()->with('success', 'แก้ไขข้อมูลเรียบร้อย');
         } catch (\Exception $e) {

@@ -77,6 +77,8 @@
                                                     <i class="fa fa-check-circle text-success fa-2x"></i>
                                                 @elseif($notification->type == 'user_rejected')
                                                     <i class="fa fa-times-circle text-danger fa-2x"></i>
+                                                @elseif($notification->type == 'cancel_pig_sale')
+                                                    <i class="fa fa-exclamation-circle text-warning fa-2x"></i>
                                                 @else
                                                     <i class=" text-info fa-2x"></i>
                                                 @endif
@@ -97,10 +99,32 @@
                                         </div>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
-                                        @if ($notification->url)
+                                        @if ($notification->url || $notification->type === 'cancel_pig_sale' || $notification->type === 'user_registration_cancelled')
                                             <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
-                                                class="btn btn-sm btn-info " title="อ่านแล้วและไปยังหน้า">
-                                                <i class="fa fa-arrow-right"></i> ไปยังหน้า
+                                                class="btn btn-sm {{ $notification->is_read ? 'btn-info' : 'btn-warning' }}"
+                                                title="ไปที่หน้า">
+                                                <i class="fa {{
+                                                    $notification->type === 'cancel_pig_sale' ? 'fa-times-circle' :
+                                                    ($notification->type === 'user_registered' ? 'fa-user-plus' :
+                                                    ($notification->type === 'user_approved' ? 'fa-check-circle' :
+                                                    ($notification->type === 'user_rejected' ? 'fa-times-circle' :
+                                                    ($notification->type === 'user_registration_cancelled' ? 'fa-ban' :
+                                                    ($notification->type === 'payment_recorded_pig_entry' ? 'bi bi-cash-stack' :
+                                                    ($notification->type === 'pig_sale' ? 'fa-shopping-cart' :
+                                                    ($notification->type === 'pig_entry' ? 'fa-inbox' :
+                                                    'fa-arrow-right')))))))
+                                                }}"></i>
+                                                {{
+                                                    $notification->type === 'cancel_pig_sale' ? 'อนุมัติการยกเลิก' :
+                                                    ($notification->type === 'user_registered' ? 'ดูการลงทะเบียน' :
+                                                    ($notification->type === 'user_approved' ? 'ตรวจสอบการอนุมัติ' :
+                                                    ($notification->type === 'user_rejected' ? 'ตรวจสอบการปฏิเสธ' :
+                                                    ($notification->type === 'user_registration_cancelled' ? 'อนุมัติการยกเลิก' :
+                                                    ($notification->type === 'payment_recorded_pig_entry' ? 'ตรวจสอบชำระเงิน' :
+                                                    ($notification->type === 'pig_sale' ? 'ดูการขาย' :
+                                                    ($notification->type === 'pig_entry' ? 'ดูการรับหมูเข้า' :
+                                                    'ไปยังหน้า')))))))
+                                                }}
                                             </a>
                                         @endif
                                         <form method="POST"

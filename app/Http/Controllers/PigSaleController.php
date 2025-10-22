@@ -17,6 +17,8 @@ use App\Models\PigSale;
 use App\Models\PigSaleDetail;
 use App\Models\PigDeath;
 use App\Models\Cost;
+use App\Models\Payment;
+use App\Models\Notification;
 use App\Services\PigPriceService;
 use App\Helpers\PigInventoryHelper;
 use App\Helpers\NotificationHelper;
@@ -272,6 +274,55 @@ class PigSaleController extends Controller
         }
     }
 
+    /**
+     * ✅ API: ดึงสถานะการชำระเงินและอนุมัติของหลาย pig sales (สำหรับ auto-refresh)
+     */
+    public function getStatusBatch(Request $request)
+    {
+        try {
+            $pigSaleIds = $request->input('pig_sale_ids', []);
+
+            if (empty($pigSaleIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่มี pig sale IDs ที่ส่งมา',
+                    'statuses' => []
+                ]);
+            }
+
+            // ดึงสถานะปัจจุบัน
+            $statuses = PigSale::whereIn('id', $pigSaleIds)
+                ->select(
+                    'id',
+                    'payment_status',
+                    'approved_at',
+                    'approved_by',
+                    'balance'
+                )
+                ->get()
+                ->keyBy('id')
+                ->map(function ($sale) {
+                    return [
+                        'payment_status' => $sale->payment_status,
+                        'approved_at' => $sale->approved_at,
+                        'approved_by' => $sale->approved_by,
+                        'balance' => $sale->balance
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'statuses' => $statuses
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'statuses' => []
+            ], 500);
+        }
+    }
+
     //--------------------------------------- Index View ------------------------------------------//
 
     public function index(Request $request)
@@ -297,6 +348,11 @@ class PigSaleController extends Controller
             'createdBy',
             'approvedBy'
         ]);
+
+        // ✅ Exclude cancelled sales (soft delete) - unless show_cancelled is true
+        if (!$request->has('show_cancelled') || !$request->show_cancelled) {
+            $query->where('status', '!=', 'ยกเลิกการขาย');
+        }
 
         // Search
         if ($request->filled('search')) {
@@ -504,20 +560,6 @@ class PigSaleController extends Controller
                 ]);
             }
 
-            // บันทึกรายได้จากการขายหมู
-            $revenueResult = RevenueHelper::recordPigSaleRevenue($pigSale);
-
-            if (!$revenueResult['success']) {
-                Log::warning('PigSale - Revenue recording failed: ' . $revenueResult['message']);
-            }
-
-            // คำนวณกำไรและบันทึกลง profit table
-            $profitResult = RevenueHelper::calculateAndRecordProfit($validated['batch_id']);
-
-            if (!$profitResult['success']) {
-                Log::warning('PigSale - Profit calculation failed: ' . $profitResult['message']);
-            }
-
             DB::commit();
 
             return redirect()->route('pig_sales.index')->with('success', 'บันทึกการขายหมูสำเร็จ');
@@ -529,6 +571,29 @@ class PigSaleController extends Controller
     }
 
     //--------------------------------------- Approve Sale ------------------------------------------//
+
+    public function show($id)
+    {
+        try {
+            $pigSale = PigSale::with(['farm', 'batch', 'payments'])->findOrFail($id);
+
+            // คำนวณ total paid และ remaining amount
+            $totalPaid = Payment::where('pig_sale_id', $pigSale->id)
+                ->where('status', 'approved')
+                ->sum('amount');
+
+            $remainingAmount = $pigSale->net_total - $totalPaid;
+
+            return view('admin.pig_sales.show', [
+                'pigSale' => $pigSale,
+                'totalPaid' => $totalPaid,
+                'remainingAmount' => max(0, $remainingAmount),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PigSaleController - show Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่พบข้อมูลการขายหมู');
+        }
+    }
 
     public function approve(Request $request, $id)
     {
@@ -552,6 +617,23 @@ class PigSaleController extends Controller
             $pigSale->approved_by = $user->name;
             $pigSale->approved_at = now();
             $pigSale->save();
+
+            // ✅ บันทึกรายได้จากการขายหมู (เมื่อสำเร็จการอนุมัติ)
+            $revenueResult = RevenueHelper::recordPigSaleRevenue($pigSale);
+
+            if (!$revenueResult['success']) {
+                Log::warning('PigSale Approve - Revenue recording failed: ' . $revenueResult['message']);
+            }
+
+            // ✅ คำนวณกำไรและบันทึกลง profit table
+            $profitResult = RevenueHelper::calculateAndRecordProfit($pigSale->batch_id);
+
+            if (!$profitResult['success']) {
+                Log::warning('PigSale Approve - Profit calculation failed: ' . $profitResult['message']);
+            }
+
+            // ✅ แจ้งเตือนผู้สร้างการขายว่าได้รับการอนุมัติแล้ว
+            \App\Helpers\NotificationHelper::notifyUserPigSaleApproved($pigSale, $user);
 
             DB::commit();
 
@@ -650,6 +732,9 @@ class PigSaleController extends Controller
             $pigSale->paid_amount += $validated['paid_amount'];
             $pigSale->balance = $pigSale->net_total - $pigSale->paid_amount;
 
+            // บันทึกสถานะเดิมเพื่อตรวจสอบการเปลี่ยนแปลง
+            $oldPaymentStatus = $pigSale->payment_status;
+
             // อัปเดทสถานะการชำระเงิน
             if ($pigSale->balance <= 0) {
                 $pigSale->payment_status = 'ชำระแล้ว';
@@ -669,6 +754,11 @@ class PigSaleController extends Controller
             // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน
             NotificationHelper::notifyAdminsPigSalePaymentRecorded($pigSale, auth()->user());
 
+            // ✅ ส่งแจ้งเตือนให้ผู้สร้างเมื่อสถานะการชำระเปลี่ยน
+            if ($oldPaymentStatus !== $pigSale->payment_status) {
+                NotificationHelper::notifyUserPigSalePaymentStatusChanged($pigSale, $oldPaymentStatus, $pigSale->payment_status);
+            }
+
             DB::commit();
 
             $message = 'บันทึกการชำระเงินสำเร็จ - ';
@@ -686,21 +776,56 @@ class PigSaleController extends Controller
 
     //--------------------------------------- Cancel (Delete) ------------------------------------------//
 
-    public function cancel($id)
+    /**
+     * ยกเลิกการขายหมู (Require Admin Approval)
+     */
+    public function destroy($id)
     {
         DB::beginTransaction();
         try {
             $pigSale = PigSale::findOrFail($id);
 
+            // สร้าง Notification สำหรับ Admin approval
+            Notification::create([
+                'user_id' => auth()->id(),
+                'type' => 'cancel_pig_sale',
+                'title' => 'ขอยกเลิกการขายหมู',
+                'message' => "ขอยกเลิกการขาย {$pigSale->quantity} ตัว (ฟาร์ม: {$pigSale->farm->farm_name}, รุ่น: {$pigSale->batch->batch_code})",
+                'related_model' => 'PigSale',
+                'related_model_id' => $pigSale->id,
+                'approval_status' => 'pending',
+                'url' => route('payment_approvals.index'),
+                'is_read' => false,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('pig_sales.index')
+                ->with('success', 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('PigSale Cancel Request Error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Admin อนุมัติยกเลิกการขาย (ใช้จาก PaymentApprovalController)
+     */
+    public function confirmCancel($id)
+    {
+        DB::beginTransaction();
+        try {
+            $pigSale = PigSale::findOrFail($id);
+            $batchId = $pigSale->batch_id;
+
             // คืนจำนวนหมู current_quantity กลับทุกคอกตามรายละเอียดที่บันทึกไว้
             $details = PigSaleDetail::where('pig_sale_id', $pigSale->id)->get();
 
             if ($details->isEmpty()) {
-                // ถ้าไม่มีรายละเอียด (ข้อมูลเก่า) คืนหมูแบบ manual โดยไม่ validation
-                Log::warning("ยกเลิกการขาย ID {$pigSale->id} (ข้อมูลเก่า - ไม่มี pig_sale_details) - คืนหมูแบบ manual");
-
+                // ถ้าไม่มีรายละเอียด (ข้อมูลเก่า)
                 if ($pigSale->pen_id && $pigSale->quantity > 0) {
-                    // คืนหมูกลับคอกโดยตรง (เฉพาะ current_quantity ไม่เพิ่ม allocated_pigs)
                     $allocation = BatchPenAllocation::where('batch_id', $pigSale->batch_id)
                         ->where('pen_id', $pigSale->pen_id)
                         ->lockForUpdate()
@@ -711,7 +836,6 @@ class PigSaleController extends Controller
                         $allocation->save();
                     }
 
-                    // คืนหมูกลับรุ่น
                     $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
                     if ($batch) {
                         $batch->current_quantity = ($batch->current_quantity ?? 0) + $pigSale->quantity;
@@ -719,22 +843,18 @@ class PigSaleController extends Controller
                     }
                 }
             } else {
-                // คืนหมู current_quantity กลับแต่ละคอกตามจำนวนที่ขายไป (ข้อมูลใหม่)
+                // คืนหมูแต่ละคอก
                 foreach ($details as $detail) {
-                    // เพิ่ม current_quantity กลับ
                     $allocation = BatchPenAllocation::where('batch_id', $pigSale->batch_id)
                         ->where('pen_id', $detail->pen_id)
                         ->lockForUpdate()
                         ->first();
 
-                    if (!$allocation) {
-                        throw new \Exception('ไม่พบข้อมูลหมูในคอก #' . $detail->pen_id);
+                    if ($allocation) {
+                        $allocation->current_quantity = ($allocation->current_quantity ?? 0) + $detail->quantity;
+                        $allocation->save();
                     }
 
-                    $allocation->current_quantity = ($allocation->current_quantity ?? 0) + $detail->quantity;
-                    $allocation->save();
-
-                    // เพิ่ม current_quantity กลับในรุ่น
                     $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
                     if ($batch) {
                         $batch->current_quantity = ($batch->current_quantity ?? 0) + $detail->quantity;
@@ -743,23 +863,27 @@ class PigSaleController extends Controller
                 }
             }
 
-            // ลบไฟล์จาก Cloudinary ถ้ามี
-            if ($pigSale->receipt_file) {
-                $publicId = $this->getPublicIdFromUrl($pigSale->receipt_file);
-                if ($publicId) {
-                    Cloudinary::destroy($publicId);
-                }
-            }
+            // Soft Delete
+            $pigSale->update([
+                'status' => 'ยกเลิกการขาย',
+                'payment_status' => 'ยกเลิกการขาย',
+            ]);
 
-            $pigSale->delete();
+            // ✅ แจ้งเตือนผู้สร้างการขายว่าถูกยกเลิก
+            NotificationHelper::notifyUserPigSaleCancelled($pigSale);
+
+            // Recalculate profit
+            RevenueHelper::calculateAndRecordProfit($batchId);
 
             DB::commit();
 
-            return redirect()->route('pig_sales.index')->with('success', 'ยกเลิกการขายสำเร็จ (คืนหมูกลับเล้า-คอกแล้ว)');
+            return redirect()->route('payment_approvals.index')
+                ->with('success', 'ยกเลิกการขายสำเร็จ (คืนหมูกลับเล้า-คอกแล้ว)');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('PigSale Cancel Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            Log::error('PigSale Confirm Cancel Error: ' . $e->getMessage());
+            return redirect()->back()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 

@@ -70,6 +70,11 @@ class BatchController extends Controller
     {
         $query = Batch::with('farm.barns.pens');
 
+        // ✅ Exclude cancelled batches (soft delete) - unless show_cancelled is true
+        if (!$request->has('show_cancelled') || !$request->show_cancelled) {
+            $query->where('status', '!=', 'cancelled');
+        }
+
         if ($request->filled('search')) {
             $query->where('batch_code', 'like', '%' . $request->search . '%');
         }
@@ -119,7 +124,10 @@ class BatchController extends Controller
         }
 
         $farms = Farm::all();
-        $allBatches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        // ✅ Exclude cancelled batches from dropdown filter (soft delete)
+        $allBatches = Batch::where('status', '!=', 'cancelled')
+            ->select('id', 'batch_code', 'farm_id')
+            ->get();
 
         return view('admin.batches.index', compact('batches', 'farms', 'allBatches'));
     }

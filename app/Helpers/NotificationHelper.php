@@ -258,6 +258,126 @@ class NotificationHelper
     }
 
     /**
+     * แจ้งเตือนผู้สร้างการขายเมื่อสถานะการชำระเปลี่ยน
+     * ใช้เมื่อ payment_status เปลี่ยน (รอชำระ -> ชำระบางส่วน -> ชำระแล้ว)
+     */
+    public static function notifyUserPigSalePaymentStatusChanged($pigSale, $oldStatus, $newStatus)
+    {
+        // หาผู้สร้างการขาย
+        $creator = User::where('name', $pigSale->created_by)->first();
+        if (!$creator) {
+            return;
+        }
+
+        // Load relationships ถ้ายังไม่ได้ load
+        if (!$pigSale->relationLoaded('batch')) {
+            $pigSale->load('batch', 'farm');
+        }
+
+        $batch = $pigSale->batch;
+        $farm = $pigSale->farm;
+
+        // กำหนดข้อความแจ้งเตือนตามสถานะ
+        $statusMessage = '';
+        $statusBadge = '';
+        switch ($newStatus) {
+            case 'ชำระแล้ว':
+                $statusMessage = "การขายของคุณได้รับการชำระเงินครบแล้ว ✅";
+                $statusBadge = 'ชำระแล้ว';
+                break;
+            case 'ชำระบางส่วน':
+                $statusMessage = "การขายของคุณได้รับการชำระเงินบางส่วน (คงเหลือ " . number_format($pigSale->balance, 2) . " บาท)";
+                $statusBadge = 'ชำระบางส่วน';
+                break;
+            case 'รอชำระ':
+                $statusMessage = "การขายของคุณรอการชำระเงิน";
+                $statusBadge = 'รอชำระ';
+                break;
+            case 'ยกเลิกการขาย':
+                $statusMessage = "การขายของคุณถูกยกเลิกแล้ว ❌";
+                $statusBadge = 'ยกเลิก';
+                break;
+            default:
+                $statusMessage = "สถานะการขายเปลี่ยนเป็น: {$newStatus}";
+                $statusBadge = $newStatus;
+        }
+
+        Notification::create([
+            'type' => 'pig_sale_status_changed',
+            'user_id' => $creator->id,
+            'title' => 'สถานะการขายหมูของคุณเปลี่ยนแปลง',
+            'message' => "{$statusMessage}\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigSale->quantity} ตัว\nราคารวม: " . number_format($pigSale->net_total, 2) . " บาท\nสถานะ: {$statusBadge}",
+            'url' => route('pig_sales.index'),
+            'is_read' => false,
+            'related_model' => 'PigSale',
+            'related_model_id' => $pigSale->id,
+        ]);
+    }
+
+    /**
+     * แจ้งเตือนผู้สร้างการขายเมื่อการขายถูกยกเลิก
+     */
+    public static function notifyUserPigSaleCancelled($pigSale)
+    {
+        // หาผู้สร้างการขาย
+        $creator = User::where('name', $pigSale->created_by)->first();
+        if (!$creator) {
+            return;
+        }
+
+        // Load relationships ถ้ายังไม่ได้ load
+        if (!$pigSale->relationLoaded('batch')) {
+            $pigSale->load('batch', 'farm');
+        }
+
+        $batch = $pigSale->batch;
+        $farm = $pigSale->farm;
+
+        Notification::create([
+            'type' => 'pig_sale_cancelled',
+            'user_id' => $creator->id,
+            'title' => 'การขายหมูของคุณถูกยกเลิก',
+            'message' => "❌ การขายของคุณถูกยกเลิกแล้ว\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigSale->quantity} ตัว\nราคารวม: " . number_format($pigSale->net_total, 2) . " บาท",
+            'url' => route('pig_sales.index'),
+            'is_read' => false,
+            'related_model' => 'PigSale',
+            'related_model_id' => $pigSale->id,
+        ]);
+    }
+
+    /**
+     * แจ้งเตือนผู้สร้างการขายเมื่อการขายได้รับการอนุมัติ
+     */
+    public static function notifyUserPigSaleApproved($pigSale, $approvedBy)
+    {
+        // หาผู้สร้างการขาย
+        $creator = User::where('name', $pigSale->created_by)->first();
+        if (!$creator) {
+            return;
+        }
+
+        // Load relationships ถ้ายังไม่ได้ load
+        if (!$pigSale->relationLoaded('batch')) {
+            $pigSale->load('batch', 'farm');
+        }
+
+        $batch = $pigSale->batch;
+        $farm = $pigSale->farm;
+
+        Notification::create([
+            'type' => 'pig_sale_approved',
+            'user_id' => $creator->id,
+            'related_user_id' => $approvedBy->id ?? null,
+            'title' => 'การขายหมูของคุณได้รับการอนุมัติ ✅',
+            'message' => "✅ การขายของคุณได้รับการอนุมัติแล้ว\n\nอนุมัติโดย: {$approvedBy->name}\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigSale->quantity} ตัว\nราคารวม: " . number_format($pigSale->net_total, 2) . " บาท",
+            'url' => route('pig_sales.index'),
+            'is_read' => false,
+            'related_model' => 'PigSale',
+            'related_model_id' => $pigSale->id,
+        ]);
+    }
+
+    /**
      * หา Admin ทั้งหมด
      */
     private static function getAdmins()
@@ -265,5 +385,61 @@ class NotificationHelper
         return User::whereHas('roles', function ($query) {
             $query->where('name', 'admin');
         })->get();
+    }
+
+    /**
+     * ส่งอีเมล เมื่อผู้ใช้ได้รับการอนุมัติ
+     */
+    public static function sendUserApprovedEmail(User $user, User $approvedBy)
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                new \App\Mail\UserRegistrationApproved($user, $approvedBy)
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Send User Approved Email Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ส่งอีเมล เมื่อผู้ใช้ถูกปฏิเสธ
+     */
+    public static function sendUserRejectedEmail(User $user, User $rejectedBy, $reason)
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                new \App\Mail\UserRegistrationRejected($user, $rejectedBy, $reason)
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Send User Rejected Email Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ส่งอีเมล เมื่อผู้ใช้ได้รับการยกเลิกลงทะเบียน
+     */
+    public static function sendUserCancelledEmail(User $user, $reason = null)
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                new \App\Mail\UserRegistrationCancelled($user, $reason)
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Send User Cancelled Email Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ส่งอีเมล เมื่อ Role ของผู้ใช้ถูกอัปเดท
+     */
+    public static function sendUserRoleUpdatedEmail(User $user, User $updatedBy, $newRole, $oldRole = null)
+    {
+        try {
+            \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                new \App\Mail\UserRoleUpdated($user, $updatedBy, $newRole, $oldRole)
+            );
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Send User Role Updated Email Error: ' . $e->getMessage());
+        }
     }
 }

@@ -127,6 +127,16 @@
                     @endforeach
                 </select>
 
+                <!-- Show Cancelled Pig Sales Checkbox -->
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="showCancelledCheckboxSale"
+                        {{ request('show_cancelled') ? 'checked' : '' }}
+                        onchange="toggleCancelledSale()">
+                    <label class="form-check-label" for="showCancelledCheckboxSale">
+                        <i class="bi bi-eye"></i> แสดงการขายที่ยกเลิก
+                    </label>
+                </div>
+
                 <div class="ms-auto d-flex gap-2">
                     <a class="btn btn-success btn-sm" href="{{ route('pig_sales.export.csv') }}">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
@@ -226,7 +236,9 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                @if ($sell->payment_status == 'ชำระแล้ว')
+                                @if ($sell->payment_status == 'ยกเลิกการขาย')
+                                    <span class="badge bg-danger">ยกเลิก</span>
+                                @elseif ($sell->payment_status == 'ชำระแล้ว')
                                     <span class="badge bg-success">ชำระแล้ว</span>
                                 @elseif ($sell->payment_status == 'ชำระบางส่วน')
                                     <span class="badge bg-warning">ชำระบางส่วน</span>
@@ -299,22 +311,28 @@
                                     </button>
                                 @endif
 
-                                @if ($sell->payment_status != 'ชำระแล้ว')
+                                @if ($sell->payment_status != 'ชำระแล้ว' && $sell->payment_status != 'ยกเลิกการขาย')
                                     <button type="button" class="btn btn-sm btn-success"
                                         onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('paymentModal{{ $sell->id }}')).show();">
                                         <i class="bi bi-cash"></i>
                                     </button>
                                 @endif
 
-                                <form action="{{ route('pig_sales.cancel', $sell->id) }}" method="POST"
-                                    class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="btn btn-sm btn-danger"
-                                        onclick="event.stopPropagation(); if(confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) { this.form.submit(); }">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                </form>
+                                @if ($sell->payment_status === 'ยกเลิกการขาย')
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> ยกเลิก
+                                    </span>
+                                @else
+                                    <form action="{{ route('pig_sales.cancel', $sell->id) }}" method="POST"
+                                        class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" class="btn btn-sm btn-danger"
+                                            onclick="event.stopPropagation(); if(confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) { this.form.submit(); }">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
                     @empty
@@ -476,7 +494,21 @@
                             </tr>
                             <tr>
                                 <td><strong>สถานะ:</strong></td>
-                                <td>{{ $sell->payment_status }}</td>
+                                <td>
+                                    @if ($sell->payment_status === 'ยกเลิกการขาย')
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> ยกเลิก
+                                        </span>
+                                    @elseif ($sell->payment_status == 'ชำระแล้ว')
+                                        <span class="badge bg-success">ชำระแล้ว</span>
+                                    @elseif ($sell->payment_status == 'ชำระบางส่วน')
+                                        <span class="badge bg-warning">ชำระบางส่วน</span>
+                                    @elseif ($sell->payment_status == 'เกินกำหนด')
+                                        <span class="badge bg-danger">เกินกำหนด</span>
+                                    @else
+                                        <span class="badge bg-secondary">รอชำระ</span>
+                                    @endif
+                                </td>
                             </tr>
                             <tr>
                                 <td><strong>ยอดที่ชำระแล้ว:</strong></td>
@@ -594,9 +626,10 @@
                         <h5 class="modal-title">บันทึกการชำระเงิน</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <form action="{{ route('pig_sales.upload_receipt', $sell->id) }}" method="POST"
-                        enctype="multipart/form-data">
+                    <form action="{{ route('payments.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
+                        <input type="hidden" name="pig_sale_id" value="{{ $sell->id }}">
+
                         <div class="modal-body">
                             <div class="mb-3">
                                 <label class="form-label">ยอดที่ต้องชำระ</label>
@@ -605,10 +638,16 @@
                                     readonly>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">จำนวนเงินที่ชำระ</label>
-                                <input type="number" name="paid_amount" class="form-control" step="0.01"
-                                    min="0"
+                                <label class="form-label">จำนวนเงินที่ชำระ <span class="text-danger">*</span></label>
+                                <input type="number" name="amount" class="form-control" step="0.01"
+                                    min="0.01"
+                                    max="{{ $sell->balance ?? ($sell->net_total ?? $sell->total_price) }}"
                                     value="{{ $sell->balance ?? ($sell->net_total ?? $sell->total_price) }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">วันที่ชำระ <span class="text-danger">*</span></label>
+                                <input type="date" name="payment_date" class="form-control"
+                                    value="{{ date('Y-m-d') }}" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">วิธีชำระเงิน <span class="text-danger">*</span></label>
@@ -618,30 +657,56 @@
                                         type="button" id="paymentMethodDropdownBtn{{ $sell->id }}"
                                         data-bs-toggle="dropdown" aria-expanded="false">
                                         <span>-- เลือกวิธีชำระเงิน --</span>
-
                                     </button>
                                     <ul class="dropdown-menu w-100" role="listbox">
                                         <li><a class="dropdown-item" href="#" data-payment-method="เงินสด"
                                                 onclick="updatePaymentMethod(event, {{ $sell->id }})">เงินสด</a></li>
                                         <li><a class="dropdown-item" href="#" data-payment-method="โอนเงิน"
-                                                onclick="updatePaymentMethod(event, {{ $sell->id }})">โอนเงิน</a>
-                                        </li>
+                                                onclick="updatePaymentMethod(event, {{ $sell->id }})">โอนเงิน</a></li>
+                                        <li><a class="dropdown-item" href="#" data-payment-method="เช็ค"
+                                                onclick="updatePaymentMethod(event, {{ $sell->id }})">เช็ค</a></li>
                                     </ul>
                                     <input type="hidden" name="payment_method" id="paymentMethod{{ $sell->id }}"
                                         value="" required>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">อัปโหลดหลักฐานการชำระ (ถ้ามี)</label>
+                                <label class="form-label">เลขที่อ้างอิง (โอนเงิน/เช็ค)</label>
+                                <input type="text" name="reference_number" class="form-control"
+                                    placeholder="เช่น เลขเช็ค, เลขอ้างอิงการโอน">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ชื่อธนาคาร</label>
+                                <input type="text" name="bank_name" class="form-control"
+                                    placeholder="เช่น ธนาคารกรุงไทย">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">อัปโหลดหลักฐานการชำระ <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control" name="receipt_file"
-                                    accept="image/*,application/pdf">
-                                <small class="text-muted">รองรับไฟล์: JPG, PNG, PDF (สูงสุด
-                                    5MB)</small>
+                                    accept=".jpg,.jpeg,.png,.pdf" required>
+                                <small class="text-muted">รองรับไฟล์: JPG, JPEG, PNG, PDF (สูงสุด 5MB)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">หมายเหตุ</label>
+                                <textarea name="note" class="form-control" rows="2" placeholder="เช่น หมายเหตุเพิ่มเติม"></textarea>
+                            </div>
+                            <hr>
+                            <div class="alert alert-warning">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>เหตุผลการยกเลิก:</strong>
+                                <p class="mb-0 mt-2">หากต้องการยกเลิกการขายนี้ กรุณากรอกเหตุผลด้านล่าง แล้วกดปุ่ม "ยกเลิกการขาย" แทนการชำระเงิน</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">หากต้องการยกเลิกการขาย - กรุณากรอกเหตุผล</label>
+                                <textarea name="cancellation_reason" class="form-control" rows="3" placeholder="เช่น ลูกค้ายกเลิกการสั่งซื้อ, ข้อผิดพลาดในการบันทึก เป็นต้น"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="submit" class="btn btn-primary">บันทึกการชำระเงิน</button>
+                            <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); if(document.querySelector('[name=cancellation_reason]').value.trim() === '') { alert('กรุณากรอกเหตุผลการยกเลิก'); return; } if(confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) { const form = this.closest('form'); form.action = '{{ route('pig_sales.cancel', $sell->id) }}'; form.method = 'POST'; form.innerHTML += '<input type=\"hidden\" name=\"_method\" value=\"DELETE\">'; form.submit(); }">
+                                <i class="bi bi-x-circle"></i> ยกเลิกการขาย
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -887,6 +952,30 @@
 
 
     @push('scripts')
+        {{-- Toggle Show Cancelled Pig Sales --}}
+        <script>
+            function toggleCancelledSale() {
+                const checkbox = document.getElementById('showCancelledCheckboxSale');
+                const form = document.getElementById('filterForm');
+
+                if (checkbox.checked) {
+                    // Add show_cancelled parameter
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'show_cancelled';
+                    input.value = '1';
+                    form.appendChild(input);
+                } else {
+                    // Remove show_cancelled parameter
+                    const input = form.querySelector('input[name="show_cancelled"]');
+                    if (input) {
+                        input.remove();
+                    }
+                }
+                form.submit();
+            }
+        </script>
+
         <style>
             .form-check-input-sm {
                 width: 1rem;
@@ -1253,6 +1342,109 @@
                     .querySelector('span').textContent = methodText;
                 document.getElementById('paymentMethod' + sellId).value = paymentMethod;
             }
+
+            // ✅ Auto-refresh status columns every 5 seconds
+            function autoRefreshPigSaleStatus() {
+                const pigSaleRows = document.querySelectorAll('tbody tr[data-row-id]');
+                if (pigSaleRows.length === 0) return;
+
+                // Get all pig sale IDs
+                const pigSaleIds = Array.from(pigSaleRows).map(row => row.getAttribute('data-row-id')).filter(Boolean);
+
+                if (pigSaleIds.length === 0) return;
+
+                // Fetch status for all pig sales
+                fetch('{{ route("pig_sales.get_status_batch") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        pig_sale_ids: pigSaleIds
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.statuses) {
+                        // Update each row with new status
+                        Object.entries(data.statuses).forEach(([pigSaleId, status]) => {
+                            updateRowStatus(pigSaleId, status);
+                        });
+                    }
+                })
+                .catch(error => console.error('Auto-refresh error:', error));
+            }
+
+            // Update individual row status
+            function updateRowStatus(pigSaleId, status) {
+                const row = document.querySelector(`tr[data-row-id="${pigSaleId}"]`);
+                if (!row) return;
+
+                const paymentStatusCell = row.querySelector('td:nth-child(9)'); // สถานะชำระ
+                const approvalStatusCell = row.querySelector('td:nth-child(10)'); // สถานะอนุมัติ
+
+                if (paymentStatusCell && status.payment_status) {
+                    const paymentBadgeHTML = getPaymentStatusBadge(status);
+                    paymentStatusCell.innerHTML = paymentBadgeHTML;
+                }
+
+                if (approvalStatusCell && status.approved_at !== null) {
+                    const approvalBadgeHTML = `
+                        <span class="badge bg-success">
+                            <i class="bi bi-check-circle"></i> อนุมัติแล้ว
+                        </span>
+                        <small class="text-muted d-block mt-1">
+                            โดย: ${status.approved_by || '-'}
+                        </small>
+                    `;
+                    approvalStatusCell.innerHTML = approvalBadgeHTML;
+                }
+            }
+
+            // Get payment status badge HTML
+            function getPaymentStatusBadge(status) {
+                const paymentStatus = status.payment_status;
+                let badgeHTML = '';
+
+                if (paymentStatus === 'ชำระแล้ว') {
+                    badgeHTML = '<span class="badge bg-success">ชำระแล้ว</span>';
+                } else if (paymentStatus === 'ชำระบางส่วน') {
+                    const balance = parseFloat(status.balance || 0).toFixed(2);
+                    badgeHTML = `
+                        <span class="badge bg-warning">ชำระบางส่วน</span>
+                        <small class="d-block mt-1">คงเหลือ: ${balance}</small>
+                    `;
+                } else if (paymentStatus === 'เกินกำหนด') {
+                    badgeHTML = '<span class="badge bg-danger">เกินกำหนด</span>';
+                } else if (paymentStatus === 'ยกเลิกการขาย') {
+                    badgeHTML = '<span class="badge bg-danger">ยกเลิก</span>';
+                } else {
+                    badgeHTML = '<span class="badge bg-secondary">รอชำระ</span>';
+                }
+
+                return badgeHTML;
+            }
+
+            // Start auto-refresh on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                // Add data-row-id to all rows for tracking
+                document.querySelectorAll('tbody tr').forEach((row, index) => {
+                    const viewButton = row.querySelector('button[onclick*="viewModal"]');
+                    if (viewButton) {
+                        const match = viewButton.getAttribute('onclick').match(/viewModal(\d+)/);
+                        if (match) {
+                            row.setAttribute('data-row-id', match[1]);
+                        }
+                    }
+                });
+
+                // Refresh status every 5 seconds
+                setInterval(autoRefreshPigSaleStatus, 5000);
+
+                // Initial refresh after 2 seconds
+                setTimeout(autoRefreshPigSaleStatus, 2000);
+            });
 
             // เรียกใช้ common table click handler
             setupClickableRows();

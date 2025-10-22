@@ -18,6 +18,11 @@ class ProfitController extends Controller
         try {
             $query = Profit::with(['farm', 'batch', 'profitDetails']);
 
+            // ✅ Exclude cancelled batches (soft delete)
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+
             // Filter by farm
             if ($request->has('farm_id') && $request->farm_id) {
                 $query->where('farm_id', $request->farm_id);
@@ -36,8 +41,8 @@ class ProfitController extends Controller
             // Get all farms for filter dropdown
             $farms = Farm::all();
 
-            // Get all batches for filter dropdown
-            $batches = Batch::all();
+            // Get all batches for filter dropdown (exclude cancelled)
+            $batches = Batch::where('status', '!=', 'cancelled')->get();
 
             // Sort
             $sortBy = $request->get('sort_by', 'period_end');
@@ -93,6 +98,11 @@ class ProfitController extends Controller
     {
         try {
             $query = Profit::with(['farm', 'batch', 'profitDetails']);
+
+            // ✅ Exclude cancelled batches (soft delete)
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
 
             // Apply same filters as index
             if ($request->has('farm_id') && $request->farm_id) {
@@ -155,7 +165,12 @@ class ProfitController extends Controller
         try {
             $farm = Farm::findOrFail($farmId);
 
-            $profits = Profit::where('farm_id', $farmId)->get();
+            // ✅ Exclude cancelled batches (soft delete)
+            $profits = Profit::where('farm_id', $farmId)
+                ->whereHas('batch', function ($q) {
+                    $q->where('status', '!=', 'cancelled');
+                })
+                ->get();
 
             $summary = [
                 'farm_name' => $farm->name,

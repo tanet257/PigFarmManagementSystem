@@ -89,11 +89,17 @@ class RevenueHelper
         try {
             $batch = \App\Models\Batch::findOrFail($batchId);
 
-            // ดึงรายได้ทั้งหมดของรุ่นนี้
-            $totalRevenue = Revenue::where('batch_id', $batchId)->sum('net_revenue');
+            // ดึงรายได้ทั้งหมดของรุ่นนี้ (เฉพาะอนุมัติแล้ว, ไม่รวม cancelled)
+            $totalRevenue = Revenue::where('batch_id', $batchId)
+                ->whereHas('pigSale', function ($query) {
+                    $query->where('status', '!=', 'ยกเลิกการขาย');
+                })
+                ->sum('net_revenue');
 
-            // ดึงต้นทุนทั้งหมด
-            $allCosts = Cost::where('batch_id', $batchId)->get();
+            // ดึงต้นทุนทั้งหมด (ไม่รวม cancelled)
+            $allCosts = Cost::where('batch_id', $batchId)
+                ->where('status', '!=', 'ยกเลิก')
+                ->get();
 
             // คำนวณต้นทุนตามหมวดหมู่
             $feedCost = $allCosts->where('cost_type', 'feed')->sum('total_price');
@@ -107,10 +113,13 @@ class RevenueHelper
 
             // คำนวณกำไร
             $grossProfit = $totalRevenue - $totalCost;
-            $profitMargin = $totalCost > 0 ? ($grossProfit / $totalRevenue * 100) : 0;
+            $profitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue * 100) : 0;
 
-            // ดึงจำนวนหมู
-            $totalPigSold = \App\Models\PigSale::where('batch_id', $batchId)->sum('quantity');
+            // ดึงจำนวนหมู (ไม่รวม cancelled)
+            $totalPigSold = \App\Models\PigSale::where('batch_id', $batchId)
+                ->where('status', '!=', 'ยกเลิกการขาย')
+                ->sum('quantity');
+
             $totalPigDead = \App\Models\PigDeath::where('batch_id', $batchId)->count();
             $profitPerPig = $totalPigSold > 0 ? ($grossProfit / $totalPigSold) : 0;
 

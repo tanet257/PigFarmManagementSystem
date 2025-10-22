@@ -211,6 +211,29 @@
                                                 data-bs-target="#updateRoleModal{{ $user->id }}">
                                                 <i class="bi bi-person-badge"></i> จัดการ Role
                                             </button>
+
+                                            {{-- ปุ่มยกเลิกลงทะเบียน (ถ้ากำลังมีคำขอยกเลิก) --}}
+                                            @if ($user->hasCancellationRequest())
+                                                <div class="btn-group" role="group">
+                                                    <form action="{{ route('user_management.approve_cancel', $user->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="btn btn-sm btn-warning" title="อนุมัติการยกเลิก">
+                                                            <i class="bi bi-check"></i> อนุมัติยกเลิก
+                                                        </button>
+                                                    </form>
+                                                    <form action="{{ route('user_management.reject_cancel', $user->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <button type="submit" class="btn btn-sm btn-secondary" title="ปฏิเสธการยกเลิก">
+                                                            <i class="bi bi-x"></i> ปฏิเสธยกเลิก
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endif
+                                        @elseif ($user->status == 'cancelled')
+                                            {{-- แสดง cancelled status badge --}}
+                                            <span class="badge bg-danger"><i class="bi bi-ban"></i> ปิดใช้งาน</span>
                                         @endif
 
                                         {{-- ปุ่มดูรายละเอียด --}}
@@ -297,7 +320,7 @@
                                             class="text-danger">*</span></strong></label>
                                 @foreach ($roles as $role)
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="selected_role"
+                                        <input class="form-check-input" type="radio" name="role_ids[]"
                                             value="{{ $role->id }}"
                                             id="role{{ $role->id }}_{{ $user->id }}">
                                         <label class="form-check-label"
@@ -306,8 +329,6 @@
                                         </label>
                                     </div>
                                 @endforeach
-                                <!-- Hidden field to send role_ids as array -->
-                                <input type="hidden" id="role_ids_{{ $user->id }}" name="role_ids[]">
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -392,7 +413,7 @@
                                             class="text-danger">*</span></strong></label>
                                 @foreach ($roles as $role)
                                     <div class="form-check">
-                                        <input class="form-check-input" type="radio" name="selected_role"
+                                        <input class="form-check-input" type="radio" name="role_ids[]"
                                             value="{{ $role->id }}"
                                             id="updaterole{{ $role->id }}_{{ $user->id }}"
                                             {{ $user->roles->contains($role->id) ? 'checked' : '' }}>
@@ -402,8 +423,6 @@
                                         </label>
                                     </div>
                                 @endforeach
-                                <!-- Hidden field to send role_ids as array -->
-                                <input type="hidden" id="role_ids_update_{{ $user->id }}" name="role_ids[]">
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -531,7 +550,15 @@
         // Set hidden field value
         const hiddenField = form.querySelector(`input[id="role_ids_${userId}"]`);
         if (hiddenField) {
-            hiddenField.value = selectedRole.value;
+    function validateRoleSelection(button) {
+        // หาพ่อ form ของปุ่มนี้
+        const form = button.closest('form');
+        // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
+        const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
+
+        if (!selectedRole) {
+            showSnackbar('⚠️ กรุณาเลือก Role ก่อนอนุมัติ', 'warning');
+            return false;
         }
 
         return true;
@@ -541,23 +568,40 @@
         // หาพ่อ form ของปุ่มนี้
         const form = button.closest('form');
         // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
-        const selectedRole = form.querySelector('input[name="selected_role"]:checked');
+        const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
 
         if (!selectedRole) {
-            alert('⚠️ กรุณาเลือก Role ก่อนบันทึก');
+            showSnackbar('⚠️ กรุณาเลือก Role ก่อนบันทึก', 'warning');
             return false;
         }
 
-        // หา user id จาก modal
-        const modalId = form.closest('.modal').id;
-        const userId = modalId.replace('updateRoleModal', '');
-
-        // Set hidden field value
-        const hiddenField = form.querySelector(`input[id="role_ids_update_${userId}"]`);
-        if (hiddenField) {
-            hiddenField.value = selectedRole.value;
-        }
-
         return true;
+    }
+
+    /**
+     * Show Snackbar notification
+     */
+    function showSnackbar(message, type = 'info') {
+        const snackbar = document.createElement('div');
+        snackbar.className = `alert alert-${type} alert-dismissible fade show`;
+        snackbar.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            min-width: 300px;
+            max-width: 500px;
+        `;
+        snackbar.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+
+        document.body.appendChild(snackbar);
+
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            snackbar.remove();
+        }, 5000);
     }
 </script>

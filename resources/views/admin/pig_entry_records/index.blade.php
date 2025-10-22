@@ -128,6 +128,16 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
+                <!-- Show Cancelled Pig Entry Checkbox -->
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="showCancelledCheckboxEntry"
+                        {{ request('show_cancelled') ? 'checked' : '' }}
+                        onchange="toggleCancelledEntry()">
+                    <label class="form-check-label" for="showCancelledCheckboxEntry">
+                        <i class="bi bi-eye"></i> แสดงรุ่นที่ยกเลิก
+                    </label>
+                </div>
+
                 <div class="ms-auto d-flex gap-2">
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                         data-bs-target="#createModal">
@@ -264,16 +274,22 @@
                                     <i class="bi bi-cash"></i>
                                 </button>
 
-                                {{-- Delete Button --}}
-                                <form action="{{ route('pig_entry_records.delete', $record->id) }}" method="POST"
-                                    class="d-inline">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="button" class="btn btn-sm btn-danger"
-                                        onclick="event.stopPropagation(); if(confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')) { this.form.submit(); }">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
+                                {{-- Delete Button / Cancelled Badge --}}
+                                @if ($record->batch && $record->batch->status === 'cancelled')
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> ยกเลิก
+                                    </span>
+                                @else
+                                    <form action="{{ route('pig_entry_records.delete', $record->id) }}" method="POST"
+                                        class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" class="btn btn-sm btn-danger"
+                                            onclick="event.stopPropagation(); if(confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')) { this.form.submit(); }">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                @endif
                             </td>
                         </tr>
 
@@ -599,6 +615,30 @@
 
 
     @push('scripts')
+        {{-- Toggle Show Cancelled Pig Entry --}}
+        <script>
+            function toggleCancelledEntry() {
+                const checkbox = document.getElementById('showCancelledCheckboxEntry');
+                const form = document.getElementById('filterForm');
+
+                if (checkbox.checked) {
+                    // Add show_cancelled parameter
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'show_cancelled';
+                    input.value = '1';
+                    form.appendChild(input);
+                } else {
+                    // Remove show_cancelled parameter
+                    const input = form.querySelector('input[name="show_cancelled"]');
+                    if (input) {
+                        input.remove();
+                    }
+                }
+                form.submit();
+            }
+        </script>
+
         {{-- Auto-submit filters --}}
         <script>
             // Snackbar notification function
