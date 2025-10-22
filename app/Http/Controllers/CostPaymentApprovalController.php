@@ -22,7 +22,19 @@ class CostPaymentApprovalController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('admin.cost_payment_approvals.index', compact('pendingPayments'));
+        $approvedPayments = CostPayment::where('status', 'approved')
+            ->with(['cost.batch', 'cost.pigEntryRecord'])
+            ->orderBy('approved_date', 'desc')
+            ->limit(10)
+            ->get();
+
+        $rejectedPayments = CostPayment::where('status', 'rejected')
+            ->with(['cost.batch', 'cost.pigEntryRecord'])
+            ->orderBy('approved_date', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('admin.cost_payment_approvals.index', compact('pendingPayments', 'approvedPayments', 'rejectedPayments'));
     }
 
     /**
