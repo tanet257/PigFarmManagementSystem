@@ -29,9 +29,9 @@ class RevenueHelper
                 $existingRevenue->update([
                     'total_revenue' => $pigSale->total_price,
                     'net_revenue' => $pigSale->net_total,
-                    'payment_status' => $pigSale->payment_status,
+                    'payment_status' => 'อนุมัติแล้ว',  // เปลี่ยนเป็น 'อนุมัติแล้ว' เมื่ออนุมัติการขาย
                     'revenue_date' => $pigSale->date,
-                    'payment_received_date' => $pigSale->payment_status === 'ชำระแล้ว' ? now() : null,
+                    'payment_received_date' => null,  // ยังไม่มีการชำระเงิน
                     'note' => 'ขายหมู ' . $pigSale->quantity . ' ตัว ให้ ' . $pigSale->buyer_name,
                 ]);
 
@@ -43,7 +43,7 @@ class RevenueHelper
                 ];
             }
 
-            // สร้างรายได้ใหม่
+            // สร้างรายได้ใหม่ - เมื่อ PigSale ได้รับการอนุมัติแล้ว
             $revenue = Revenue::create([
                 'farm_id' => $pigSale->farm_id,
                 'batch_id' => $pigSale->batch_id,
@@ -54,9 +54,9 @@ class RevenueHelper
                 'total_revenue' => $pigSale->total_price,
                 'discount' => 0,
                 'net_revenue' => $pigSale->net_total,
-                'payment_status' => $pigSale->payment_status,
+                'payment_status' => 'อนุมัติแล้ว',  // ✅ เปลี่ยนเป็น 'อนุมัติแล้ว' เมื่ออนุมัติการขาย (ไม่ต้องรอสถานะการชำระเงิน)
                 'revenue_date' => $pigSale->date,
-                'payment_received_date' => $pigSale->payment_status === 'ชำระแล้ว' ? now() : null,
+                'payment_received_date' => null,  // ยังไม่ได้รับการชำระเงิน
                 'note' => 'ขายหมู ' . $pigSale->quantity . ' ตัว ให้ ' . $pigSale->buyer_name,
             ]);
 
@@ -89,9 +89,9 @@ class RevenueHelper
         try {
             $batch = \App\Models\Batch::findOrFail($batchId);
 
-            // ดึงรายได้ทั้งหมดของรุ่นนี้ (เฉพาะที่ชำระแล้ว)
+            // ดึงรายได้ทั้งหมดของรุ่นนี้ (เฉพาะที่ได้รับการอนุมัติแล้ว - payment_status = 'อนุมัติแล้ว' หรือ 'ชำระแล้ว')
             $totalRevenue = Revenue::where('batch_id', $batchId)
-                ->where('payment_status', 'ชำระแล้ว')
+                ->whereIn('payment_status', ['อนุมัติแล้ว', 'ชำระแล้ว'])
                 ->sum('net_revenue');
 
             // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว)
@@ -104,7 +104,7 @@ class RevenueHelper
             // คำนวณต้นทุนตามหมวดหมู่ (เฉพาะ approved payments)
             $feedCost = $approvedCosts->where('cost_type', 'feed')->sum('total_price');
             $medicineCost = $approvedCosts->where('cost_type', 'medicine')->sum('total_price');
-            $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost') 
+            $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost')
                            + $approvedCosts->where('cost_type', 'piglet')->sum('transport_cost');
             $excessWeightCost = $approvedCosts->where('cost_type', 'piglet')->sum('excess_weight_cost');
             $laborCost = $approvedCosts->where('cost_type', 'wage')->sum('total_price');

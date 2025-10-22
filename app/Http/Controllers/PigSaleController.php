@@ -614,7 +614,7 @@ class PigSaleController extends Controller
             }
 
             // บันทึกข้อมูลการอนุมัติ
-            $pigSale->approved_by = $user->name;
+            $pigSale->approved_by = $user->id;
             $pigSale->approved_at = now();
             $pigSale->save();
 
