@@ -454,6 +454,24 @@ class PigEntryController extends Controller
                 }
             }
 
+            // ✅ Soft Delete Cost - ยกเลิกต้นทุนทั้งหมดที่เกี่ยวกับ PigEntry นี้
+            $costs = Cost::where('pig_entry_record_id', $id)->get();
+            foreach ($costs as $cost) {
+                if ($cost->payment_status !== 'ยกเลิก') {
+                    // ยกเลิก Cost โดยเปลี่ยน payment_status เป็น 'ยกเลิก'
+                    $cost->update([
+                        'payment_status' => 'ยกเลิก',
+                    ]);
+
+                    // ยกเลิก CostPayment ที่เกี่ยวข้อง (ใช้ 'rejected' เพราะ enum มีเฉพาะ pending/approved/rejected)
+                    $cost->payments()->update([
+                        'status' => 'rejected',
+                    ]);
+
+                    Log::info('PigEntry Delete - Cost cancelled: Cost ID ' . $cost->id);
+                }
+            }
+
             // ✅ Soft Delete - อัปเดท status เป็น 'cancelled'
             $pigEntryRecord->update([
                 'status' => 'cancelled',
@@ -470,7 +488,7 @@ class PigEntryController extends Controller
 
             DB::commit();
             return redirect()->route('pig_entry_records.index')
-                ->with('success', 'ยกเลิกรายการและคืนหมูเรียบร้อยแล้ว');
+                ->with('success', 'ยกเลิกรายการและคืนหมู+ต้นทุนเรียบร้อยแล้ว');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());

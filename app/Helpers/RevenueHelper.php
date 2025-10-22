@@ -94,8 +94,9 @@ class RevenueHelper
                 ->whereIn('payment_status', ['อนุมัติแล้ว', 'ชำระแล้ว'])
                 ->sum('net_revenue');
 
-            // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว)
+            // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว และ ไม่ถูกยกเลิก)
             $approvedCosts = Cost::where('batch_id', $batchId)
+                ->where('payment_status', '!=', 'ยกเลิก')  // ❌ ยกเว้น ยกเลิก
                 ->whereHas('payments', function ($query) {
                     $query->where('status', 'approved');
                 })
