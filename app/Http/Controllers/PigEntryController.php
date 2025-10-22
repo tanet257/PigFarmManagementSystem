@@ -370,10 +370,11 @@ class PigEntryController extends Controller
                 $file = $request->file('receipt_file');
                 if (!$file->isValid()) return redirect()->back()->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
 
-                $uploadedFileUrl = Cloudinary::upload(
+                $uploadResult = Cloudinary::upload(
                     $file->getRealPath(),
                     ['folder' => 'receipt_files']
-                )->getSecurePath();
+                );
+                $uploadedFileUrl = $uploadResult['secure_url'] ?? null;
             }
 
             $record->update([
@@ -577,10 +578,9 @@ class PigEntryController extends Controller
                             'resource_type' => 'auto',
                         ]);
 
-                        // CloudinaryEngine::upload() returns the engine instance itself
-                        // Call getSecurePath() to extract the URL from the stored response
-                        $receiptPath = $uploadResult->getSecurePath();
-                        Log::info('Receipt path from getSecurePath: ' . ($receiptPath ?? 'null'));
+                        // Get secure URL from upload result
+                        $receiptPath = $uploadResult['secure_url'] ?? null;
+                        Log::info('Receipt path: ' . ($receiptPath ?? 'null'));
                     } catch (\Exception $e) {
                         Log::error('Cloudinary upload error: ' . $e->getMessage());
                         DB::rollBack();
@@ -607,18 +607,32 @@ class PigEntryController extends Controller
                           ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
                           ($record->batch->costs->sum('transport_cost') ?? 0);
 
-            Cost::create([
+            $cost = Cost::create([
                 'farm_id' => $record->batch->farm_id,
                 'batch_id' => $record->batch_id,
                 'pig_entry_record_id' => $record->id,
-                'cost_type' => 'payment',
-                'amount' => $validated['paid_amount'],
+                'cost_type' => 'piglet',
+                'item_code' => 'PIGLET-' . $record->batch->batch_code,
+                'item_name' => 'ลูกหมู - ' . $record->batch->batch_code,
+                'quantity' => $record->total_pig_amount,
+                'unit' => 'ตัว',
+                'price_per_unit' => $record->average_price_per_pig,
+                'total_price' => $record->total_pig_price,
+                'transport_cost' => $record->batch->costs->sum('transport_cost') ?? 0,
+                'excess_weight_cost' => $record->batch->costs->sum('excess_weight_cost') ?? 0,
                 'payment_method' => $validated['payment_method'],
                 'receipt_file' => $receiptPath,
                 'payment_status' => 'pending',
                 'paid_date' => now()->toDateString(),
-                'date' => now()->toDateString(),
+                'date' => $record->pig_entry_date,
                 'note' => $validated['note'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
+            ]);
+
+            // สร้าง CostPayment record (pending approval)
+            \App\Models\CostPayment::create([
+                'cost_id' => $cost->id,
+                'amount' => $record->total_pig_price + ($record->batch->costs->sum('transport_cost') ?? 0) + ($record->batch->costs->sum('excess_weight_cost') ?? 0),
+                'status' => 'pending',
             ]);
 
             // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน
