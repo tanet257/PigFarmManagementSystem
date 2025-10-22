@@ -15,6 +15,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\UserApprovalController;
 use App\Http\Controllers\PaymentApprovalController;
+use App\Http\Controllers\CostPaymentApprovalController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfitController;
 
@@ -249,6 +250,14 @@ Route::prefix('payment_approvals')->middleware(['auth', 'prevent.cache'])->group
     // Cancel sale approval
     Route::patch('/{notificationId}/approve-cancel-sale', [PaymentApprovalController::class, 'approveCancelSale'])->name('payment_approvals.approve_cancel_sale');
     Route::patch('/{notificationId}/reject-cancel-sale', [PaymentApprovalController::class, 'rejectCancelSale'])->name('payment_approvals.reject_cancel_sale');
+});
+
+//------------------- route cost payment approvals -----------//
+Route::prefix('cost_payment_approvals')->middleware(['auth', 'prevent.cache'])->group(function () {
+    Route::get('/', [CostPaymentApprovalController::class, 'index'])->name('cost_payment_approvals.index');
+    Route::get('/{id}', [CostPaymentApprovalController::class, 'show'])->name('cost_payment_approvals.show');
+    Route::post('/{id}/approve', [CostPaymentApprovalController::class, 'approve'])->name('cost_payment_approvals.approve');
+    Route::post('/{id}/reject', [CostPaymentApprovalController::class, 'reject'])->name('cost_payment_approvals.reject');
 });
 
 //------------------- route profits -------------------------//

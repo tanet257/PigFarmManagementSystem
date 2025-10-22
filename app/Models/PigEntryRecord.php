@@ -31,6 +31,11 @@ class PigEntryRecord extends Model
         'paid_date',
         'total_cost',
         'receipt_number',
+        // Soft delete fields
+        'status',
+        'cancellation_reason',
+        'cancelled_at',
+        'cancelled_by',
     ];
 
     protected $casts = [
@@ -82,18 +87,5 @@ class PigEntryRecord extends Model
     public function latestCost()
     {
         return $this->hasOne(Cost::class, 'batch_id', 'batch_id')->latestOfMany();
-    }
-
-    /**
-     * Boot method to handle cascading deletes
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // ลบ pig_entry_details เมื่อลบ pig_entry_record
-        static::deleting(function ($pigEntry) {
-            PigEntryDetail::where('pig_entry_id', $pigEntry->id)->delete();
-        });
     }
 }

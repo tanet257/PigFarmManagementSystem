@@ -442,4 +442,115 @@ class NotificationHelper
             \Illuminate\Support\Facades\Log::error('Send User Role Updated Email Error: ' . $e->getMessage());
         }
     }
+
+    /**
+     * แจ้งเตือนผู้สร้างการรับเข้าเมื่อการชำระได้รับการอนุมัติ
+     */
+    public static function notifyUserPigEntryPaymentApproved($pigEntry)
+    {
+        try {
+            // หาผู้สร้าง
+            $creator = User::where('name', $pigEntry->created_by)->first();
+            if (!$creator) {
+                return;
+            }
+
+            // Load relationships ถ้ายังไม่ได้ load
+            if (!$pigEntry->relationLoaded('batch')) {
+                $pigEntry->load('batch', 'farm');
+            }
+
+            $batch = $pigEntry->batch;
+            $farm = $pigEntry->farm;
+
+            Notification::create([
+                'type' => 'pig_entry_payment_approved',
+                'user_id' => $creator->id,
+                'title' => '✅ การชำระเงินการรับเข้าได้รับการอนุมัติ',
+                'message' => "✅ การชำระเงินของคุณได้รับการอนุมัติแล้ว\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nวันที่รับเข้า: {$pigEntry->pig_entry_date}",
+                'url' => route('pig_entry_records.index'),
+                'is_read' => false,
+                'related_model' => 'PigEntryRecord',
+                'related_model_id' => $pigEntry->id,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Notify User Pig Entry Payment Approved Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * อัปเดตแจ้งเตือนของการแจ้งเตือนการรับเข้า เมื่อถูกลบ
+     * (ไม่ลบ แต่เปลี่ยน title ให้เป็น "[ลบแล้ว]")
+     */
+    public static function markPigEntryNotificationsAsDeleted($pigEntryRecordId)
+    {
+        try {
+            // หาแจ้งเตือนทั้งหมดที่เกี่ยวข้องกับ PigEntryRecord นี้
+            $notifications = Notification::where('related_model', 'PigEntryRecord')
+                ->where('related_model_id', $pigEntryRecordId)
+                ->get();
+
+            foreach ($notifications as $notification) {
+                // เพิ่ม "[ลบแล้ว]" ในหน้า title
+                if (!str_contains($notification->title, '[ลบแล้ว]')) {
+                    $notification->update([
+                        'title' => '[ลบแล้ว] ' . $notification->title,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Mark Pig Entry Notifications As Deleted Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * อัปเดตแจ้งเตือนของการขายหมู เมื่อถูกยกเลิก
+     * (ไม่ลบ แต่เปลี่ยน title/message ให้เป็น "ยกเลิกแล้ว")
+     */
+    public static function markPigSaleNotificationsAsCancelled($pigSaleId)
+    {
+        try {
+            // หาแจ้งเตือนทั้งหมดที่เกี่ยวข้องกับ PigSale นี้
+            $notifications = Notification::where('related_model', 'PigSale')
+                ->where('related_model_id', $pigSaleId)
+                ->where('type', '!=', 'pig_sale_cancelled') // ไม่อัปเดตแจ้งเตือนการยกเลิก
+                ->get();
+
+            foreach ($notifications as $notification) {
+                // เพิ่ม "[ยกเลิกแล้ว]" ในหน้า title
+                if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
+                    $notification->update([
+                        'title' => '[ยกเลิกแล้ว] ' . $notification->title,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Mark Pig Sale Notifications As Cancelled Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * อัปเดตแจ้งเตือนของ Batch เมื่อถูกยกเลิก
+     * (ไม่ลบ แต่เปลี่ยน title/message ให้เป็น "[ยกเลิกแล้ว]")
+     */
+    public static function markBatchNotificationsAsCancelled($batchId)
+    {
+        try {
+            // หาแจ้งเตือนทั้งหมดที่เกี่ยวข้องกับ Batch นี้
+            $notifications = Notification::where('related_model', 'Batch')
+                ->where('related_model_id', $batchId)
+                ->get();
+
+            foreach ($notifications as $notification) {
+                // เพิ่ม "[ยกเลิกแล้ว]" ในหน้า title
+                if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
+                    $notification->update([
+                        'title' => '[ยกเลิกแล้ว] ' . $notification->title,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Mark Batch Notifications As Cancelled Error: ' . $e->getMessage());
+        }
+    }
 }

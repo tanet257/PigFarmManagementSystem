@@ -24,7 +24,9 @@
 
              <li class="active"><a href="{{ url('admin_index') }}"><i class="icon-home"></i>Home</a></li>
 
-             <li ><a href="{{ route('profits.index') }}"><i class="bi bi-bar-chart"></i>Dashboard</a></li>
+             <li ><a href="{{ route('profits.index') }}"><i class="bi bi-bar-chart"></i>Revenue Dashboard</a></li>
+
+             <li ><a href="{{ route('cost-payment-approvals.index') }}"><i class="bi bi-bar-chart"></i>Cost Dashboard</a></li>
 
              <li><a href="#batchMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Add Batch </a>

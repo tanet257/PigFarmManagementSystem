@@ -134,7 +134,7 @@
                         {{ request('show_cancelled') ? 'checked' : '' }}
                         onchange="toggleCancelledEntry()">
                     <label class="form-check-label" for="showCancelledCheckboxEntry">
-                        <i class="bi bi-eye"></i> แสดงรุ่นที่ยกเลิก
+                        <i class="bi bi-eye"></i> แสดงรายการที่ยกเลิก
                     </label>
                 </div>
 
@@ -269,13 +269,17 @@
                                 </button>
 
                                 {{-- Payment Button --}}
-                                <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
-                                    data-bs-target="#paymentModal{{ $record->id }}" onclick="event.stopPropagation();">
-                                    <i class="bi bi-cash"></i>
-                                </button>
+                                @if ($record->status !== 'cancelled' || $record->payment_status === 'approved')
+                                    {{-- ซ่อน payment button ถ้า ยกเลิกแล้ว หรือ ชำระแล้ว --}}
+                                @else
+                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                        data-bs-target="#paymentModal{{ $record->id }}" onclick="event.stopPropagation();">
+                                        <i class="bi bi-cash"></i>
+                                    </button>
+                                @endif
 
                                 {{-- Delete Button / Cancelled Badge --}}
-                                @if ($record->batch && $record->batch->status === 'cancelled')
+                                @if ($record->status === 'cancelled')
                                     <span class="badge bg-danger">
                                         <i class="bi bi-x-circle"></i> ยกเลิก
                                     </span>

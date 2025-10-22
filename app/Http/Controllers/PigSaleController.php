@@ -872,6 +872,9 @@ class PigSaleController extends Controller
             // ✅ แจ้งเตือนผู้สร้างการขายว่าถูกยกเลิก
             NotificationHelper::notifyUserPigSaleCancelled($pigSale);
 
+            // ✅ อัปเดตแจ้งเตือนเก่าให้ mark ว่า "ยกเลิกแล้ว"
+            NotificationHelper::markPigSaleNotificationsAsCancelled($pigSale->id);
+
             // Recalculate profit
             RevenueHelper::calculateAndRecordProfit($batchId);
 

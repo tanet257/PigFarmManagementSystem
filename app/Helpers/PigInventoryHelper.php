@@ -537,8 +537,8 @@ class PigInventoryHelper
                     'current_quantity' => 0,
                 ]);
 
-            // ลบการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้
-            self::deleteRelatedNotifications($batchId);
+            // อัปเดตการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้ (ไม่ลบ แต่เพิ่ม prefix)
+            self::markBatchAndRelatedNotificationsAsCancelled($batchId);
 
             DB::commit();
 
@@ -565,8 +565,62 @@ class PigInventoryHelper
     }
 
     /**
+     * อัปเดตการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้ให้เป็น "[ยกเลิกแล้ว]"
+     * (ไม่ลบ แต่เพิ่ม prefix ให้สอดคล้องกับ PigEntry/PigSale)
+     */
+    private static function markBatchAndRelatedNotificationsAsCancelled($batchId)
+    {
+        try {
+            // อัปเดต Batch notifications
+            \App\Helpers\NotificationHelper::markBatchNotificationsAsCancelled($batchId);
+
+            // อัปเดต PigEntry notifications ของรุ่นนี้
+            $pigEntryIds = \App\Models\PigEntryRecord::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($pigEntryIds)) {
+                $pigEntryNotifications = \App\Models\Notification::where('related_model', 'PigEntryRecord')
+                    ->whereIn('related_model_id', $pigEntryIds)
+                    ->get();
+
+                foreach ($pigEntryNotifications as $notification) {
+                    if (!str_contains($notification->title, '[ลบแล้ว]')) {
+                        $notification->update([
+                            'title' => '[ลบแล้ว] ' . $notification->title,
+                        ]);
+                    }
+                }
+            }
+
+            // อัปเดต PigSale notifications ของรุ่นนี้
+            $pigSaleIds = \App\Models\PigSale::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($pigSaleIds)) {
+                $pigSaleNotifications = \App\Models\Notification::where('related_model', 'PigSale')
+                    ->whereIn('related_model_id', $pigSaleIds)
+                    ->get();
+
+                foreach ($pigSaleNotifications as $notification) {
+                    if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
+                        $notification->update([
+                            'title' => '[ยกเลิกแล้ว] ' . $notification->title,
+                        ]);
+                    }
+                }
+            }
+
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::warning('Error marking related notifications as cancelled: ' . $e->getMessage());
+            // ไม่ throw error เพื่อให้ batch deletion ยังคงดำเนินต่อ
+        }
+    }
+
+    /**
      * ลบการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้
-     * ลบ notification ของ pig entry, pig sale, approval ฯลฯ
+     * (DEPRECATED - ใช้ markBatchAndRelatedNotificationsAsCancelled แทน)
      */
     private static function deleteRelatedNotifications($batchId)
     {

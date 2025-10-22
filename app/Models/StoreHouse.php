@@ -20,9 +20,15 @@ class StoreHouse extends Model
         'min_quantity',
         'unit',
         'status',
-
         'note',
-        'date'
+        'date',
+        'source',
+        'created_by',
+        'updated_by',
+        'reason',
+        'cancelled_at',
+        'cancelled_by',
+        'cost_id',
     ];
 
     // ------------ Relationships ------------ //
@@ -45,5 +51,30 @@ class StoreHouse extends Model
     public function latestCost()
     {
         return $this->hasOne(Cost::class, 'item_code', 'item_code')->latestOfMany('updated_at');
+    }
+
+    public function auditLogs()
+    {
+        return $this->hasMany(StoreHouseAuditLog::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function cost()
+    {
+        return $this->belongsTo(Cost::class);
+    }
+
+    public function canceller()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 }

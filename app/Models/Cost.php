@@ -62,4 +62,14 @@ class Cost extends Model
     {
         return $this->belongsTo(PigEntryRecord::class, 'pig_entry_record_id');
     }
+
+    public function payments()
+    {
+        return $this->hasMany(CostPayment::class);
+    }
+
+    public function latestPayment()
+    {
+        return $this->hasOne(CostPayment::class)->latestOfMany();
+    }
 }

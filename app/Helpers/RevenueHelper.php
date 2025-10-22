@@ -96,20 +96,24 @@ class RevenueHelper
                 })
                 ->sum('net_revenue');
 
-            // ดึงต้นทุนทั้งหมด (ไม่รวม cancelled)
-            $allCosts = Cost::where('batch_id', $batchId)
+            // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว)
+            $approvedCosts = Cost::where('batch_id', $batchId)
                 ->where('status', '!=', 'ยกเลิก')
+                ->whereHas('payments', function ($query) {
+                    $query->where('status', 'approved');
+                })
                 ->get();
 
-            // คำนวณต้นทุนตามหมวดหมู่
-            $feedCost = $allCosts->where('cost_type', 'feed')->sum('total_price');
-            $medicineCost = $allCosts->where('cost_type', 'medicine')->sum('total_price');
-            $transportCost = $allCosts->where('cost_type', 'shipping')->sum('transport_cost');
-            $laborCost = $allCosts->where('cost_type', 'wage')->sum('total_price');
-            $utilityCost = $allCosts->whereIn('cost_type', ['electric_bill', 'water_bill'])->sum('total_price');
-            $otherCost = $allCosts->where('cost_type', 'other')->sum('total_price');
+            // คำนวณต้นทุนตามหมวดหมู่ (เฉพาะ approved payments)
+            $feedCost = $approvedCosts->where('cost_type', 'feed')->sum('total_price');
+            $medicineCost = $approvedCosts->where('cost_type', 'medicine')->sum('total_price');
+            $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost');
+            $laborCost = $approvedCosts->where('cost_type', 'wage')->sum('total_price');
+            $utilityCost = $approvedCosts->whereIn('cost_type', ['electric_bill', 'water_bill'])->sum('total_price');
+            $otherCost = $approvedCosts->where('cost_type', 'other')->sum('total_price');
+            $pigletCost = $approvedCosts->where('cost_type', 'piglet')->sum('total_price');
 
-            $totalCost = $feedCost + $medicineCost + $transportCost + $laborCost + $utilityCost + $otherCost;
+            $totalCost = $feedCost + $medicineCost + $transportCost + $laborCost + $utilityCost + $otherCost + $pigletCost;
 
             // คำนวณกำไร
             $grossProfit = $totalRevenue - $totalCost;
@@ -171,7 +175,7 @@ class RevenueHelper
             }
 
             // บันทึก profit details
-            self::recordProfitDetails($profit, $allCosts);
+            self::recordProfitDetails($profit, $approvedCosts);
 
             DB::commit();
 
@@ -239,3 +243,4 @@ class RevenueHelper
         }
     }
 }
+

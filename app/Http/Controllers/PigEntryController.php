@@ -272,11 +272,7 @@ class PigEntryController extends Controller
 
         // ✅ Exclude cancelled entries (soft delete) - unless show_cancelled is true
         if (!$request->has('show_cancelled') || !$request->show_cancelled) {
-            // PigEntry ใช้ payment_status ไม่ใช่ status - แต่เปลี่ยนแปลงหลังมาถ้า follow soft delete pattern
-            // จึงตรวจหา batch status = 'cancelled' แทน (batch soft delete)
-            $query->whereHas('batch', function ($q) {
-                $q->where('status', '!=', 'cancelled');
-            });
+            $query->where('status', '!=', 'cancelled');
         }
 
         // Search
@@ -425,7 +421,12 @@ class PigEntryController extends Controller
 
             $pigEntryRecord = PigEntryRecord::find($id);
             if (!$pigEntryRecord) {
-                return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการลบ');
+                return redirect()->back()->with('error', 'ไม่พบรายการที่ต้องการยกเลิก');
+            }
+
+            // ตรวจสอบว่าถูกยกเลิกแล้วหรือไม่
+            if ($pigEntryRecord->status === 'cancelled') {
+                return redirect()->back()->with('error', 'รายการนี้ถูกยกเลิกแล้ว');
             }
 
             $batchId = $pigEntryRecord->batch_id;
@@ -435,13 +436,12 @@ class PigEntryController extends Controller
 
             // คืนค่าแต่ละ allocation ตามรายละเอียดที่บันทึกไว้
             foreach ($entryDetails as $detail) {
-
                 // ใช้ helper มาลด inventory
                 $result = PigInventoryHelper::reducePigInventory(
                     $detail->batch_id,
                     $detail->pen_id,
                     $detail->quantity,
-                    'pig_entry_deletion'
+                    'pig_entry_cancellation'
                 );
 
                 if (!$result['success']) {
@@ -450,18 +450,23 @@ class PigEntryController extends Controller
                 }
             }
 
-            // ลบรายละเอียด
-            PigEntryDetail::where('pig_entry_id', $id)->delete();
+            // ✅ Soft Delete - อัปเดท status เป็น 'cancelled'
+            $pigEntryRecord->update([
+                'status' => 'cancelled',
+                'cancellation_reason' => request('cancellation_reason') ?? 'ยกเลิกโดยผู้ใช้',
+                'cancelled_at' => now(),
+                'cancelled_by' => auth()->user()->name,
+            ]);
 
-            // ลบ cost records ที่เกี่ยวข้อง
-            Cost::where('batch_id', $batchId)->delete();
+            // ✅ อัปเดตแจ้งเตือนเก่าให้ mark ว่า "[ยกเลิกแล้ว]"
+            NotificationHelper::markPigEntryNotificationsAsDeleted($id);
 
-            // ลบ pig entry record
-            $pigEntryRecord->delete();
+            // 🔥 Recalculate profit เมื่อยกเลิก
+            \App\Helpers\RevenueHelper::calculateAndRecordProfit($batchId);
 
             DB::commit();
             return redirect()->route('pig_entry_records.index')
-                ->with('success', 'ลบรายการและคืนหมูเรียบร้อยแล้ว');
+                ->with('success', 'ยกเลิกรายการและคืนหมูเรียบร้อยแล้ว');
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());

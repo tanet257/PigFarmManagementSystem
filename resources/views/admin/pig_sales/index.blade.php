@@ -688,25 +688,12 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">หมายเหตุ</label>
-                                <textarea name="note" class="form-control" rows="2" placeholder="เช่น หมายเหตุเพิ่มเติม"></textarea>
-                            </div>
-                            <hr>
-                            <div class="alert alert-warning">
-                                <i class="bi bi-info-circle"></i>
-                                <strong>เหตุผลการยกเลิก:</strong>
-                                <p class="mb-0 mt-2">หากต้องการยกเลิกการขายนี้ กรุณากรอกเหตุผลด้านล่าง แล้วกดปุ่ม "ยกเลิกการขาย" แทนการชำระเงิน</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">หากต้องการยกเลิกการขาย - กรุณากรอกเหตุผล</label>
-                                <textarea name="cancellation_reason" class="form-control" rows="3" placeholder="เช่น ลูกค้ายกเลิกการสั่งซื้อ, ข้อผิดพลาดในการบันทึก เป็นต้น"></textarea>
+                                <textarea name="note" class="form-control" rows="2"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                             <button type="submit" class="btn btn-primary">บันทึกการชำระเงิน</button>
-                            <button type="button" class="btn btn-danger" onclick="event.stopPropagation(); if(document.querySelector('[name=cancellation_reason]').value.trim() === '') { alert('กรุณากรอกเหตุผลการยกเลิก'); return; } if(confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) { const form = this.closest('form'); form.action = '{{ route('pig_sales.cancel', $sell->id) }}'; form.method = 'POST'; form.innerHTML += '<input type=\"hidden\" name=\"_method\" value=\"DELETE\">'; form.submit(); }">
-                                <i class="bi bi-x-circle"></i> ยกเลิกการขาย
-                            </button>
                         </div>
                     </form>
                 </div>

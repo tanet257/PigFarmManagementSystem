@@ -227,8 +227,23 @@ class PaymentApprovalController extends Controller
 
             if ($relatedModel === 'PigEntryRecord') {
                 $pigEntry = PigEntryRecord::findOrFail($relatedModelId);
+
+                // ✅ อัปเดท PigEntryRecord payment status
+                $pigEntry->update([
+                    'payment_approved_at' => now(),
+                    'payment_approved_by' => auth()->user()->name,
+                    'payment_status' => 'approved',
+                ]);
+
+                // 🔥 Recalculate profit เมื่อ payment อนุมัติ
+                if ($pigEntry->batch_id) {
+                    RevenueHelper::calculateAndRecordProfit($pigEntry->batch_id);
+                }
             } elseif ($relatedModel === 'PigSale') {
                 $pigSale = PigSale::findOrFail($relatedModelId);
+
+                // ✅ For PigSale, just mark notification as approved
+                // (The payment approval is already handled in approvePayment() method)
             } else {
                 throw new \Exception('ไม่รู้จักประเภท model นี้');
             }
@@ -240,6 +255,11 @@ class PaymentApprovalController extends Controller
                 'is_read' => true,
                 'read_at' => now(),
             ]);
+
+            // ✅ ส่งแจ้งเตือนให้ผู้ที่เกี่ยวข้องว่าการชำระได้รับการอนุมัติ
+            if ($relatedModel === 'PigEntryRecord') {
+                \App\Helpers\NotificationHelper::notifyUserPigEntryPaymentApproved($pigEntry);
+            }
 
             DB::commit();
 
