@@ -19,6 +19,7 @@ class Profit extends Model
         'feed_cost',
         'medicine_cost',
         'transport_cost',
+        'excess_weight_cost',
         'labor_cost',
         'utility_cost',
         'other_cost',

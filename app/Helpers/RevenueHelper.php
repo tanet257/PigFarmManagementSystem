@@ -104,13 +104,16 @@ class RevenueHelper
             // คำนวณต้นทุนตามหมวดหมู่ (เฉพาะ approved payments)
             $feedCost = $approvedCosts->where('cost_type', 'feed')->sum('total_price');
             $medicineCost = $approvedCosts->where('cost_type', 'medicine')->sum('total_price');
-            $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost');
+            $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost') 
+                           + $approvedCosts->where('cost_type', 'piglet')->sum('transport_cost');
+            $excessWeightCost = $approvedCosts->where('cost_type', 'piglet')->sum('excess_weight_cost');
             $laborCost = $approvedCosts->where('cost_type', 'wage')->sum('total_price');
             $utilityCost = $approvedCosts->whereIn('cost_type', ['electric_bill', 'water_bill'])->sum('total_price');
             $otherCost = $approvedCosts->where('cost_type', 'other')->sum('total_price');
             $pigletCost = $approvedCosts->where('cost_type', 'piglet')->sum('total_price');
 
-            $totalCost = $feedCost + $medicineCost + $transportCost + $laborCost + $utilityCost + $otherCost + $pigletCost;
+            // รวมต้นทุนทั้งหมด
+            $totalCost = $feedCost + $medicineCost + $transportCost + $excessWeightCost + $laborCost + $utilityCost + $otherCost + $pigletCost;
 
             // คำนวณกำไร
             $grossProfit = $totalRevenue - $totalCost;
@@ -137,6 +140,7 @@ class RevenueHelper
                     'feed_cost' => $feedCost,
                     'medicine_cost' => $medicineCost,
                     'transport_cost' => $transportCost,
+                    'excess_weight_cost' => $excessWeightCost,
                     'labor_cost' => $laborCost,
                     'utility_cost' => $utilityCost,
                     'other_cost' => $otherCost,
@@ -158,6 +162,7 @@ class RevenueHelper
                     'feed_cost' => $feedCost,
                     'medicine_cost' => $medicineCost,
                     'transport_cost' => $transportCost,
+                    'excess_weight_cost' => $excessWeightCost,
                     'labor_cost' => $laborCost,
                     'utility_cost' => $utilityCost,
                     'other_cost' => $otherCost,
