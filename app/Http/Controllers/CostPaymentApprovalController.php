@@ -90,7 +90,8 @@ class CostPaymentApprovalController extends Controller
 
             // Recalculate profit
             if ($cost->batch_id) {
-                RevenueHelper::calculateAndRecordProfit($cost->batch_id);
+                $profitResult = RevenueHelper::calculateAndRecordProfit($cost->batch_id);
+                Log::info('Profit calculation result', $profitResult);
             }
 
             // บันทึก notification

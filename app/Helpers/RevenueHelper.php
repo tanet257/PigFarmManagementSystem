@@ -89,16 +89,13 @@ class RevenueHelper
         try {
             $batch = \App\Models\Batch::findOrFail($batchId);
 
-            // ดึงรายได้ทั้งหมดของรุ่นนี้ (เฉพาะอนุมัติแล้ว, ไม่รวม cancelled)
+            // ดึงรายได้ทั้งหมดของรุ่นนี้ (เฉพาะที่ชำระแล้ว)
             $totalRevenue = Revenue::where('batch_id', $batchId)
-                ->whereHas('pigSale', function ($query) {
-                    $query->where('status', '!=', 'ยกเลิกการขาย');
-                })
+                ->where('payment_status', 'ชำระแล้ว')
                 ->sum('net_revenue');
 
             // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว)
             $approvedCosts = Cost::where('batch_id', $batchId)
-                ->where('status', '!=', 'ยกเลิก')
                 ->whereHas('payments', function ($query) {
                     $query->where('status', 'approved');
                 })

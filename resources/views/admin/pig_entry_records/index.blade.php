@@ -272,7 +272,7 @@
                                 @if ($record->status !== 'cancelled' && $record->payment_status !== 'approved')
                                     <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
                                         data-bs-target="#paymentModal{{ $record->id }}" onclick="event.stopPropagation();">
-                                        <i class="bi bi-cash"></i> ชำระเงิน
+                                        <i class="bi bi-cash"></i>
                                     </button>
                                 @endif
 

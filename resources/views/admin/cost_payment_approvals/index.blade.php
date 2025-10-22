@@ -91,7 +91,7 @@
                                     <td class="text-end"><strong>฿{{ number_format($payment->amount, 2) }}</strong></td>
                                     <td>{{ $payment->created_at->format('d/m/Y H:i') }}</td>
                                     <td class="text-center">
-                                        <a href="{{ route('cost-payment-approvals.show', $payment->id) }}"
+                                        <a href="{{ route('cost_payment_approvals.show', $payment->id) }}"
                                             class="btn btn-sm btn-info" title="ดูรายละเอียด">
                                             <i class="bi bi-eye"></i>
                                         </a>
@@ -120,7 +120,7 @@
                                                     data-bs-dismiss="modal"></button>
                                             </div>
                                             <form id="approveForm{{ $payment->id }}"
-                                                action="{{ route('cost-payment-approvals.approve', $payment->id) }}"
+                                                action="{{ route('cost_payment_approvals.approve', $payment->id) }}"
                                                 method="POST">
                                                 @csrf
                                                 <div class="modal-body">
@@ -158,7 +158,7 @@
                                                     data-bs-dismiss="modal"></button>
                                             </div>
                                             <form id="rejectForm{{ $payment->id }}"
-                                                action="{{ route('cost-payment-approvals.reject', $payment->id) }}"
+                                                action="{{ route('cost_payment_approvals.reject', $payment->id) }}"
                                                 method="POST">
                                                 @csrf
                                                 <div class="modal-body">

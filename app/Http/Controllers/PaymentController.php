@@ -39,6 +39,7 @@ class PaymentController extends Controller
                 ->where('status', 'approved')
                 ->sum('amount');
 
+
             $remainingAmount = $pigSale->net_total - $totalPaid;
 
             if ($validated['amount'] > $remainingAmount) {
@@ -47,23 +48,26 @@ class PaymentController extends Controller
                     ->with('error', "จำนวนเงินเกินกว่ายอดคงค้างที่เหลือ ($remainingAmount บาท)");
             }
 
-            // อัปโหลดไฟล์ receipt ถ้ามี
-            $receiptPath = null;
-            if ($request->hasFile('receipt_file')) {
-                $file = $request->file('receipt_file');
-                if ($file->isValid()) {
-                    try {
-                        $uploadResponse = Cloudinary::upload($file->getRealPath(), [
-                            'folder' => 'payment-receipts',
-                        ]);
-                        $receiptPath = $uploadResponse['secure_url'] ?? null;
-                    } catch (\Exception $e) {
-                        Log::error('Cloudinary upload error: ' . $e->getMessage());
-                        return redirect()->back()
-                            ->withInput()
-                            ->with('error', 'ไม่สามารถอัปโหลดไฟล์ได้');
-                    }
+            
+            // อัปโหลดไฟล์ (ต้องมี)
+            $uploadedFileUrl = null;
+            if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
+                try {
+                    $uploadResult = Cloudinary::upload(
+                        $request->file('receipt_file')->getRealPath(),
+                        ['folder' => 'receipt_files']
+                    );
+                    // CloudinaryEngine::upload() returns the engine instance
+                    $uploadedFileUrl = $uploadResult->getSecurePath();
+                } catch (\Exception $e) {
+                    Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
+                    return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
                 }
+            }
+
+            // ตรวจสอบว่าอัปโหลดสำเร็จ
+            if (!$uploadedFileUrl) {
+                return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
             }
 
             // สร้าง Payment record
@@ -75,7 +79,7 @@ class PaymentController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'reference_number' => $validated['reference_number'],
                 'bank_name' => $validated['bank_name'],
-                'receipt_file' => $receiptPath,
+                'receipt_file' => $uploadedFileUrl,
                 'note' => $validated['note'],
                 'status' => 'pending',
                 'recorded_by' => auth()->id(),

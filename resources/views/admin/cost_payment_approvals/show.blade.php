@@ -132,7 +132,7 @@
 
                 {{-- Back Button --}}
                 <div class="mt-3">
-                    <a href="{{ route('cost-payment-approvals.index') }}" class="btn btn-secondary">
+                    <a href="{{ route('cost_payment_approvals.index') }}" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> กลับไปที่รายการ
                     </a>
                 </div>
@@ -189,7 +189,7 @@
                     <h5 class="modal-title">ยืนยันการอนุมัติ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="approveForm" action="{{ route('cost-payment-approvals.approve', $payment->id) }}"
+                <form id="approveForm" action="{{ route('cost_payment_approvals.approve', $payment->id) }}"
                     method="POST">
                     @csrf
                     <div class="modal-body">
@@ -220,7 +220,7 @@
                     <h5 class="modal-title">ยืนยันการปฏิเสธ</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="rejectForm" action="{{ route('cost-payment-approvals.reject', $payment->id) }}"
+                <form id="rejectForm" action="{{ route('cost_payment_approvals.reject', $payment->id) }}"
                     method="POST">
                     @csrf
                     <div class="modal-body">
@@ -306,7 +306,7 @@
                 .then(data => {
                     if (data.success) {
                         alert(data.message);
-                        location.href = '{{ route('cost-payment-approvals.index') }}';
+                        location.href = "{{ route('cost_payment_approvals.index') }}";
                     } else {
                         alert('Error: ' + data.message);
                     }

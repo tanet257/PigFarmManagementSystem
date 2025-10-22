@@ -571,41 +571,27 @@ class PigEntryController extends Controller
             DB::beginTransaction();
 
             // อัปโหลดไฟล์ receipt (ต้องมี)
-            $receiptPath = null;
-            if ($request->hasFile('receipt_file')) {
-                $file = $request->file('receipt_file');
-                if ($file->isValid()) {
-                    try {
-                        $uploadResult = Cloudinary::upload($file->getRealPath(), [
-                            'folder' => 'pig-farm/pig-entry-receipts',
-                            'resource_type' => 'auto',
-                        ]);
-
-                        // Get secure URL from upload result
-                        $receiptPath = $uploadResult['secure_url'] ?? null;
-                        Log::info('Receipt path: ' . ($receiptPath ?? 'null'));
-                    } catch (\Exception $e) {
-                        Log::error('Cloudinary upload error: ' . $e->getMessage());
-                        DB::rollBack();
-                        return redirect()->back()
-                            ->withInput()
-                            ->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
-                    }
-                } else {
-                    DB::rollBack();
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'ไฟล์ที่ส่งมาไม่ถูกต้อง');
+            $uploadedFileUrl = null;
+            if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
+                try {
+                    $uploadResult = Cloudinary::upload(
+                        $request->file('receipt_file')->getRealPath(),
+                        ['folder' => 'receipt_files']
+                    );
+                    // CloudinaryEngine::upload() returns the engine instance
+                    $uploadedFileUrl = $uploadResult->getSecurePath();
+                } catch (\Exception $e) {
+                    Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
+                    return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
                 }
             }
 
             // ตรวจสอบว่าอัปโหลดสำเร็จ
-            if (!$receiptPath) {
-                DB::rollBack();
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
-            }            // สร้าง Cost record เพื่อบันทึกการชำระเงิน
+            if (!$uploadedFileUrl) {
+                return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
+            }         // สร้าง Cost record เพื่อบันทึกการชำระเงิน
+
+            // สร้าง Cost record เพื่อบันทึกการชำระเงิน
             $totalAmount = $record->total_pig_price +
                           ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
                           ($record->batch->costs->sum('transport_cost') ?? 0);
@@ -624,7 +610,7 @@ class PigEntryController extends Controller
                 'transport_cost' => $record->batch->costs->sum('transport_cost') ?? 0,
                 'excess_weight_cost' => $record->batch->costs->sum('excess_weight_cost') ?? 0,
                 'payment_method' => $validated['payment_method'],
-                'receipt_file' => $receiptPath,
+                'receipt_file' => $uploadedFileUrl,
                 'payment_status' => 'pending',
                 'paid_date' => now()->toDateString(),
                 'date' => $record->pig_entry_date,
