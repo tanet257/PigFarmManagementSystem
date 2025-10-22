@@ -248,6 +248,9 @@ class PigEntryController extends Controller
                     Log::warning('PigEntry - Profit calculation failed: ' . $profitResult['message']);
                 }
 
+                // ส่งแจ้งเตือนให้ Admin ว่ามีการบันทึกหมูเข้าใหม่
+                NotificationHelper::notifyAdminsPigEntryRecorded($pigEntry, auth()->user());
+
                 DB::commit();
                 return redirect()->back()->with('success', 'เพิ่มหมูเข้า + บันทึกค่าใช้จ่ายเรียบร้อย');
             } else {

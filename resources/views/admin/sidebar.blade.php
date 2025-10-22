@@ -26,8 +26,6 @@
 
              <li ><a href="{{ route('profits.index') }}"><i class="bi bi-bar-chart"></i>Revenue Dashboard</a></li>
 
-             <li ><a href="{{ route('cost-payment-approvals.index') }}"><i class="bi bi-bar-chart"></i>Cost Dashboard</a></li>
-
              <li><a href="#batchMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Add Batch </a>
                  <ul id="batchMenuDropdown" class="collapse list-unstyled ">
@@ -70,6 +68,8 @@
 
              <li><a href="{{ route('user_management.index') }}"><i class="bi bi-clipboard-check"></i> จัดการผู้ใช้</a></li>
 
+             <li ><a href="{{ route('cost_payment_approvals.index') }}"><i class="bi bi-clipboard-check"></i>Cost Payment Approvals</a></li>
+             
              <li><a href="#farmMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Farm / Barn / Pen </a>
                  <ul id="farmMenuDropdown" class="collapse list-unstyled ">

@@ -224,6 +224,38 @@ class NotificationHelper
     }
 
     /**
+     * แจ้งเตือน Admin เมื่อมีการบันทึกหมูเข้าใหม่
+     */
+    public static function notifyAdminsPigEntryRecorded($pigEntryRecord, User $recordedBy)
+    {
+        $admins = User::whereHas('roles', function ($query) {
+            $query->where('name', 'admin');
+        })->get();
+
+        // Load relationship ถ้ายังไม่ได้ load
+        if (!$pigEntryRecord->relationLoaded('batch')) {
+            $pigEntryRecord->load('batch', 'farm');
+        }
+
+        $batch = $pigEntryRecord->batch;
+        $farm = $pigEntryRecord->farm;
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'type' => 'pig_entry_recorded',
+                'user_id' => $admin->id,
+                'related_user_id' => $recordedBy->id,
+                'title' => 'บันทึกการรับเข้าหมูใหม่',
+                'message' => "มีการบันทึกการรับเข้าหมูใหม่\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigEntryRecord->total_pig_amount} ตัว\nวันที่รับเข้า: {$pigEntryRecord->pig_entry_date}\nรอการบันทึกการชำระเงิน",
+                'url' => route('pig_entry_records.index'),
+                'is_read' => false,
+                'related_model' => 'PigEntryRecord',
+                'related_model_id' => $pigEntryRecord->id,
+            ]);
+        }
+    }
+
+    /**
      * แจ้งเตือน Admin เมื่อมีการบันทึกการชำระเงิน (Pig Sale Payment)
      */
     public static function notifyAdminsPigSalePaymentRecorded($pigSale, User $recordedBy)
