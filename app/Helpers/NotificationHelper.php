@@ -193,19 +193,24 @@ class NotificationHelper
     /**
      * แจ้งเตือน Admin เมื่อมีการบันทึกการชำระเงิน (Pig Entry Payment)
      */
-    public static function notifyAdminsPigEntryPaymentRecorded($pigEntryRecord, User $recordedBy)
+    public static function notifyAdminsPigEntryPaymentRecorded($costPayment, User $recordedBy)
     {
         $admins = User::whereHas('roles', function ($query) {
             $query->where('name', 'admin');
         })->get();
 
         // Load relationship ถ้ายังไม่ได้ load
-        if (!$pigEntryRecord->relationLoaded('batch')) {
-            $pigEntryRecord->load('batch', 'farm');
+        if (!$costPayment->relationLoaded('cost')) {
+            $costPayment->load('cost');
         }
 
-        $batch = $pigEntryRecord->batch;
-        $farm = $pigEntryRecord->farm;
+        $cost = $costPayment->cost;
+        if (!$cost->relationLoaded('batch')) {
+            $cost->load('batch', 'farm');
+        }
+
+        $batch = $cost->batch;
+        $farm = $cost->farm;
 
         foreach ($admins as $admin) {
             Notification::create([
@@ -213,11 +218,11 @@ class NotificationHelper
                 'user_id' => $admin->id,
                 'related_user_id' => $recordedBy->id,
                 'title' => 'บันทึกการชำระเงินการรับเข้าหมู',
-                'message' => "บันทึกการชำระเงิน\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nวันที่รับเข้า: {$pigEntryRecord->pig_entry_date}\nรอการอนุมัติ",
-                'url' => route('payment_approvals.index'),
+                'message' => "บันทึกการชำระเงิน\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nวันที่: {$cost->date}\nรอการอนุมัติ",
+                'url' => route('cost_payment_approvals.index'),  // ✅ PigEntry payment ไปที่ Cost Payment Approvals
                 'is_read' => false,
-                'related_model' => 'PigEntryRecord',
-                'related_model_id' => $pigEntryRecord->id,
+                'related_model' => 'CostPayment',  // ✅ เป็น CostPayment
+                'related_model_id' => $costPayment->id,  // ✅ ใช้ CostPayment ID
                 'approval_status' => 'pending',
             ]);
         }

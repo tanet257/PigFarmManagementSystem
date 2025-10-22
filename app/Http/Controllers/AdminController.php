@@ -13,15 +13,7 @@ use App\Models\Barn;
 use App\Models\Pen;
 use App\Models\Farm;
 use App\Models\Batch;
-use App\Models\BatchTreatment;
-use App\Models\Cost;
-use App\Models\PigSale;
-use App\Models\Feeding;
-use App\Models\PigDeath;
-use App\Models\PigEntryRecord;
-use App\Models\DairyRecord;
-use App\Models\StoreHouse;
-use App\Models\InventoryMovement;
+
 
 
 class AdminController extends Controller
@@ -34,15 +26,6 @@ class AdminController extends Controller
 
     //-------------------function_add----------------------//
 
-    //add_batch
-    public function add_batch()
-    {
-        $farms = Farm::all();
-        $barns = Barn::all();
-        $pens = Pen::all();
-        return view('admin.add.add_batch', compact('farms', 'barns', 'pens'));
-    }
-
     //add_farm
     public function add_farm()
     {
@@ -53,7 +36,9 @@ class AdminController extends Controller
     public function add_barn()
     {
         $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
+            ->get();
         return view('admin.add.add_barn', compact('farms', 'batches'));
     }
 
@@ -62,60 +47,6 @@ class AdminController extends Controller
     {
         $barns = Barn::all();
         return view('admin.add.add_pen', compact('barns'));
-    }
-
-    //add_batch_treatment
-    public function add_batch_treatment()
-    {
-        $barns = Barn::all();
-        $pens = Pen::all();
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.add.add_batch_treatment', compact('farms', 'batches', 'pens', 'barns'));
-    }
-
-    //add_cost
-    public function add_cost()
-    {
-        $farms = Farm::all();
-        $storehouses = StoreHouse::select('id', 'item_name', 'farm_id')->get();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.add.add_cost', compact('farms', 'batches', 'storehouses'));
-    }
-
-    //add_feeding
-    public function add_feeding()
-    {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.add.add_feeding', compact('farms', 'batches'));
-    }
-
-    //add_pig_death
-    public function add_pig_death()
-    {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        $barns = Barn::all();
-        $pens = Pen::all();
-        return view('admin.add.add_pig_death', compact('farms', 'batches', 'barns', 'pens'));
-    }
-
-    //add_dairy_record
-    public function dairy_record()
-    {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.record.dairy_record', compact('farms', 'batches'));
-    }
-
-
-    //add_pig_sell_record
-    public function add_pig_sell_record()
-    {
-        $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
-        return view('admin.add.add_pig_sell_record', compact('farms', 'batches'));
     }
 
     //--------------------------------------- UPLOAD ------------------------------------------//

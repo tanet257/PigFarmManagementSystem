@@ -4,6 +4,13 @@ namespace App\Helpers;
 
 use App\Models\Batch;
 use App\Models\BatchPenAllocation;
+use App\Models\PigEntryRecord;
+use App\Models\PigSale;
+use App\Models\Cost;
+use App\Models\CostPayment;
+use App\Models\Profit;
+use App\Models\ProfitDetail;
+use App\Models\Revenue;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
@@ -527,6 +534,12 @@ class PigInventoryHelper
 
             // 🔥 Soft Delete: อัปเดทสถานะเป็น 'cancelled' แทนการลบจริง ๆ
             $batch->status = 'cancelled';
+
+            // ✅ Reset ค่าทั้งหมดของ batch เมื่อยกเลิก
+            $batch->total_pig_amount = 0;
+            $batch->current_quantity = 0;
+            $batch->total_death = 0;
+
             $batch->save();
 
             // Reset batch pen allocations เพื่อไม่ให้ใช้งาน (เหมือนกับ 'เสร็จสิ้น')
@@ -536,6 +549,68 @@ class PigInventoryHelper
                     'allocated_pigs' => 0,
                     'current_quantity' => 0,
                 ]);
+
+            // ✅ Cancel ทั้งหมดที่เกี่ยวกับ batch
+            // 1. Cancel PigEntry ที่ยังไม่ cancelled
+            \App\Models\PigEntryRecord::where('batch_id', $batchId)
+                ->where('status', '!=', 'cancelled')
+                ->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now(),
+                    'cancelled_by' => 'System - Batch Cancelled',
+                ]);
+
+            // 2. Cancel PigSale ที่ยังไม่ cancelled
+            \App\Models\PigSale::where('batch_id', $batchId)
+                ->where('status', '!=', 'ยกเลิกการขาย')
+                ->update([
+                    'status' => 'ยกเลิกการขาย',
+                ]);
+
+            // ✅ 2.1 Cancel Payment approvals ที่เกี่ยวข้องกับ PigSale ของรุ่นนี้
+            $pigSaleIds = \App\Models\PigSale::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($pigSaleIds)) {
+                \App\Models\Payment::whereIn('pig_sale_id', $pigSaleIds)
+                    ->where('status', '!=', 'rejected')  // ไม่ update ถ้าถูก reject แล้ว
+                    ->update([
+                        'status' => 'rejected',
+                        'rejected_by' => 'System - Batch Cancelled',
+                        'rejected_at' => now(),
+                        'reject_reason' => 'Batch cancelled - Payment automatically rejected',
+                    ]);
+            }
+
+            // 3. Cancel Cost ที่ยังไม่ cancelled
+            \App\Models\Cost::where('batch_id', $batchId)
+                ->where('payment_status', '!=', 'ยกเลิก')
+                ->update([
+                    'payment_status' => 'ยกเลิก',
+                ]);
+
+            // ✅ 3.1 Cancel CostPayment approvals (Payment Approvals สำหรับค่าใช้จ่าย)
+            $costIds = \App\Models\Cost::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($costIds)) {
+                CostPayment::whereIn('cost_id', $costIds)
+                    ->where('status', '!=', 'rejected')  // ไม่ update ถ้าถูก reject แล้ว
+                    ->update([
+                        'status' => 'rejected',
+                        'cancelled_at' => now(),
+                    ]);
+            }
+
+            // 4. Delete/Clear Profit records (includes related ProfitDetail via cascade)
+            $profitIds = \App\Models\Profit::where('batch_id', $batchId)->pluck('id')->toArray();
+            \App\Models\ProfitDetail::whereIn('profit_id', $profitIds)->delete();
+            \App\Models\Profit::where('batch_id', $batchId)->delete();
+
+            // 5. Delete Revenue records
+            \App\Models\Revenue::where('batch_id', $batchId)->delete();
 
             // อัปเดตการแจ้งเตือนที่เกี่ยวข้องกับรุ่นนี้ (ไม่ลบ แต่เพิ่ม prefix)
             self::markBatchAndRelatedNotificationsAsCancelled($batchId);
@@ -608,6 +683,64 @@ class PigInventoryHelper
                         $notification->update([
                             'title' => '[ยกเลิกแล้ว] ' . $notification->title,
                         ]);
+                    }
+                }
+
+                // ✅ อัปเดต Payment Approval notifications สำหรับการขาย
+                $paymentIds = \App\Models\Payment::whereIn('pig_sale_id', $pigSaleIds)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($paymentIds)) {
+                    $paymentNotifications = \App\Models\Notification::where('related_model', 'Payment')
+                        ->whereIn('related_model_id', $paymentIds)
+                        ->get();
+
+                    foreach ($paymentNotifications as $notification) {
+                        if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
+                            $notification->update([
+                                'title' => '[ยกเลิกแล้ว] ' . $notification->title,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // ✅ อัปเดต Cost/CostPayment Approval notifications ของรุ่นนี้
+            $costIds = \App\Models\Cost::where('batch_id', $batchId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($costIds)) {
+                // อัปเดต Cost notifications
+                $costNotifications = \App\Models\Notification::where('related_model', 'Cost')
+                    ->whereIn('related_model_id', $costIds)
+                    ->get();
+
+                foreach ($costNotifications as $notification) {
+                    if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
+                        $notification->update([
+                            'title' => '[ยกเลิกแล้ว] ' . $notification->title,
+                        ]);
+                    }
+                }
+
+                // อัปเดต CostPayment Approval notifications
+                $costPaymentIds = CostPayment::whereIn('cost_id', $costIds)
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($costPaymentIds)) {
+                    $costPaymentNotifications = \App\Models\Notification::where('related_model', 'CostPayment')
+                        ->whereIn('related_model_id', $costPaymentIds)
+                        ->get();
+
+                    foreach ($costPaymentNotifications as $notification) {
+                        if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
+                            $notification->update([
+                                'title' => '[ยกเลิกแล้ว] ' . $notification->title,
+                            ]);
+                        }
                     }
                 }
             }

@@ -328,9 +328,10 @@ class PigSaleController extends Controller
     public function index(Request $request)
     {
         $farms = Farm::all();
-        // กรองเฉพาะรุ่นที่ยังไม่เสร็จสิ้น
+        // กรองเฉพาะรุ่นที่ยังไม่เสร็จสิ้น และ ไม่ได้ยกเลิก
         $batches = Batch::select('id', 'batch_code', 'farm_id')
             ->where('status', '!=', 'เสร็จสิ้น')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
             ->get();
         $barns = Barn::all();
         $pens = Pen::all();

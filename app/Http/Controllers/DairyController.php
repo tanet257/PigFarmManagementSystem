@@ -81,7 +81,10 @@ class DairyController extends Controller
     public function indexDairy(Request $request)
     {
         $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'เสร็จสิ้น')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
+            ->get();
         $barns = Barn::all();
 
         $query = DairyRecord::with([

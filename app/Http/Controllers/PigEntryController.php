@@ -84,8 +84,11 @@ class PigEntryController extends Controller
     // หน้าเพิ่ม Pig Entry
     public function pig_entry_record()
     {
-        $farms = Farm::with('barns')->get();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
+        $farms = Farm::all();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'เสร็จสิ้น')
+            ->where('status', '!=', 'cancelled')  //  ยกเว้น cancelled
+            ->get();
         return view('admin.pig_entry_records.record.pig_entry_record', compact('farms', 'batches'));
     }
 
@@ -137,17 +140,17 @@ class PigEntryController extends Controller
                 // ตรวจสอบความจุที่เหลือใช้งานจริงของ barns
                 $totalAvailableCapacity = 0;
                 foreach ($selectedBarns as $barn) {
-                    // คำนวณความจุที่ใช้ไปแล้ว
+                    // คำนวณความจุที่ใช้ไปแล้ว (ตรวจสอบ allocated_pigs แทน current_quantity เพื่อ track สิ่งที่จัดสรรแล้ว)
                     $usedCapacity = DB::table('batch_pen_allocations')
                         ->where('barn_id', $barn->id)
-                        ->sum('current_quantity');
+                        ->sum('allocated_pigs');  // ✅ ใช้ allocated_pigs เพื่อให้แม่นยำ
                     $availableCapacity = $barn->pig_capacity - $usedCapacity;
                     $totalAvailableCapacity += max(0, $availableCapacity);
                 }
 
                 if ($totalAvailableCapacity < $totalPigs) {
                     DB::rollBack();
-                    return redirect()->back()->with('error', 'จำนวนหมูมากกว่าความจุที่เหลือของ barns ที่เลือก (เหลือ ' . $totalAvailableCapacity . ' ตัว แต่ต้อง ' . $totalPigs . ' ตัว)');
+                    return redirect()->back()->with('error', 'จำนวนหมูมากกว่าความจุที่จัดสรรแล้ว (เหลือ ' . $totalAvailableCapacity . ' ตัว แต่ต้อง ' . $totalPigs . ' ตัว)');
                 }
 
                 // บันทึก PigEntryRecord ก่อน เพื่อเอา ID ไปใช้ในการบันทึก details
@@ -268,7 +271,10 @@ class PigEntryController extends Controller
     public function indexPigEntryRecord(Request $request)
     {
         $farms = Farm::with('barns')->get();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'เสร็จสิ้น')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
+            ->get();
         $barns = Barn::all();
 
         $query = PigEntryRecord::with(['farm', 'batch.costs']);
@@ -434,6 +440,7 @@ class PigEntryController extends Controller
             }
 
             $batchId = $pigEntryRecord->batch_id;
+            $totalPigsInEntry = $pigEntryRecord->total_pig_amount;  // ✅ บันทึกจำนวนหมูของ entry นี้
 
             // ดึงรายละเอียดการแจกจ่าย
             $entryDetails = PigEntryDetail::where('pig_entry_id', $id)->get();
@@ -452,6 +459,15 @@ class PigEntryController extends Controller
                     DB::rollBack();
                     return redirect()->back()->with('error', 'ไม่สามารถคืนค่าหมูได้: ' . $result['message']);
                 }
+            }
+
+            // ✅ ลดจำนวนหมูรวมของ Batch เมื่อยกเลิก PigEntry
+            $batch = Batch::lockForUpdate()->find($batchId);
+            if ($batch) {
+                $batch->total_pig_amount = max(0, ($batch->total_pig_amount ?? 0) - $totalPigsInEntry);
+                $batch->current_quantity = max(0, ($batch->current_quantity ?? 0) - $totalPigsInEntry);
+                $batch->save();
+                Log::info('PigEntry Delete - Batch {' . $batchId . '} total_pig_amount reduced by ' . $totalPigsInEntry);
             }
 
             // ✅ Soft Delete Cost - ยกเลิกต้นทุนทั้งหมดที่เกี่ยวกับ PigEntry นี้
@@ -549,7 +565,7 @@ class PigEntryController extends Controller
     public function update_payment(Request $request, $id)
     {
         try {
-            $record = PigEntryRecord::findOrFail($id);
+            $record = PigEntryRecord::with(['batch.costs'])->findOrFail($id);
 
             // Validate input - แยก validation logic เพื่อให้ messages ออกมาชัดเจน
             try {
@@ -607,12 +623,14 @@ class PigEntryController extends Controller
             // ตรวจสอบว่าอัปโหลดสำเร็จ
             if (!$uploadedFileUrl) {
                 return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
-            }         // สร้าง Cost record เพื่อบันทึกการชำระเงิน
+            }
 
-            // สร้าง Cost record เพื่อบันทึกการชำระเงิน
-            $totalAmount = $record->total_pig_price +
-                          ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
-                          ($record->batch->costs->sum('transport_cost') ?? 0);
+            // ✅ สร้าง Cost record เพื่อบันทึกการชำระเงิน (ยกเว้น cancelled costs)
+            $nonCancelledCosts = $record->batch->costs->where('payment_status', '!=', 'ยกเลิก');
+            $transportCostSum = $nonCancelledCosts->sum('transport_cost') ?? 0;
+            $excessWeightCostSum = $nonCancelledCosts->sum('excess_weight_cost') ?? 0;
+
+            $totalAmount = $record->total_pig_price + $transportCostSum + $excessWeightCostSum;
 
             $cost = Cost::create([
                 'farm_id' => $record->batch->farm_id,
@@ -625,8 +643,8 @@ class PigEntryController extends Controller
                 'unit' => 'ตัว',
                 'price_per_unit' => $record->average_price_per_pig,
                 'total_price' => $record->total_pig_price,
-                'transport_cost' => $record->batch->costs->sum('transport_cost') ?? 0,
-                'excess_weight_cost' => $record->batch->costs->sum('excess_weight_cost') ?? 0,
+                'transport_cost' => $transportCostSum,
+                'excess_weight_cost' => $excessWeightCostSum,
                 'payment_method' => $validated['payment_method'],
                 'receipt_file' => $uploadedFileUrl,
                 'payment_status' => 'pending',
@@ -635,15 +653,15 @@ class PigEntryController extends Controller
                 'note' => $validated['note'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
             ]);
 
-            // สร้าง CostPayment record (pending approval)
-            \App\Models\CostPayment::create([
+            // ✅ สร้าง CostPayment record (pending approval)
+            $costPayment = \App\Models\CostPayment::create([
                 'cost_id' => $cost->id,
-                'amount' => $record->total_pig_price + ($record->batch->costs->sum('transport_cost') ?? 0) + ($record->batch->costs->sum('excess_weight_cost') ?? 0),
+                'amount' => $totalAmount,
                 'status' => 'pending',
             ]);
 
-            // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน
-            NotificationHelper::notifyAdminsPigEntryPaymentRecorded($record, auth()->user());
+            // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน (ใช้ CostPayment notification)
+            NotificationHelper::notifyAdminsPigEntryPaymentRecorded($costPayment, auth()->user());
 
             DB::commit();
 

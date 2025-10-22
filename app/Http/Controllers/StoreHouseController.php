@@ -30,8 +30,11 @@ class StoreHouseController extends Controller
         // farms
         $farms = Farm::all();
 
-        // batches (กรองเฉพาะ batch ที่ยังไม่เสร็จสิ้น)
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->where('status', '!=', 'เสร็จสิ้น')->get();
+        // batches (กรองเฉพาะ batch ที่ยังไม่เสร็จสิ้น และ ไม่ยกเลิก)
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'เสร็จสิ้น')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
+            ->get();
 
         // storehouses
         $storehouses = StoreHouse::all();
@@ -280,7 +283,9 @@ class StoreHouseController extends Controller
     public function indexStoreHouse(Request $request)
     {
         $farms = Farm::all();
-        $batches = Batch::select('id', 'batch_code', 'farm_id')->get();
+        $batches = Batch::select('id', 'batch_code', 'farm_id')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
+            ->get();
 
         // query จาก farm และ latestCost
         $query = StoreHouse::with(['farm', 'latestCost']);

@@ -18,9 +18,10 @@ class BatchPenAllocationController extends Controller
     public function index(Request $request)
     {
         $farms   = Farm::all();
-        // ดึงเฉพาะ batch ที่ยังมี batch_pen_allocations record
+        // ดึงเฉพาะ batch ที่ยังมี batch_pen_allocations record และ ไม่ยกเลิก
         $batches = Batch::select('id', 'batch_code', 'farm_id')
             ->whereHas('batchPenAllocations')
+            ->where('status', '!=', 'cancelled')  // ✅ ยกเว้น cancelled
             ->get();
 
         $farmId  = $request->get('farm_id');
