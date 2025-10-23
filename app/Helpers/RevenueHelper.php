@@ -106,7 +106,7 @@ class RevenueHelper
             $feedCost = $approvedCosts->where('cost_type', 'feed')->sum('total_price');
             $medicineCost = $approvedCosts->where('cost_type', 'medicine')->sum('total_price');
             $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost')
-                           + $approvedCosts->where('cost_type', 'piglet')->sum('transport_cost');
+                + $approvedCosts->where('cost_type', 'piglet')->sum('transport_cost');
             $excessWeightCost = $approvedCosts->where('cost_type', 'piglet')->sum('excess_weight_cost');
             $laborCost = $approvedCosts->where('cost_type', 'wage')->sum('total_price');
             $utilityCost = $approvedCosts->whereIn('cost_type', ['electric_bill', 'water_bill'])->sum('total_price');
@@ -246,4 +246,3 @@ class RevenueHelper
         }
     }
 }
-

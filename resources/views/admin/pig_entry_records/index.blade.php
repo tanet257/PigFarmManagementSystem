@@ -218,19 +218,21 @@
                             </td>
                             <td class="text-center">{{ number_format($record->total_pig_price, 2) }} ฿</td>
 
-                            {{-- คำนวณจาก batch->costs --}}
+                            {{-- ค่าน้ำหนักเกิน - จาก latestCost ของ record นี้ --}}
                             <td class="text-center">
-                                {{ number_format($record->batch->costs->sum('excess_weight_cost') ?? 0, 2) }}
+                                {{ number_format($record->latestCost->excess_weight_cost ?? 0, 2) }}
                                 ฿
                             </td>
+                            {{-- ค่าขนส่ง - จาก latestCost ของ record นี้ --}}
                             <td class="text-center">
-                                {{ number_format($record->batch->costs->sum('transport_cost') ?? 0, 2) }}
+                                {{ number_format($record->latestCost->transport_cost ?? 0, 2) }}
                                 ฿</td>
+                            {{-- ราคารวม - คำนวณจาก record นี้เท่านั้น --}}
                             <td class="text-center">
                                 <strong>{{ number_format(
                                     $record->total_pig_price +
-                                        ($record->batch->costs->sum('excess_weight_cost') ?? 0) +
-                                        ($record->batch->costs->sum('transport_cost') ?? 0),
+                                        ($record->latestCost->excess_weight_cost ?? 0) +
+                                        ($record->latestCost->transport_cost ?? 0),
                                     2,
                                 ) }}
                                     ฿</strong>
