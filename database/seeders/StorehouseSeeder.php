@@ -20,10 +20,11 @@ class StoreHouseSeeder extends Seeder
             return;
         }
 
-        // ดึง batch ตัวอย่าง
-        $batch = Batch::first();
-        if (!$batch) {
-            $this->command->info('ไม่มี Batch ให้สร้าง InventoryMovement');
+        // ดึง batches ที่มี status = 'กำลังเลี้ยง' เท่านั้น
+        $activeBatches = Batch::where('status', 'กำลังเลี้ยง')->get();
+
+        if ($activeBatches->isEmpty()) {
+            $this->command->warn('ไม่มี Batch ที่มี status "กำลังเลี้ยง" ให้สร้าง InventoryMovement');
             return;
         }
 
@@ -66,17 +67,19 @@ class StoreHouseSeeder extends Seeder
                     'updated_at'    => now(),
                 ]);
 
-                // สร้าง Inventory Movement สำหรับ Feed
-                InventoryMovement::create([
-                    'storehouse_id' => $storehouse->id,
-                    'batch_id'      => $batch->id,
-                    'change_type'   => 'in',
-                    'quantity'      => $item['stock'],
-                    'note'          => 'สต็อกเริ่มต้น',
-                    'date'          => now(),
-                    'created_at'    => now(),
-                    'updated_at'    => now(),
-                ]);
+                // สร้าง Inventory Movement สำหรับ Feed - สำหรับทุก batch ที่กำลังเลี้ยง
+                foreach ($activeBatches as $batch) {
+                    InventoryMovement::create([
+                        'storehouse_id' => $storehouse->id,
+                        'batch_id'      => $batch->id,
+                        'change_type'   => 'in',
+                        'quantity'      => $item['stock'],
+                        'note'          => 'สต็อกเริ่มต้น',
+                        'date'          => now(),
+                        'created_at'    => now(),
+                        'updated_at'    => now(),
+                    ]);
+                }
             }
 
             // สร้าง Medicine Items
@@ -96,17 +99,19 @@ class StoreHouseSeeder extends Seeder
                     'updated_at'    => now(),
                 ]);
 
-                // สร้าง Inventory Movement สำหรับ Medicine
-                InventoryMovement::create([
-                    'storehouse_id' => $storehouse->id,
-                    'batch_id'      => $batch->id,
-                    'change_type'   => 'in',
-                    'quantity'      => $item['stock'],
-                    'note'          => 'สต็อกเริ่มต้น - ราคา: ฿' . $item['price'] . ' ต่อ ' . $item['volume'],
-                    'date'          => now(),
-                    'created_at'    => now(),
-                    'updated_at'    => now(),
-                ]);
+                // สร้าง Inventory Movement สำหรับ Medicine - สำหรับทุก batch ที่กำลังเลี้ยง
+                foreach ($activeBatches as $batch) {
+                    InventoryMovement::create([
+                        'storehouse_id' => $storehouse->id,
+                        'batch_id'      => $batch->id,
+                        'change_type'   => 'in',
+                        'quantity'      => $item['stock'],
+                        'note'          => 'สต็อกเริ่มต้น - ราคา: ฿' . $item['price'] . ' ต่อ ' . $item['volume'],
+                        'date'          => now(),
+                        'created_at'    => now(),
+                        'updated_at'    => now(),
+                    ]);
+                }
             }
         }
 
