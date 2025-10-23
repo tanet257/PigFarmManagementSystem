@@ -188,51 +188,6 @@
                     </table>
                 </div>
                 {{ $pendingPayments->links() }}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {{-- Reject Cancel Modal --}}
-                                    <div class="modal fade" id="rejectCancelModal{{ $cancelRequest->id }}" tabindex="-1">
-                                        <div class="modal-dialog">
-                                            <div class="modal-content">
-                                                <div class="modal-header bg-danger text-white">
-                                                    <h5 class="modal-title">ปฏิเสธการยกเลิกการขาย</h5>
-                                                    <button type="button" class="btn-close btn-close-white"
-                                                        data-bs-dismiss="modal"></button>
-                                                </div>
-                                                <form action="{{ route('payment_approvals.reject_cancel_sale', $cancelRequest->id) }}"
-                                                    method="POST">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <div class="modal-body">
-                                                        <div class="alert alert-warning">
-                                                            <strong>เหตุผลการขอยกเลิก:</strong>
-                                                            <p class="mb-0">{{ $cancelRequest->message }}</p>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label">เหตุผลในการปฏิเสธ <span
-                                                                    class="text-danger">*</span></label>
-                                                            <textarea name="rejection_reason" class="form-control" rows="3" required></textarea>
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary"
-                                                            data-bs-dismiss="modal">ยกเลิก</button>
-                                                        <button type="submit" class="btn btn-danger">
-                                                            <i class="bi bi-x-circle"></i> ปฏิเสธ
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @empty
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
             </div>
 
             {{-- Tab: Approved --}}
@@ -326,6 +281,5 @@
                 </div>
                 {{ $rejectedPayments->links() }}
             </div>
-        </div>
-    </div>
-@endsection
+
+        @endsection
