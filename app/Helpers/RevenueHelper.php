@@ -107,7 +107,9 @@ class RevenueHelper
             $feedCost = $approvedCosts->where('cost_type', 'feed')->sum('total_price');
             $medicineCost = $approvedCosts->where('cost_type', 'medicine')->sum('total_price');
             $transportCost = $approvedCosts->where('cost_type', 'shipping')->sum('transport_cost')
-                + $approvedCosts->where('cost_type', 'piglet')->sum('transport_cost');
+                + $approvedCosts->where('cost_type', 'piglet')->sum('transport_cost')
+                + $approvedCosts->where('cost_type', 'feed')->sum('transport_cost')
+                + $approvedCosts->where('cost_type', 'medicine')->sum('transport_cost');
             $excessWeightCost = $approvedCosts->where('cost_type', 'piglet')->sum('excess_weight_cost');
             $laborCost = $approvedCosts->where('cost_type', 'wage')->sum('total_price');
             $utilityCost = $approvedCosts->whereIn('cost_type', ['electric_bill', 'water_bill'])->sum('total_price');
@@ -258,8 +260,27 @@ class RevenueHelper
     {
         if (!$note) return 0;
 
-        // ค้นหา pattern "฿XXXX" หรือ "฿XX.XX"
-        if (preg_match('/฿([\d.]+)/', $note, $matches)) {
+        // ค้นหา pattern "ราคา: ฿XXXX" หรือ "฿XX.XX"
+        if (preg_match('/ราคา:\s*฿([\d.]+)/', $note, $matches)) {
+            return (float) $matches[1];
+        }
+
+        return 0;
+    }
+
+    /**
+     * แยกค่าส่งจาก storehouse note
+     * ตัวอย่าง: "ค่าส่ง: ฿100" → 100
+     *
+     * @param string $note
+     * @return float|int
+     */
+    public static function extractTransportCostFromNote($note)
+    {
+        if (!$note) return 0;
+
+        // ค้นหา pattern "ค่าส่ง: ฿XXXX"
+        if (preg_match('/ค่าส่ง:\s*฿([\d.]+)/', $note, $matches)) {
             return (float) $matches[1];
         }
 
@@ -302,6 +323,7 @@ class RevenueHelper
 
             // แยกราคาต่อหน่วยจาก note
             $pricePerUnit = self::extractPriceFromNote($storehouse->note);
+            $transportCost = self::extractTransportCostFromNote($storehouse->note);
 
             if ($pricePerUnit <= 0) {
                 Log::warning('RevenueHelper - No price found in storehouse note: ' . $storehouse->note);
@@ -313,8 +335,8 @@ class RevenueHelper
                 ];
             }
 
-            // คำนวณต้นทุนรวม
-            $totalPrice = $inventoryMovement->quantity * $pricePerUnit;
+            // คำนวณต้นทุนรวม (ราคาต่อหน่วย x จำนวน + ค่าส่ง)
+            $totalPrice = ($inventoryMovement->quantity * $pricePerUnit) + $transportCost;
 
             // บันทึก Cost record
             $cost = Cost::create([
@@ -326,6 +348,7 @@ class RevenueHelper
                 'quantity' => $inventoryMovement->quantity,
                 'unit' => $storehouse->unit,
                 'price_per_unit' => $pricePerUnit,
+                'transport_cost' => $transportCost,
                 'total_price' => $totalPrice,
                 'payment_status' => 'approved',
                 'note' => 'ต้นทุน ' . $storehouse->item_type . ' จาก ' . $storehouse->item_name . ' - ' . $inventoryMovement->note,
