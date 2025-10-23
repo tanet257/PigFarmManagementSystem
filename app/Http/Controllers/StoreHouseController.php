@@ -231,6 +231,7 @@ class StoreHouseController extends Controller
                                 'price_per_unit' => $validated['price_per_unit'] ?? 0,
                                 'unit'           => $validated['unit'] ?? null,
                                 'total_price'    => $validated['price_per_unit'] ?? 0,
+                                'payment_status' => 'approved',
                                 'note'           => $validated['note'] ?? null,
                                 'receipt_file'   => $uploadedFileUrl,
                             ]);
@@ -242,6 +243,7 @@ class StoreHouseController extends Controller
                         $cost = Cost::create([
                             'farm_id'        => $batch->farm_id,
                             'batch_id'       => $batch->id,
+                            'storehouse_id'  => $storehouse->id,
                             'date'           => $formattedDate,
                             'cost_type'      => $validated['item_type'],
                             'item_code'      => $validated['item_code'] ?? null,
@@ -250,6 +252,7 @@ class StoreHouseController extends Controller
                             'transport_cost' => $validated['transport_cost'] ?? 0,
                             'unit'           => $validated['unit'] ?? null,
                             'total_price'    => $total,
+                            'payment_status' => 'approved',
                             'note'           => $validated['note'] ?? null,
                             'receipt_file'   => $uploadedFileUrl ?? null,
                         ]);
