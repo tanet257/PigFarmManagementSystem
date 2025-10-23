@@ -326,15 +326,6 @@
                 </div>
                 {{ $rejectedPayments->links() }}
             </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
-            </div>
         </div>
     </div>
 @endsection
