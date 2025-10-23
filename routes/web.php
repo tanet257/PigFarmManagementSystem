@@ -243,10 +243,6 @@ Route::prefix('payment_approvals')->middleware(['auth', 'prevent.cache'])->group
     Route::patch('/{paymentId}/approve-payment', [PaymentApprovalController::class, 'approvePayment'])->name('payment_approvals.approve_payment');
     Route::patch('/{paymentId}/reject-payment', [PaymentApprovalController::class, 'rejectPayment'])->name('payment_approvals.reject_payment');
 
-    // Notification table (pig entry payments)
-    Route::post('/{notificationId}/approve', [PaymentApprovalController::class, 'approve'])->name('payment_approvals.approve');
-    Route::post('/{notificationId}/reject', [PaymentApprovalController::class, 'reject'])->name('payment_approvals.reject');
-
     // Cancel sale approval
     Route::patch('/{notificationId}/approve-cancel-sale', [PaymentApprovalController::class, 'approveCancelSale'])->name('payment_approvals.approve_cancel_sale');
     Route::patch('/{notificationId}/reject-cancel-sale', [PaymentApprovalController::class, 'rejectCancelSale'])->name('payment_approvals.reject_cancel_sale');
