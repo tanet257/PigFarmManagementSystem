@@ -27,8 +27,8 @@
                     @foreach ($lowStockItems->take(5) as $item)
                         <li>
                             <strong>{{ $item->item_name }}</strong>
-                            - เหลือ {{ number_format($item->stock, 2) }} {{ $item->unit }}
-                            (ขั้นต่ำ {{ number_format($item->min_quantity ?? 0, 2) }})
+                            - เหลือ {{ number_format($item->stock) }} {{ $item->unit }}
+                            (ขั้นต่ำ {{ number_format($item->min_quantity ?? 0) }})
                         </li>
                     @endforeach
                     @if ($lowStockItems->count() > 5)
@@ -246,7 +246,7 @@
                                 @endif
                             </td>
                             <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
-                            <td class="text-center"><strong>{{ number_format($item->stock ?? 0, 2) }}</strong></td>
+                            <td class="text-center"><strong>{{ number_format($item->stock ?? 0) }}</strong></td>
                             <td class="text-center">{{ $item->unit }}</td>
                             <td class="text-center">
                                 @if (($item->stock ?? 0) <= 0)
