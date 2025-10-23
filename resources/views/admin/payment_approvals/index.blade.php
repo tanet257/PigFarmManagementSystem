@@ -76,6 +76,111 @@
                             </tr>
                         </thead>
                         <tbody>
+                            {{-- Display Payment Records (PigSale Payments) --}}
+                            @forelse($pendingPayments as $index => $payment)
+                                <tr>
+                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">การขายหมู</span>
+                                    </td>
+                                    <td>
+                                        <strong>บันทึกการชำระเงิน</strong><br>
+                                        ฟาร์ม: {{ $payment->pigSale->farm->farm_name ?? '-' }}<br>
+                                        รุ่น: {{ $payment->pigSale->batch->batch_code ?? '-' }}<br>
+                                        ผู้ซื้อ: {{ $payment->pigSale->buyer_name ?? '-' }}<br>
+                                        จำนวน: {{ number_format($payment->amount, 2) }} ฿
+                                    </td>
+                                    <td class="text-center">{{ $payment->recordedBy->name ?? '-' }}</td>
+                                    <td class="text-center">{{ $payment->created_at->format('d/m/Y H:i') }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('payment_approvals.detail', $payment->id) }}"
+                                            class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> ดู
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                            data-bs-target="#approvePaymentModal{{ $payment->id }}">
+                                            <i class="bi bi-check"></i> อนุมัติ
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
+                                            data-bs-target="#rejectPaymentModal{{ $payment->id }}">
+                                            <i class="bi bi-x"></i> ปฏิเสธ
+                                        </button>
+                                    </td>
+                                </tr>
+
+                                {{-- Approve Payment Modal --}}
+                                <div class="modal fade" id="approvePaymentModal{{ $payment->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-success text-white">
+                                                <h5 class="modal-title">อนุมัติการชำระเงิน</h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form action="{{ route('payment_approvals.approve_payment', $payment->id) }}"
+                                                method="POST">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="alert alert-info">
+                                                        <strong>การชำระเงิน:</strong><br>
+                                                        จำนวน: {{ number_format($payment->amount, 2) }} ฿<br>
+                                                        วิธีชำระ: {{ $payment->payment_method ?? '-' }}
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">หมายเหตุการอนุมัติ (ไม่จำเป็น)</label>
+                                                        <textarea name="approval_notes" class="form-control" rows="3"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">ยกเลิก</button>
+                                                    <button type="submit" class="btn btn-success">
+                                                        <i class="bi bi-check-circle"></i> อนุมัติ
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Reject Payment Modal --}}
+                                <div class="modal fade" id="rejectPaymentModal{{ $payment->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-danger text-white">
+                                                <h5 class="modal-title">ปฏิเสธการชำระเงิน</h5>
+                                                <button type="button" class="btn-close btn-close-white"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <form action="{{ route('payment_approvals.reject_payment', $payment->id) }}"
+                                                method="POST">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <div class="alert alert-warning">
+                                                        <strong>การชำระเงิน:</strong><br>
+                                                        จำนวน: {{ number_format($payment->amount, 2) }} ฿
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">เหตุผลในการปฏิเสธ <span
+                                                                class="text-danger">*</span></label>
+                                                        <textarea name="reject_reason" class="form-control" rows="3" required></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">ยกเลิก</button>
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="bi bi-x-circle"></i> ปฏิเสธ
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                            @endforelse
+
+                            {{-- Display Notification Records (if any PigSale payment notifications) --}}
                             @forelse($pendingNotifications as $index => $notification)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>
@@ -333,9 +438,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($approvedNotifications as $index => $notification)
+                            {{-- Display Approved Payment Records --}}
+                            @forelse($approvedPayments as $index => $payment)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-primary">การขายหมู</span>
+                                    </td>
+                                    <td>
+                                        <strong>บันทึกการชำระเงิน</strong><br>
+                                        ฟาร์ม: {{ $payment->pigSale->farm->farm_name ?? '-' }}<br>
+                                        รุ่น: {{ $payment->pigSale->batch->batch_code ?? '-' }}<br>
+                                        จำนวน: {{ number_format($payment->amount, 2) }} ฿
+                                    </td>
+                                    <td class="text-center">{{ $payment->recordedBy->name ?? '-' }}</td>
+                                    <td class="text-center">{{ $payment->approved_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('payment_approvals.detail', $payment->id) }}"
+                                            class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> ดู
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                            @endforelse
+
+                            {{-- Display Approved Notifications --}}
+                            @forelse($approvedNotifications as $index => $notification)
+                                <tr>
+                                    <td class="text-center">{{ $loop->iteration + count($approvedPayments) }}</td>
                                     <td class="text-center">
                                         @if ($notification->type === 'payment_recorded_pig_entry')
                                             <span class="badge bg-info">การรับเข้าหมู</span>
@@ -354,14 +485,16 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted">ไม่มีรายการที่อนุมัติแล้ว</td>
-                                </tr>
+                                @if(count($approvedPayments) == 0)
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">ไม่มีรายการที่อนุมัติแล้ว</td>
+                                    </tr>
+                                @endif
                             @endforelse
                         </tbody>
                     </table>
                 </div>
-                {{ $approvedNotifications->links() }}
+                {{ $approvedPayments->links() }}
 
                 {{-- Approved Cancel Requests Section --}}
                 @if ($approvedCancelRequests && $approvedCancelRequests->count() > 0)
@@ -429,12 +562,65 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($rejectedNotifications as $index => $notification)
+                            {{-- Display Rejected Payment Records --}}
+                            @forelse($rejectedPayments as $index => $payment)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>
                                     <td class="text-center">
+                                        <span class="badge bg-primary">การขายหมู</span>
+                                    </td>
+                                    <td>
+                                        <strong>บันทึกการชำระเงิน</strong><br>
+                                        ฟาร์ม: {{ $payment->pigSale->farm->farm_name ?? '-' }}<br>
+                                        รุ่น: {{ $payment->pigSale->batch->batch_code ?? '-' }}<br>
+                                        จำนวน: {{ number_format($payment->amount, 2) }} ฿
+                                    </td>
+                                    <td class="text-center">{{ $payment->recordedBy->name ?? '-' }}</td>
+                                    <td class="text-center">{{ $payment->rejected_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                    <td>{{ $payment->reject_reason ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('payment_approvals.detail', $payment->id) }}"
+                                            class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> ดู
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                            @endforelse
+
+                            {{-- Display Rejected Notifications --}}
+                            @forelse($rejectedNotifications as $index => $notification)
+                                <tr>
+                                    <td class="text-center">{{ $loop->iteration + count($rejectedPayments) }}</td>
+                                    <td class="text-center">
                                         @if ($notification->type === 'payment_recorded_pig_entry')
                                             <span class="badge bg-info">การรับเข้าหมู</span>
+                                        @else
+                                            <span class="badge bg-primary">การขายหมู</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $notification->message }}</td>
+                                    <td class="text-center">{{ $notification->relatedUser->name ?? '-' }}</td>
+                                    <td class="text-center">{{ $notification->read_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                    <td>{{ $notification->approval_notes ?? '-' }}</td>
+                                    <td class="text-center">
+                                        <a href="{{ route('payment_approvals.detail', $notification->id) }}"
+                                            class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i> ดู
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                @if(count($rejectedPayments) == 0)
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">ไม่มีรายการที่ปฏิเสธ</td>
+                                    </tr>
+                                @endif
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                {{ $rejectedPayments->links() }}
                                         @else
                                             <span class="badge bg-primary">การขายหมู</span>
                                         @endif

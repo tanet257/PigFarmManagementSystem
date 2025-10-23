@@ -2,7 +2,7 @@
 
 /**
  * Test: Payment Approvals Page Fix - Phase 7I Integration
- * 
+ *
  * Verify that:
  * 1. Payment Approvals page shows only PigSale notifications
  * 2. PigEntry notifications are NOT shown on Payment Approvals page
