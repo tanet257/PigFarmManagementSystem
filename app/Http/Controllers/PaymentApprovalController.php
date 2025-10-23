@@ -115,6 +115,9 @@ class PaymentApprovalController extends Controller
             // อัปเดท Revenue และ PigSale
             $pigSale = $payment->pigSale;
             if ($pigSale) {
+                // ✅ ก่อนอื่น บันทึก/อัปเดท Revenue ของ PigSale
+                RevenueHelper::recordPigSaleRevenue($pigSale);
+
                 $oldPaymentStatus = $pigSale->payment_status;
                 $totalPaid = Payment::where('pig_sale_id', $pigSale->id)
                     ->where('status', 'approved')

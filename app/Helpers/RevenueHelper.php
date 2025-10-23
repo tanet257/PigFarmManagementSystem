@@ -94,26 +94,13 @@ class RevenueHelper
                 ->whereIn('payment_status', ['อนุมัติแล้ว', 'ชำระแล้ว'])
                 ->sum('net_revenue');
 
-            Log::info("=== Profit Calculation for Batch $batchId ===");
-            Log::info("Total Revenue: " . $totalRevenue);
-
             // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว และ ไม่ถูกยกเลิก)
-            $allCosts = Cost::where('batch_id', $batchId)
-                ->where('payment_status', '!=', 'ยกเลิก')
+            $approvedCosts = Cost::where('batch_id', $batchId)
+                ->where('payment_status', '!=', 'ยกเลิก')  // ❌ ยกเว้น ยกเลิก
+                ->whereHas('payments', function ($query) {
+                    $query->where('status', 'approved');
+                })
                 ->get();
-
-            Log::info("Total Costs in DB: " . $allCosts->count());
-
-            // Filter เฉพาะ costs ที่มี approved payments
-            $approvedCosts = $allCosts->filter(function ($cost) {
-                $hasApprovedPayment = $cost->payments()
-                    ->where('status', 'approved')
-                    ->exists();
-                return $hasApprovedPayment;
-            });
-
-            Log::info("Approved Costs (with approved payments): " . count($approvedCosts));
-
 
             // คำนวณต้นทุนตามหมวดหมู่ (เฉพาะ approved payments)
             $feedCost = $approvedCosts->where('cost_type', 'feed')->sum('total_price');
@@ -126,19 +113,12 @@ class RevenueHelper
             $otherCost = $approvedCosts->where('cost_type', 'other')->sum('total_price');
             $pigletCost = $approvedCosts->where('cost_type', 'piglet')->sum('total_price');
 
-            Log::info("Feed: $feedCost, Medicine: $medicineCost, Transport: $transportCost, Labor: $laborCost");
-            Log::info("Piglet: $pigletCost, Other: $otherCost, Utility: $utilityCost, Excess Weight: $excessWeightCost");
-
             // รวมต้นทุนทั้งหมด
             $totalCost = $feedCost + $medicineCost + $transportCost + $excessWeightCost + $laborCost + $utilityCost + $otherCost + $pigletCost;
-
-            Log::info("Total Cost: " . $totalCost);
 
             // คำนวณกำไร
             $grossProfit = $totalRevenue - $totalCost;
             $profitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue * 100) : 0;
-
-            Log::info("Gross Profit: " . $grossProfit . ", Margin: " . $profitMargin . "%");
 
             // ดึงจำนวนหมู (ไม่รวม cancelled)
             $totalPigSold = \App\Models\PigSale::where('batch_id', $batchId)
@@ -147,8 +127,6 @@ class RevenueHelper
 
             $totalPigDead = \App\Models\PigDeath::where('batch_id', $batchId)->count();
             $profitPerPig = $totalPigSold > 0 ? ($grossProfit / $totalPigSold) : 0;
-
-            Log::info("Total Pig Sold: $totalPigSold, Dead: $totalPigDead, Profit per Pig: " . $profitPerPig);
 
             // ตรวจสอบว่ามี Profit record แล้วหรือไม่
             $profit = Profit::where('batch_id', $batchId)->first();
@@ -173,8 +151,6 @@ class RevenueHelper
                     'period_start' => $batch->created_at,
                     'period_end' => now(),
                 ]);
-
-                Log::info("Updated Profit Record ID: " . $profit->id);
             } else {
                 // สร้างใหม่
                 $profit = Profit::create([
@@ -199,16 +175,12 @@ class RevenueHelper
                     'days_in_farm' => now()->diffInDays($batch->created_at),
                     'status' => 'incomplete',
                 ]);
-
-                Log::info("Created new Profit Record ID: " . $profit->id);
             }
 
             // บันทึก profit details
             self::recordProfitDetails($profit, $approvedCosts);
 
             DB::commit();
-
-            Log::info("=== Profit Calculation Complete ===");
 
             return [
                 'success' => true,
