@@ -250,8 +250,13 @@ class PaymentApprovalController extends Controller
             } elseif ($relatedModel === 'PigSale') {
                 $pigSale = PigSale::findOrFail($relatedModelId);
 
-                // ✅ For PigSale, just mark notification as approved
-                // (The payment approval is already handled in approvePayment() method)
+                // ✅ For PigSale, record Revenue and recalculate profit
+                RevenueHelper::recordPigSaleRevenue($pigSale);
+                
+                // 🔥 Recalculate profit เมื่อ payment อนุมัติ
+                if ($pigSale->batch_id) {
+                    RevenueHelper::calculateAndRecordProfit($pigSale->batch_id);
+                }
             } else {
                 throw new \Exception('ไม่รู้จักประเภท model นี้');
             }

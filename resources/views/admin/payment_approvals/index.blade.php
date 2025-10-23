@@ -22,7 +22,7 @@
             <div class="col-md-4">
                 <div class="card text-center bg-success text-white">
                     <div class="card-status-summary">
-                        <h3>{{ ($approvedPayments->total() ?? 0) + ($approvedCancelRequests->total() ?? 0) + ($approvedNotifications->total() ?? 0) }}</h3>
+                        <h3>{{ ($approvedPayments->total() ?? 0)  + ($approvedNotifications->total() ?? 0) }}</h3>
                         <p class="mb-0"><i class="bi bi-check-circle"></i> อนุมัติแล้ว</p>
                     </div>
                 </div>
@@ -48,7 +48,7 @@
             <li class="nav-item">
                 <a class="nav-link" id="approved-tab" data-bs-toggle="tab" href="#approved" role="tab">
                     <i class="bi bi-check-circle"></i> อนุมัติแล้ว
-                    <span class="badge bg-success ms-2">{{ ($approvedPayments->total() ?? 0) + ($approvedCancelRequests->total() ?? 0) + ($approvedNotifications->total() ?? 0) }}</span>
+                    <span class="badge bg-success ms-2">{{ ($approvedPayments->total() ?? 0) + ($approvedNotifications->total() ?? 0) }}</span>
                 </a>
             </li>
             <li class="nav-item">
@@ -499,53 +499,8 @@
                 {{ $approvedPayments->links() }}
 
                 {{-- Approved Cancel Requests Section --}}
-                @if ($approvedCancelRequests && $approvedCancelRequests->count() > 0)
-                    <hr class="my-4">
-                    <h5 class="mb-3">
-                        <i class="bi bi-check-circle"></i> ยกเลิกการขายแล้ว
-                        <span class="badge bg-success">{{ $approvedCancelRequests->count() }}</span>
-                    </h5>
-                    <div class="table-responsive">
-                        <table class="table table-success mb-0">
-                            <thead class="table-header-custom">
-                                <tr>
-                                    <th class="text-center">ลำดับ</th>
-                                    <th class="text-center">เลขที่ขาย</th>
-                                    <th class="text-center">จำนวนหมู</th>
-                                    <th class="text-center">ผู้ขอยกเลิก</th>
-                                    <th class="text-center">อนุมัติเมื่อ</th>
-                                    <th class="text-center">การกระทำ</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($approvedCancelRequests as $index => $cancelRequest)
-                                    <tr>
-                                        <td class="text-center">{{ $loop->iteration }}</td>
-                                        <td class="text-center">
-                                            {{ $cancelRequest->relatedModel === 'PigSale'
-                                                ? \App\Models\PigSale::find($cancelRequest->related_model_id)?->id
-                                                : '-' }}
-                                        </td>
-                                        <td class="text-center">
-                                            {{ $cancelRequest->relatedModel === 'PigSale'
-                                                ? \App\Models\PigSale::find($cancelRequest->related_model_id)?->quantity . ' ตัว'
-                                                : '-' }}
-                                        </td>
-                                        <td class="text-center">{{ $cancelRequest->relatedUser->name ?? '-' }}</td>
-                                        <td class="text-center">{{ $cancelRequest->updated_at->format('d/m/Y H:i') }}</td>
-                                        <td class="text-center">
-                                            <a href="{{ route('payment_approvals.detail', $cancelRequest->id) }}"
-                                                class="btn btn-sm btn-info">
-                                                <i class="bi bi-eye"></i> ดู
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @empty
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+
+
             </div>
 
             {{-- Tab: Rejected --}}
