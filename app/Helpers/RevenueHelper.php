@@ -6,6 +6,8 @@ use App\Models\Revenue;
 use App\Models\Profit;
 use App\Models\ProfitDetail;
 use App\Models\Cost;
+use App\Models\StoreHouse;
+use App\Models\InventoryMovement;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -94,12 +96,11 @@ class RevenueHelper
                 ->whereIn('payment_status', ['อนุมัติแล้ว', 'ชำระแล้ว'])
                 ->sum('net_revenue');
 
-            // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติการชำระเงินแล้ว และ ไม่ถูกยกเลิก)
+            // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติแล้ว และ ไม่ถูกยกเลิก)
+            // รองรับทั้ง Cost ที่มี CostPayment (payment_status = 'approved')
+            // และ Cost ที่สร้างจาก inventory_movements (payment_status = 'approved' โดยตรง)
             $approvedCosts = Cost::where('batch_id', $batchId)
-                ->where('payment_status', '!=', 'ยกเลิก')  // ❌ ยกเว้น ยกเลิก
-                ->whereHas('payments', function ($query) {
-                    $query->where('status', 'approved');
-                })
+                ->where('payment_status', 'approved')
                 ->get();
 
             // คำนวณต้นทุนตามหมวดหมู่ (เฉพาะ approved payments)
@@ -243,6 +244,109 @@ class RevenueHelper
         } catch (\Exception $e) {
             Log::error('RevenueHelper - getBatchFinancialSummary Error: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * แยกราคาต่อหน่วยจาก storehouse note
+     * ตัวอย่าง: "ราคา: ฿549 ต่อ กระสอบ" → 549
+     *
+     * @param string $note
+     * @return float|int
+     */
+    public static function extractPriceFromNote($note)
+    {
+        if (!$note) return 0;
+
+        // ค้นหา pattern "฿XXXX" หรือ "฿XX.XX"
+        if (preg_match('/฿([\d.]+)/', $note, $matches)) {
+            return (float) $matches[1];
+        }
+
+        return 0;
+    }
+
+    /**
+     * บันทึกต้นทุนจากการใช้สินค้า storehouse
+     * เรียกเมื่อ inventory_movement ถูกสร้าง (change_type = 'in')
+     *
+     * @param $inventoryMovement - InventoryMovement object
+     * @return array ['success' => bool, 'message' => string, 'cost' => Cost object or null]
+     */
+    public static function recordStorehouseCost($inventoryMovement)
+    {
+        DB::beginTransaction();
+        try {
+            // ตรวจสอบว่าเป็น 'in' movement เท่านั้น (เข้าคลัง)
+            if ($inventoryMovement->change_type !== 'in') {
+                DB::commit();
+                return [
+                    'success' => true,
+                    'message' => 'ไม่บันทึก - เป็น out movement',
+                    'cost' => null,
+                ];
+            }
+
+            // ตรวจสอบว่ามี batch แล้ว
+            if (!$inventoryMovement->batch_id) {
+                DB::commit();
+                return [
+                    'success' => true,
+                    'message' => 'ไม่บันทึก - ไม่มี batch',
+                    'cost' => null,
+                ];
+            }
+
+            // ดึง storehouse ข้อมูล
+            $storehouse = StoreHouse::findOrFail($inventoryMovement->storehouse_id);
+
+            // แยกราคาต่อหน่วยจาก note
+            $pricePerUnit = self::extractPriceFromNote($storehouse->note);
+
+            if ($pricePerUnit <= 0) {
+                Log::warning('RevenueHelper - No price found in storehouse note: ' . $storehouse->note);
+                DB::commit();
+                return [
+                    'success' => true,
+                    'message' => 'ไม่บันทึก - ไม่พบราคาในข้อมูล',
+                    'cost' => null,
+                ];
+            }
+
+            // คำนวณต้นทุนรวม
+            $totalPrice = $inventoryMovement->quantity * $pricePerUnit;
+
+            // บันทึก Cost record
+            $cost = Cost::create([
+                'farm_id' => $inventoryMovement->batch->farm_id,
+                'batch_id' => $inventoryMovement->batch_id,
+                'storehouse_id' => $inventoryMovement->storehouse_id,
+                'cost_type' => $storehouse->item_type, // 'feed' หรือ 'medicine'
+                'item_code' => $storehouse->item_code,
+                'quantity' => $inventoryMovement->quantity,
+                'unit' => $storehouse->unit,
+                'price_per_unit' => $pricePerUnit,
+                'total_price' => $totalPrice,
+                'payment_status' => 'approved',
+                'note' => 'ต้นทุน ' . $storehouse->item_type . ' จาก ' . $storehouse->item_name . ' - ' . $inventoryMovement->note,
+                'date' => $inventoryMovement->date,
+            ]);
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'บันทึกต้นทุนสำเร็จ',
+                'cost' => $cost,
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('RevenueHelper - recordStorehouseCost Error: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถบันทึกต้นทุนได้: ' . $e->getMessage(),
+                'cost' => null,
+            ];
         }
     }
 }

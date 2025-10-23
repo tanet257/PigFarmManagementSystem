@@ -30,9 +30,9 @@ class StoreHouseSeeder extends Seeder
 
         // Feed Items (เหมือนเดิม)
         $feedItems = [
-            ['item_code' => 'F931L', 'item_name' => 'อาหารหมูเล็ก', 'unit' => 'กระสอบ', 'min_quantity' => 10, 'stock' => 50],
-            ['item_code' => 'F992', 'item_name' => 'อาหารหมูกลาง', 'unit' => 'กระสอบ', 'min_quantity' => 10, 'stock' => 40],
-            ['item_code' => 'F993', 'item_name' => 'อาหารหมูใหญ่', 'unit' => 'กระสอบ', 'min_quantity' => 10, 'stock' => 30],
+            ['item_code' => 'F931L', 'item_name' => 'อาหารหมูเล็ก', 'unit' => 'กระสอบ', 'min_quantity' => 10, 'stock' => 50, 'price' => 549],
+            ['item_code' => 'F992', 'item_name' => 'อาหารหมูกลาง', 'unit' => 'กระสอบ', 'min_quantity' => 10, 'stock' => 40, 'price' => 456],
+            ['item_code' => 'F993', 'item_name' => 'อาหารหมูใหญ่', 'unit' => 'กระสอบ', 'min_quantity' => 10, 'stock' => 30, 'price' => 456],
         ];
 
         // Medicine Items (เพิ่มใหม่)
@@ -61,7 +61,7 @@ class StoreHouseSeeder extends Seeder
                     'min_quantity'  => $item['min_quantity'],
                     'unit'          => $item['unit'],
                     'status'        => 'available',
-                    'note'          => 'สินค้าตัวอย่าง Feed',
+                    'note'          => 'ราคา: ฿' . $item['price'] . ' ต่อ ' . $item['unit'],
                     'date'          => now(),
                     'created_at'    => now(),
                     'updated_at'    => now(),

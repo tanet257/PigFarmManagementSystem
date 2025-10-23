@@ -180,7 +180,7 @@
                                     <span class="badge bg-dark">-</span>
                                 @endif
                             </td>
-                            <td class="text-center"><strong>{{ number_format($movement->quantity, 2) }}</strong></td>
+                            <td class="text-center"><strong>{{ $movement->quantity }}</strong></td>
                             <td class="text-center">{{ $movement->note ?? '-' }}</td>
                             <td class="text-center">
                                 @if ($movement->cost && !empty($movement->cost->receipt_file))

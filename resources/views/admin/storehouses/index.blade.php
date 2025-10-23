@@ -27,8 +27,8 @@
                     @foreach ($lowStockItems->take(5) as $item)
                         <li>
                             <strong>{{ $item->item_name }}</strong>
-                            - เหลือ {{ number_format($item->stock) }} {{ $item->unit }}
-                            (ขั้นต่ำ {{ number_format($item->min_quantity ?? 0) }})
+                            - เหลือ {{ $item->stock }} {{ $item->unit }}
+                            (ขั้นต่ำ {{ $item->min_quantity ?? 0 }})
                         </li>
                     @endforeach
                     @if ($lowStockItems->count() > 5)
@@ -246,7 +246,7 @@
                                 @endif
                             </td>
                             <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
-                            <td class="text-center"><strong>{{ number_format($item->stock ?? 0) }}</strong></td>
+                            <td class="text-center"><strong>{{ $item->stock ?? 0 }}</strong></td>
                             <td class="text-center">{{ $item->unit }}</td>
                             <td class="text-center">
                                 @if (($item->stock ?? 0) <= 0)
@@ -345,13 +345,13 @@
                                 <table class="table table-secondary table-sm table-hover">
                                     <tr>
                                         <td width="40%"><strong>จำนวน:</strong></td>
-                                        <td><strong class="text-success">{{ number_format($item->stock, 2) }}
+                                        <td><strong class="text-success">{{ $item->stock }}
                                                 {{ $item->unit }}</strong>
                                         </td>
                                     </tr>
                                     <tr>
                                         <td><strong>จำนวนขั้นต่ำ:</strong></td>
-                                        <td>{{ number_format($item->min_quantity ?? 0, 2) }} {{ $item->unit }}</td>
+                                        <td>{{ $item->min_quantity ?? 0 }} {{ $item->unit }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>วันหมดอายุ:</strong></td>
