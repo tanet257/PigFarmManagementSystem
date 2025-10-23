@@ -120,6 +120,7 @@
                                             <form action="{{ route('payment_approvals.approve_payment', $payment->id) }}"
                                                 method="POST">
                                                 @csrf
+                                                @method('PATCH')
                                                 <div class="modal-body">
                                                     <div class="alert alert-info">
                                                         <strong>การชำระเงิน:</strong><br>
@@ -155,6 +156,7 @@
                                             <form action="{{ route('payment_approvals.reject_payment', $payment->id) }}"
                                                 method="POST">
                                                 @csrf
+                                                @method('PATCH')
                                                 <div class="modal-body">
                                                     <div class="alert alert-warning">
                                                         <strong>การชำระเงิน:</strong><br>
@@ -621,30 +623,36 @@
                     </table>
                 </div>
                 {{ $rejectedPayments->links() }}
-                                        @else
-                                            <span class="badge bg-primary">การขายหมู</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $notification->message }}</td>
-                                    <td class="text-center">{{ $notification->relatedUser->name ?? '-' }}</td>
-                                    <td class="text-center">{{ $notification->read_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                    <td>{{ $notification->approval_notes ?? '-' }}</td>
-                                    <td class="text-center">
-                                        <a href="{{ route('payment_approvals.detail', $notification->id) }}"
-                                            class="btn btn-sm btn-info">
-                                            <i class="bi bi-eye"></i> ดู
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">ไม่มีรายการที่ปฏิเสธ</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-                {{ $rejectedNotifications->links() }}
+
+                {{-- Display Rejected Notifications (continued) --}}
+                @forelse($rejectedNotifications as $index => $notification)
+                    <tr>
+                        <td class="text-center">{{ $loop->iteration + count($rejectedPayments) }}</td>
+                        <td class="text-center">
+                            @if ($notification->type === 'payment_recorded_pig_entry')
+                                <span class="badge bg-info">การรับเข้าหมู</span>
+                            @else
+                                <span class="badge bg-primary">การขายหมู</span>
+                            @endif
+                        </td>
+                        <td>{{ $notification->message }}</td>
+                        <td class="text-center">{{ $notification->relatedUser->name ?? '-' }}</td>
+                        <td class="text-center">{{ $notification->read_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                        <td>{{ $notification->approval_notes ?? '-' }}</td>
+                        <td class="text-center">
+                            <a href="{{ route('payment_approvals.detail', $notification->id) }}"
+                                class="btn btn-sm btn-info">
+                                <i class="bi bi-eye"></i> ดู
+                            </a>
+                        </td>
+                    </tr>
+                @empty
+                    @if(count($rejectedPayments) == 0)
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">ไม่มีรายการที่ปฏิเสธ</td>
+                        </tr>
+                    @endif
+                @endforelse
 
                 {{-- Rejected Cancel Requests Section --}}
                 @if ($rejectedCancelRequests && $rejectedCancelRequests->count() > 0)
