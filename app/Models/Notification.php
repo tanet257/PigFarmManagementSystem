@@ -65,6 +65,15 @@ class Notification extends Model
     }
 
     /**
+     * Cost Payment (for PigEntry payment)
+     */
+    public function costPayment()
+    {
+        return $this->hasOne(CostPayment::class, 'id', 'related_model_id')
+            ->where('related_model', 'CostPayment');
+    }
+
+    /**
      * ืำเครื่องหมายว่าอ่านแล้ว
      */
 

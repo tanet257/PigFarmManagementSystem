@@ -57,19 +57,24 @@ class PaymentApprovalController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
-        // ดึง notification ประเภท pig_entry
+        // ดึง notification ประเภท payment ทั้งหมด 
+        // ❌ ไม่ดึง payment_recorded_pig_entry (ไปแสดงบน Cost Payment Approvals แทน - Phase 7I)
+        // ✅ ดึงเฉพาะ payment_recorded_pig_sale
         $pendingNotifications = Notification::where('approval_status', 'pending')
-            ->whereIn('type', ['payment_recorded_pig_entry'])
+            ->where('type', 'payment_recorded_pig_sale')  // Only PigSale payments
+            ->with(['relatedUser', 'pigSale'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         $approvedNotifications = Notification::where('approval_status', 'approved')
-            ->whereIn('type', ['payment_recorded_pig_entry'])
+            ->where('type', 'payment_recorded_pig_sale')  // Only PigSale payments
+            ->with(['relatedUser', 'pigSale'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         $rejectedNotifications = Notification::where('approval_status', 'rejected')
-            ->whereIn('type', ['payment_recorded_pig_entry'])
+            ->where('type', 'payment_recorded_pig_sale')  // Only PigSale payments
+            ->with(['relatedUser', 'pigSale'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
