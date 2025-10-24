@@ -228,7 +228,7 @@
                                                     <li><a class="dropdown-item" href="#"
                                                             data-value="กำลังดำเนินการ (กำลังฉีด/กำลังให้ยาอยู่)">กำลังดำเนินการ</a>
                                                     </li>
-                                                    <li><a class="dropdown-item" href#"
+                                                    <li><a class="dropdown-item" href="#"
                                                             data-value="ให้ยาเสร็จแล้ว">ให้ยาเสร็จแล้ว</a></li>
                                                     <li><a class="dropdown-item" href="#"
                                                             data-value="ยกเลิก">ยกเลิก</a></li>

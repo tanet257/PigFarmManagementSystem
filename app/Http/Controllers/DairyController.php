@@ -55,22 +55,20 @@ class DairyController extends Controller
         $storehouses = StoreHouse::select('id', 'item_code', 'item_name', 'item_type', 'unit')->get();
         //dd($farms, $batches, $barns, $pens, $storehouses);
 
-        $storehousesByTypeAndBatch = InventoryMovement::with('storehouse')
+        $storehousesByTypeAndBatch = StoreHouse::select('item_type', 'batch_id', 'item_code', 'item_name')
+            ->distinct('item_code')
+            ->orderBy('item_type')
+            ->orderBy('batch_id')
             ->get()
-            ->groupBy(fn($movement) => $movement->storehouse->item_type)
-            ->map(function ($group) {
-                return $group->groupBy('batch_id')->map(function ($batchGroup) {
-                    $unique = [];
-                    foreach ($batchGroup as $movement) {
-                        $code = $movement->storehouse->item_code;
-                        if (!isset($unique[$code])) {
-                            $unique[$code] = [
-                                'item_code' => $code,
-                                'item_name' => $movement->storehouse->item_name,
-                            ];
-                        }
-                    }
-                    return $unique;
+            ->groupBy('item_type')
+            ->map(function ($typeGroup) {
+                return $typeGroup->groupBy('batch_id')->map(function ($batchGroup) {
+                    return $batchGroup->mapWithKeys(function ($item) {
+                        return [$item->item_code => [
+                            'item_code' => $item->item_code,
+                            'item_name' => $item->item_name,
+                        ]];
+                    });
                 });
             });
 
