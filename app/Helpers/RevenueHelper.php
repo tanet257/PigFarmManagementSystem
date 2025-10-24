@@ -6,6 +6,7 @@ use App\Models\Revenue;
 use App\Models\Profit;
 use App\Models\ProfitDetail;
 use App\Models\Cost;
+use \App\Models\PigDeath;
 use App\Models\StoreHouse;
 use App\Models\InventoryMovement;
 use Illuminate\Support\Facades\DB;
@@ -128,7 +129,8 @@ class RevenueHelper
                 ->where('status', '!=', 'ยกเลิกการขาย')
                 ->sum('quantity');
 
-            $totalPigDead = \App\Models\PigDeath::where('batch_id', $batchId)->count();
+            // ใช้ sum('quantity') แทน count() เพื่อได้จำนวนหมูที่ตายจริง ๆ
+            $totalPigDead = \App\Models\PigDeath::where('batch_id', $batchId)->sum('quantity');
             $profitPerPig = $totalPigSold > 0 ? ($grossProfit / $totalPigSold) : 0;
 
             // ตรวจสอบว่ามี Profit record แล้วหรือไม่

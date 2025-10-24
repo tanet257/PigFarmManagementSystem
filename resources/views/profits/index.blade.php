@@ -7,7 +7,7 @@
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-md-12">
-            <h2 class="mb-4">📊 สรุปผลกำไร (Profit Summary)</h2>
+            <h2 class="mb-4"> สรุปผลกำไร (Profit Summary)</h2>
         </div>
     </div>
 

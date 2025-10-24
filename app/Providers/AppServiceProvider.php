@@ -5,8 +5,10 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use App\Models\InventoryMovement;
 use App\Models\Cost;
+use App\Models\PigDeath;
 use App\Observers\InventoryMovementObserver;
 use App\Observers\CostObserver;
+use App\Observers\PigDeathObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,5 +32,7 @@ class AppServiceProvider extends ServiceProvider
         // Register observers
         InventoryMovement::observe(InventoryMovementObserver::class);
         Cost::observe(CostObserver::class);
+        PigDeath::observe(PigDeathObserver::class);
     }
 }
+

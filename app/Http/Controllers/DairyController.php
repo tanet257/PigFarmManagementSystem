@@ -55,10 +55,21 @@ class DairyController extends Controller
         $storehouses = StoreHouse::select('id', 'item_code', 'item_name', 'item_type', 'unit')->get();
         //dd($farms, $batches, $barns, $pens, $storehouses);
 
-        $storehousesByTypeAndBatch = StoreHouse::select('item_type', 'batch_id', 'item_code', 'item_name')
-            ->distinct('item_code')
-            ->orderBy('item_type')
-            ->orderBy('batch_id')
+        /**
+         * สร้าง storehousesByTypeAndBatch เหมือนกับ storehouse pattern
+         * แต่ group ตาม type -> batch (เพราะ dairy ต้องแยกตาม batch)
+         *
+         * ดึงจาก StoreHouse โดยตรง แล้ว join ไปยัง Batch เพื่อให้ได้ batch_id
+         * หลังจากนั้น JavaScript จะ filter ตาม batch_id ที่เลือก
+         */
+        $storehousesByTypeAndBatch = DB::table('storehouses')
+            ->join('batches', 'storehouses.farm_id', '=', 'batches.farm_id')
+            ->select('storehouses.item_type', 'batches.id as batch_id', 'storehouses.item_code', 'storehouses.item_name')
+            ->where('batches.status', '!=', 'เสร็จสิ้น')
+            ->where('batches.status', '!=', 'cancelled')
+            ->distinct('storehouses.item_code')
+            ->orderBy('storehouses.item_type')
+            ->orderBy('batches.id')
             ->get()
             ->groupBy('item_type')
             ->map(function ($typeGroup) {
@@ -70,9 +81,7 @@ class DairyController extends Controller
                         ]];
                     });
                 });
-            });
-
-        return view(
+            });        return view(
             'admin.dairy_records.record.dairy_record',
             compact('farms', 'batches', 'barns', 'pens', 'storehouses', 'storehousesByTypeAndBatch')
         );
