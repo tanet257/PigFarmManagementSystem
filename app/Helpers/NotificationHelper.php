@@ -73,11 +73,10 @@ class NotificationHelper
 
         // Load relationships ถ้ายังไม่ได้ load
         if (!$pigDeath->relationLoaded('batch')) {
-            $pigDeath->load('batch', 'barn', 'pen');
+            $pigDeath->load('batch', 'pen');
         }
 
         $batch = $pigDeath->batch;
-        $barn = $pigDeath->barn;
         $pen = $pigDeath->pen;
 
         foreach ($admins as $admin) {
@@ -86,9 +85,11 @@ class NotificationHelper
                 'user_id' => $admin->id,
                 'related_user_id' => $reportedBy->id,
                 'title' => 'รายงานหมูตาย',
-                'message' => "มีหมูตาย {$pigDeath->amount} ตัว\nรุ่น: {$batch->batch_code}\nเล้า: {$barn->barn_code}\nคอก: {$pen->pen_code}\nสาเหตุ: " . ($pigDeath->cause ?? 'ไม่ระบุ'),
+                'message' => "มีหมูตาย {$pigDeath->quantity} ตัว\nรุ่น: {$batch->batch_code}\nคอก: {$pen->pen_code}\nสาเหตุ: " . ($pigDeath->cause ?? 'ไม่ระบุ'),
                 'url' => url('view_pig_death'),
                 'is_read' => false,
+                'related_model' => 'PigDeath',
+                'related_model_id' => $pigDeath->id,
             ]);
         }
     }
@@ -139,16 +140,20 @@ class NotificationHelper
         }
 
         $batch = $pigSale->batch;
+        $sellTypeText = $pigSale->sell_type ?? 'หมูปกติ'; // ✅ NEW: ระบุประเภทหมูที่ขาย
 
         foreach ($admins as $admin) {
             Notification::create([
                 'type' => 'pig_sale',
                 'user_id' => $admin->id,
                 'related_user_id' => $reportedBy->id,
-                'title' => 'บันทึกการขายหมู',
-                'message' => "มีการขายหมู {$pigSale->quantity} ตัว\nรุ่น: {$batch->batch_code}\nราคารวม: " . number_format($pigSale->total_price, 2) . " บาท\nวันที่ขาย: {$pigSale->date}",
+                'title' => "บันทึกการขายหมู ({$sellTypeText}) - รอการอนุมัติ",  // ✅ เพิ่มประเภทหมู + สถานะ
+                'message' => "มีการขายหมู {$pigSale->quantity} ตัว ({$sellTypeText})\nรุ่น: {$batch->batch_code}\nราคารวม: " . number_format($pigSale->total_price, 2) . " บาท\nวันที่ขาย: {$pigSale->date}\n\n⏳ รอการอนุมัติ",
                 'url' => route('pig_sales.index'),
                 'is_read' => false,
+                'related_model' => 'PigSale',  // ✅ NEW
+                'related_model_id' => $pigSale->id,  // ✅ NEW
+                'approval_status' => 'pending',  // ✅ NEW
             ]);
         }
     }

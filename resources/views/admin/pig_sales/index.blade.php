@@ -761,20 +761,6 @@
                             </div>
                         </div>
 
-                        {{-- Step 2: เลือกหมูที่จะขาย (ตาราง) --}}
-                        <div class="card mb-3">
-                            <div class="card-header bg-light">
-                                <h6 class="mb-0"><i class="bi bi-2-circle me-2"></i>เลือกหมูที่จะขาย</h6>
-                            </div>
-                            <div class="card-custom-quaternary">
-                                <div id="pen_selection_container">
-                                    <div class="alert alert-warning">
-                                        <i class="bi bi-info-circle"></i> กรุณาเลือกฟาร์มและรุ่นก่อน
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         {{-- Step 3: ข้อมูลการขาย --}}
                         <div class="card mb-3">
                             <div class="card-header bg-light">
@@ -818,6 +804,22 @@
                                         </div>
                                     </div>
                                 </div>
+
+                        {{-- Step 2: เลือกหมูที่จะขาย (ตาราง) --}}
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-2-circle me-2"></i>เลือกหมูที่จะขาย</h6>
+                            </div>
+                            <div class="card-custom-quaternary">
+                                <div id="pen_selection_container">
+                                    <div class="alert alert-warning">
+                                        <i class="bi bi-info-circle"></i> กรุณาเลือกฟาร์มและรุ่นก่อน
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
 
                                 {{-- ราคาอ้างอิงจาก CPF --}}
                                 @if ($latestPrice)
@@ -1010,6 +1012,11 @@
                         // Update button text and hidden input
                         sellTypeDropdownBtn.querySelector('span').textContent = sellTypeText;
                         sellTypeSelect.value = sellType;
+
+                        // ✅ NEW: Reload pen selection table when sell_type changes
+                        if (batchSelectInput.value) {
+                            loadPenSelectionTable();
+                        }
                     });
                 });
             }
@@ -1097,6 +1104,7 @@
             function loadPenSelectionTable() {
                 const farmId = farmSelectInput.value;
                 const batchId = batchSelectInput.value;
+                const sellType = sellTypeSelect.value; // ✅ NEW: ได้ sell_type จาก select
                 const container = document.getElementById('pen_selection_container');
 
                 // Reset if no farm or batch selected
@@ -1109,8 +1117,8 @@
                 container.innerHTML =
                     '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">กำลังโหลด...</p></div>';
 
-                // Fetch pen allocation data using batch ID
-                fetch(`/pig_sales/pens-by-batch/${batchId}`)
+                // ✅ NEW: ส่ง sell_type ไปกับ request
+                fetch(`/pig_sales/pens-by-batch/${batchId}?sell_type=${encodeURIComponent(sellType)}`)
                     .then(response => response.json())
                     .then(data => {
                         console.log('Pens response:', data); // DEBUG
@@ -1134,11 +1142,16 @@
 
                             data.data.forEach((pen, index) => {
                                 const penId = pen.pen_id;
-                                const maxQty = pen.current_quantity || 0;
+                                const maxQty = pen.current_quantity || pen.available || 0;
+                                const isDead = pen.is_dead || false; // ✅ NEW: FLAG หมูตาย
+                                const displayStyle = isDead ? 'color: #dc3545; font-weight: bold;' : ''; // สีแดงถ้าหมูตาย
+
                                 html += `
                                     <tr class="pen-row" data-pen-id="${penId}">
                                         <td class="text-center">
                                             <input type="checkbox" class="form-check-input form-check-input-sm pen-checkbox" name="selected_pens[]" value="${penId}" data-pen-id="${penId}" data-max-qty="${maxQty}">
+                                            <!-- ✅ NEW: Hidden flag ระบุว่าเป็นหมูตายหรือไม่ -->
+                                            <input type="hidden" name="is_dead_${penId}" value="${isDead ? '1' : '0'}">
                                         </td>
                                         <td>${pen.barn_name || 'ไม่ระบุ'}</td>
                                         <td>${pen.pen_name || 'ไม่ระบุ'}</td>
@@ -1148,7 +1161,7 @@
                                                 class="form-control form-control-sm quantity-input text-center"
                                                 data-pen-id="${penId}"
                                                 min="0" max="${maxQty}" value=""
-                                                style="width: 100%;" disabled>
+                                                style="width: 100%; ${displayStyle}" disabled>
                                         </td>
                                     </tr>`;
                             });

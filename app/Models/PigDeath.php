@@ -20,7 +20,9 @@ class PigDeath extends Model
         'cause',
 
         'note',
-        'date'
+        'date',
+        'status',      // ✅ NEW: recorded, sold, disposed
+        'recorded_by', // ✅ NEW: user_id ของคนที่บันทึก
     ];
 
     // ------------ Relationships ------------ //
@@ -32,14 +34,19 @@ class PigDeath extends Model
     }
 
     public function pen()
-{
-    return $this->belongsTo(Pen::class, 'pen_id', 'id'); // pen_id ใน batch_treatments ชี้ไป id ของ pens
-}
-
+    {
+        return $this->belongsTo(Pen::class, 'pen_id', 'id');
+    }
 
     public function dairy_record()
     {
         return $this->belongsTo(DairyRecord::class);
+    }
+
+    // ✅ NEW: ใครที่บันทึก
+    public function recordedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'recorded_by');
     }
 
 }

@@ -447,12 +447,13 @@ class PigEntryController extends Controller
 
             // คืนค่าแต่ละ allocation ตามรายละเอียดที่บันทึกไว้
             foreach ($entryDetails as $detail) {
-                // ใช้ helper มาลด inventory
+                // ✅ ใช้ helper มาลด inventory + ลด allocated_pigs ด้วย (ยกเลิก = คืนค่าจำนวนหมูทั้งหมด)
                 $result = PigInventoryHelper::reducePigInventory(
                     $detail->batch_id,
                     $detail->pen_id,
                     $detail->quantity,
-                    'pig_entry_cancellation'
+                    'pig_entry_cancellation',
+                    true  // ✅ shouldReduceAllocatedPigs = true (ยกเลิก PigEntry)
                 );
 
                 if (!$result['success']) {

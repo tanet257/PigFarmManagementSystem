@@ -347,6 +347,7 @@
                 const barns = @json($barns);
                 const pens = @json($pens);
                 const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
+                const penAllocations = @json($penAllocations); // เฉพาะ pen ที่มีหมูคงเหลือ
 
                 const farmSelect = document.getElementById('farmSelect');
                 const batchSelect = document.getElementById('batchSelect');
@@ -608,7 +609,13 @@
                                 return;
                             }
 
-                            const filteredBarns = barns.filter(b => b.farm_id === selectedFarmId);
+                            // ✅ NEW: ดึง unique barns ที่มีใน penAllocations สำหรับ batch นี้
+                            const allocationsForBatch = penAllocations[selectedBatchId] || [];
+                            const barnIdsFromAllocations = new Set(allocationsForBatch.map(a => a.barn_id));
+
+                            const filteredBarns = barns.filter(b =>
+                                b.farm_id === selectedFarmId && barnIdsFromAllocations.has(b.id)
+                            );
 
                             filteredBarns.forEach(b => {
                                 const li = document.createElement('li');
@@ -624,8 +631,7 @@
                                     if (!isFeed) {
                                         const penBtn = rowContainer.querySelector('.pen-select');
                                         const penMenu = rowContainer.querySelector('.pen-dropdown');
-                                        const hiddenPen = rowContainer.querySelector(
-                                            '.barn-pen-json');
+                                        const hiddenPen = rowContainer.querySelector('.barn-pen-json');
                                         if (!penBtn || !penMenu || !hiddenPen) return;
 
                                         // ---------------------- reset pen ----------------------
@@ -633,31 +639,30 @@
                                         penBtn.textContent = 'เลือกคอก';
                                         hiddenPen.value = JSON.stringify([]);
 
-                                        pens.filter(p => p.barn_id == b.id).forEach(p => {
+                                        // ✅ NEW: ดึง pen จาก penAllocations ที่ตรงกับ barn นี้
+                                        // แสดงเฉพาะ pen ที่มี current_quantity > 0
+                                        const pensInBarn = allocationsForBatch.filter(a => a.barn_id === b.id);
+
+                                        pensInBarn.forEach(allocation => {
                                             const liPen = document.createElement('li');
-                                            liPen.innerHTML =
-                                                `<a class="dropdown-item" href="#" data-pen="${p.id}">คอก ${p.pen_code}</a>`;
+                                            liPen.innerHTML = `<a class="dropdown-item" href="#" data-pen="${allocation.pen_id}">${allocation.display_text}</a>`;
                                             penMenu.appendChild(liPen);
 
-                                            liPen.querySelector('a').addEventListener(
-                                                'click',
-                                                function(e) {
-                                                    e.preventDefault();
-                                                    penBtn.textContent =
-                                                        `คอก ${p.pen_code}`;
+                                            liPen.querySelector('a').addEventListener('click', function(e) {
+                                                e.preventDefault();
+                                                penBtn.textContent = allocation.display_text;
 
-                                                    if (isFeed) {
-                                                        // feed_use ยังใช้ JSON array (เหมือนเดิม)
-                                                        hiddenPen.value = JSON
-                                                            .stringify([{
-                                                                barn_id: b.id,
-                                                                pen_id: p.id
-                                                            }]);
-                                                    } else {
-                                                        // medicine_use / dead_pig ใช้ scalar เลย
-                                                        hiddenPen.value = p.id;
-                                                    }
-                                                });
+                                                if (isFeed) {
+                                                    // feed_use ยังใช้ JSON array (เหมือนเดิม)
+                                                    hiddenPen.value = JSON.stringify([{
+                                                        barn_id: b.id,
+                                                        pen_id: allocation.pen_id
+                                                    }]);
+                                                } else {
+                                                    // medicine_use / dead_pig ใช้ scalar เลย
+                                                    hiddenPen.value = allocation.pen_id;
+                                                }
+                                            });
                                         });
                                     }
                                 });

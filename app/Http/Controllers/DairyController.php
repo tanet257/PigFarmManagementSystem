@@ -12,14 +12,17 @@ use App\Models\DairyRecord;
 use App\Models\StoreHouse;
 use App\Models\PigDeath;
 use App\Models\BatchTreatment;
-use App\Models\InventoryMovement;
+use App\Models\Notification;
 use App\Models\DairyStorehouseUse;
+use App\Models\InventoryMovement;
+use App\Helpers\RevenueHelper;
 
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use App\Helpers\PigInventoryHelper;
 
 class DairyController extends Controller
@@ -48,8 +51,46 @@ class DairyController extends Controller
         // barns (ผูกกับ farm_id เอาไว้ filter)
         $barns = Barn::select('id', 'farm_id', 'barn_code')->get();
 
-        // pens (ผูกกับ barn_id เอาไว้ filter)
-        $pens = Pen::select('id', 'barn_id', 'pen_code')->get();
+        // ✅ NEW: penAllocations - เฉพาะ pen ที่มี current_quantity > 0
+        // ใช้ batch_pen_allocations เพื่อให้รู้จำนวนหมูคงเหลือจริงๆ
+        $penAllocations = DB::table('batch_pen_allocations')
+            ->join('pens', 'batch_pen_allocations.pen_id', '=', 'pens.id')
+            ->join('barns', 'batch_pen_allocations.barn_id', '=', 'barns.id')
+            ->join('batches', 'batch_pen_allocations.batch_id', '=', 'batches.id')
+            ->where('batch_pen_allocations.current_quantity', '>', 0) // เฉพาะที่มีหมูเหลือ
+            ->where('batches.status', '!=', 'cancelled')
+            ->select(
+                'batch_pen_allocations.id as allocation_id',
+                'batch_pen_allocations.batch_id',
+                'batch_pen_allocations.pen_id',
+                'batch_pen_allocations.barn_id',
+                'batch_pen_allocations.current_quantity',
+                'pens.pen_code',
+                'barns.barn_code'
+            )
+            ->get()
+            ->groupBy('batch_id')
+            ->map(function ($batchAllocations) {
+                return $batchAllocations->map(function ($alloc) {
+                    return [
+                        'allocation_id'   => $alloc->allocation_id,
+                        'pen_id'          => $alloc->pen_id,
+                        'barn_id'         => $alloc->barn_id,
+                        'current_quantity' => $alloc->current_quantity,
+                        'pen_code'        => $alloc->pen_code,
+                        'barn_code'       => $alloc->barn_code,
+                        'display_text'    => "{$alloc->barn_code}/{$alloc->pen_code} (มีหมู {$alloc->current_quantity} ตัว)",
+                    ];
+                })->values();
+            });
+
+        // pens (ผูกกับ barn_id เอาไว้ filter) - เฉพาะที่มีหมู
+        $pens = Pen::select('id', 'barn_id', 'pen_code')
+            ->whereIn('id', DB::table('batch_pen_allocations')
+                ->where('current_quantity', '>', 0)
+                ->distinct('pen_id')
+                ->pluck('pen_id'))
+            ->get();
 
         // storehouses (ใช้เป็น dropdown feed/medicine)
         $storehouses = StoreHouse::select('id', 'item_code', 'item_name', 'item_type', 'unit')->get();
@@ -81,9 +122,11 @@ class DairyController extends Controller
                         ]];
                     });
                 });
-            });        return view(
+            });
+
+        return view(
             'admin.dairy_records.record.dairy_record',
-            compact('farms', 'batches', 'barns', 'pens', 'storehouses', 'storehousesByTypeAndBatch')
+            compact('farms', 'batches', 'barns', 'pens', 'storehouses', 'storehousesByTypeAndBatch', 'penAllocations')
         );
     }
 
@@ -488,13 +531,14 @@ class DairyController extends Controller
                             $batch = Batch::find($validated['batch_id']);
                             if (!$batch || $batch->status === 'cancelled') continue;
 
-                            $batch->total_death += $deadQuantity;
-                            $batch->current_quantity = max(($batch->current_quantity ?? 0) - $deadQuantity, 0);
-
-                            $currentAmount = $batch->current_quantity + $deadQuantity;
+                            // ✅ คำนวน weight ก่อนเพราะต้องใช้ current_quantity เดิม
+                            $currentAmount = $batch->current_quantity ?? $batch->total_pig_amount;
                             $avgWeightPerPig = ($currentAmount > 0 && ($batch->total_pig_weight ?? 0) > 0)
                                 ? $batch->total_pig_weight / $currentAmount
                                 : 0;
+
+                            // ✅ เพิ่ม total_death แต่ไม่ลด current_quantity ที่นี่ (จะลดใน reduceCurrentQuantityOnly)
+                            $batch->total_death += $deadQuantity;
                             $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $deadQuantity), 0);
                             $batch->save();
 
@@ -513,40 +557,34 @@ class DairyController extends Controller
                                         ->first();
 
                                     if ($allocation) {
-                                        // Use helper to reduce inventory where possible
+                                        // ✅ ใช้ reduceCurrentQuantityOnly เพราะ allocated_pigs ไม่ควรเปลี่ยน
                                         $availableInAllocation = $allocation->current_quantity ?? $allocation->allocated_pigs;
                                         $reduce = min($remainingDead, $availableInAllocation);
 
-                                        $result = PigInventoryHelper::reducePigInventory(
+                                        $result = PigInventoryHelper::reduceCurrentQuantityOnly(
                                             $batch->id,
                                             $allocation->pen_id,
-                                            $reduce,
-                                            'death'
+                                            $reduce
                                         );
 
                                         if (!$result['success']) {
-                                            // fallback to direct update: adjust current_quantity if present, else allocated_pigs
-                                            if (property_exists($allocation, 'current_quantity')) {
-                                                $newCurrent = max(($allocation->current_quantity ?? $allocation->allocated_pigs) - $reduce, 0);
-                                                DB::table('batch_pen_allocations')
-                                                    ->where('id', $allocation->id)
-                                                    ->update([
-                                                        'current_quantity' => $newCurrent,
-                                                        'updated_at'     => now(),
-                                                    ]);
-                                            } else {
-                                                DB::table('batch_pen_allocations')
-                                                    ->where('id', $allocation->id)
-                                                    ->update([
-                                                        'allocated_pigs' => max($allocation->allocated_pigs - $reduce, 0),
-                                                        'updated_at'     => now(),
-                                                    ]);
-                                            }
+                                            // fallback: ลดเฉพาะ current_quantity เท่านั้น
+                                            $newCurrent = max(($allocation->current_quantity ?? $allocation->allocated_pigs) - $reduce, 0);
+                                            DB::table('batch_pen_allocations')
+                                                ->where('id', $allocation->id)
+                                                ->update([
+                                                    'current_quantity' => $newCurrent,
+                                                    'updated_at'     => now(),
+                                                ]);
+
+                                            // ✅ FIX: ต้องลด batch->current_quantity ใน fallback ด้วย
+                                            $batch->current_quantity = max(($batch->current_quantity ?? 0) - $reduce, 0);
+                                            $batch->save();
                                         }
                                     }
                                 }
 
-                                PigDeath::create([
+                                $pigDeathData = [
                                     'dairy_record_id' => $dairyId,
                                     'batch_id'        => $batch->id,
                                     'pen_id'          => $penId2,
@@ -554,7 +592,42 @@ class DairyController extends Controller
                                     'cause'           => $validated['cause'] ?? null,
                                     'note'            => $validated['note'] ?? null,
                                     'date'            => $formattedDate,
-                                ]);
+                                    'status'          => 'recorded', // ✅ NEW: บันทึกแล้ว
+                                    'recorded_by'     => Auth::id(), // ✅ FIX: Auth::id()
+                                ];
+
+                                Log::info('Creating PigDeath', $pigDeathData);
+                                $createdDeath = PigDeath::create($pigDeathData);
+                                Log::info('PigDeath Created', ['id' => $createdDeath->id, 'batch_id' => $createdDeath->batch_id]);
+
+                                // ✅ NEW: สร้าง notification ให้ admin ทั้งหมด
+                                try {
+                                    $recordedByName = $createdDeath->recordedBy?->name ?? 'ไม่ระบุ';
+                                    $message = "บันทึกหมูตาย {$createdDeath->quantity} ตัว (รุ่น: {$batch->batch_code}, ผู้บันทึก: {$recordedByName})";
+
+                                    // หา admin ทั้งหมด
+                                    $admins = \App\Models\User::whereHas('roles', function ($query) {
+                                        $query->where('name', 'admin');
+                                    })->get();
+
+                                    foreach ($admins as $admin) {
+                                        Notification::create([
+                                            'user_id'   => $admin->id, // ✅ FIX: ส่งให้ admin แต่ละคน
+                                            'title'     => 'บันทึกหมูตาย',
+                                            'message'   => $message,
+                                            'type'      => 'pig_death',
+                                            'related_model' => 'PigDeath',
+                                            'related_model_id' => $createdDeath->id,
+                                            'is_read'    => false,
+                                        ]);
+                                    }
+                                    Log::info('Notification created for PigDeath', ['pig_death_id' => $createdDeath->id, 'admin_count' => count($admins)]);
+                                } catch (\Exception $notifError) {
+                                    Log::error('Failed to create notification', [
+                                        'pig_death_id' => $createdDeath->id,
+                                        'error' => $notifError->getMessage()
+                                    ]);
+                                }
 
                                 $remainingDead -= $reduce;
                                 if ($remainingDead <= 0) break;
@@ -562,6 +635,17 @@ class DairyController extends Controller
                         }
                     }
                 }
+            }
+
+            // ✅ NEW: อัปเดท profit หลังบันทึกหมูตายเสร็จ
+            try {
+                RevenueHelper::calculateAndRecordProfit($batch->id);
+                Log::info('Profit recalculated for batch', ['batch_id' => $batch->id]);
+            } catch (\Exception $profitError) {
+                Log::error('Failed to recalculate profit', [
+                    'batch_id' => $batch->id,
+                    'error' => $profitError->getMessage()
+                ]);
             }
 
             DB::commit();
@@ -744,10 +828,10 @@ class DairyController extends Controller
             ]);
             $this->updateNoteAndDate($pigDeath, $validated['note'], 'updated_at', now());
 
+            // ✅ เพิ่ม total_death แต่ไม่ลด current_quantity ที่นี่ (จะลดใน reduceCurrentQuantityOnly)
             $batch->total_death += $diffQuantity;
-            $batch->current_quantity = max(($batch->current_quantity ?? 0) - $diffQuantity, 0);
-            $avgWeightPerPig = ($batch->current_quantity + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
-                ? $batch->total_pig_weight / ($batch->current_quantity + $diffQuantity)
+            $avgWeightPerPig = (($batch->current_quantity ?? 0) + $diffQuantity > 0 && ($batch->total_pig_weight ?? 0) > 0)
+                ? $batch->total_pig_weight / (($batch->current_quantity ?? 0) + $diffQuantity)
                 : 0;
             $batch->total_pig_weight = max(($batch->total_pig_weight ?? 0) - ($avgWeightPerPig * $diffQuantity), 0);
             $batch->save();
@@ -761,26 +845,19 @@ class DairyController extends Controller
                     $availableInAllocation = $allocation->current_quantity ?? $allocation->allocated_pigs;
                     $reduce = min($diffQuantity, $availableInAllocation);
 
-                    $result = PigInventoryHelper::reducePigInventory(
+                    // ✅ ใช้ reduceCurrentQuantityOnly เพราะ allocated_pigs ไม่ควรเปลี่ยน
+                    $result = PigInventoryHelper::reduceCurrentQuantityOnly(
                         $batch->id,
                         $allocation->pen_id,
-                        $reduce,
-                        'death'
+                        $reduce
                     );
 
                     if (!$result['success']) {
-                        // fallback to direct update: adjust current_quantity if present, else allocated_pigs
-                        if (property_exists($allocation, 'current_quantity')) {
-                            $newCurrent = max(($allocation->current_quantity ?? $allocation->allocated_pigs) - $diffQuantity, 0);
-                            DB::table('batch_pen_allocations')
-                                ->where('id', $allocation->id)
-                                ->update(['current_quantity' => $newCurrent, 'updated_at' => now()]);
-                        } else {
-                            $newAllocated = max($allocation->allocated_pigs - $diffQuantity, 0);
-                            DB::table('batch_pen_allocations')
-                                ->where('id', $allocation->id)
-                                ->update(['allocated_pigs' => $newAllocated, 'updated_at' => now()]);
-                        }
+                        // fallback: ลดเฉพาะ current_quantity เท่านั้น
+                        $newCurrent = max(($allocation->current_quantity ?? $allocation->allocated_pigs) - $diffQuantity, 0);
+                        DB::table('batch_pen_allocations')
+                            ->where('id', $allocation->id)
+                            ->update(['current_quantity' => $newCurrent, 'updated_at' => now()]);
                     }
                 }
             }

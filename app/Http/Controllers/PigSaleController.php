@@ -71,6 +71,9 @@ class PigSaleController extends Controller
     public function getPensByBatch($batchId)
     {
         try {
+            // ✅ NEW: รับ sell_type จาก query parameter
+            $sellType = request()->query('sell_type', 'หมูปกติ'); // Default: หมูปกติ
+
             $pens = PigInventoryHelper::getPigsByBatch($batchId);
 
             if (!isset($pens['pigs']) || empty($pens['pigs'])) {
@@ -81,17 +84,37 @@ class PigSaleController extends Controller
                 ]);
             }
 
+            // ✅ NEW: Filter ตามประเภทหมู
+            $filtered_pigs = collect($pens['pigs'])->filter(function ($allocation) use ($sellType) {
+                $is_dead = $allocation['is_dead'] ?? false;
+
+                if ($sellType === 'หมูตาย') {
+                    return $is_dead === true;  // แสดงเฉพาะหมูตาย
+                } else {
+                    return $is_dead !== true;  // แสดงเฉพาะหมูปกติ
+                }
+            })->values();
+
             // จัดรูปแบบข้อมูลสำหรับ table
-            $penOptions = collect($pens['pigs'])->map(function ($allocation) {
+            $penOptions = $filtered_pigs->map(function ($allocation) use ($sellType) {
+                $is_dead = $allocation['is_dead'] ?? false;
+                // ✅ FIX: Dead pigs ให้ส่ง 'available' เป็น current_quantity เพื่อให้ frontend แสดงจำนวนที่ถูก
+                $displayQuantity = $is_dead ? $allocation['available'] : $allocation['current_quantity'];
+                $displayText = $is_dead
+                    ? "{$allocation['barn_name']} - {$allocation['pen_name']} (หมูตาย {$displayQuantity} ตัว)"
+                    : "{$allocation['barn_name']} - {$allocation['pen_name']} (มีหมู {$displayQuantity} ตัว)";
+
                 return [
                     'pen_id' => $allocation['pen_id'],
                     'barn_name' => $allocation['barn_name'],
                     'pen_name' => $allocation['pen_name'],
-                    'current_quantity' => $allocation['current_quantity'],
-                    'display_text' => "{$allocation['barn_name']} - {$allocation['pen_name']} (มีหมู {$allocation['current_quantity']} ตัว)"
+                    'current_quantity' => $displayQuantity,  // ✅ FIX: ใช้ available สำหรับ dead pigs
+                    'available' => $allocation['available'] ?? null,  // ✅ ส่ง original available ด้วย
+                    'is_dead' => $is_dead,  // ✅ ส่ง flag ตรวจสอบประเภท
+                    'display_text' => $displayText
                 ];
             })->filter(function ($pen) {
-                // แสดงเฉพาะเล้า-คอกที่มีหมู
+                // แสดงเฉพาะเล้า-คอกที่มีหมู (ตรวจสอบ current_quantity ซึ่งเก็บจำนวนที่ถูก)
                 return $pen['current_quantity'] > 0;
             })->values();
 
@@ -99,8 +122,8 @@ class PigSaleController extends Controller
                 'success' => true,
                 'data' => $penOptions,
                 'summary' => [
-                    'total_available' => $pens['total_available'] ?? 0,
-                    'total_pens' => $pens['total_pens'] ?? 0
+                    'total_available' => collect($filtered_pigs)->sum('current_quantity') ?? 0,
+                    'total_pens' => $penOptions->count() ?? 0
                 ]
             ]);
         } catch (\Exception $e) {
@@ -461,20 +484,53 @@ class PigSaleController extends Controller
                 $quantity = $validated['quantities'][$penId] ?? 0;
 
                 if ($quantity > 0) {
-                    $result = PigInventoryHelper::reduceCurrentQuantityOnly(
-                        $validated['batch_id'],
-                        $penId,
-                        $quantity
-                    );
+                    // ✅ NEW: ตรวจสอบว่าเป็นหมูตายหรือไม่ (is_dead flag ใน getPigsByBatch)
+                    $penIsDeadPigs = $validated['is_dead_' . $penId] ?? false;
 
-                    if (!$result['success']) {
-                        throw new \Exception($result['message']);
+                    if ($penIsDeadPigs) {
+                        // หมูตาย - ลดจาก pig_deaths, ไม่ลด allocation
+                        $pigDeaths = \App\Models\PigDeath::where('batch_id', $validated['batch_id'])
+                            ->where('pen_id', $penId)
+                            ->where('status', 'recorded')
+                            ->orderBy('created_at')
+                            ->get();
+
+                        $remainingToReduce = $quantity;
+                        foreach ($pigDeaths as $death) {
+                            if ($remainingToReduce <= 0) break;
+
+                            $reduceAmount = min($remainingToReduce, $death->quantity);
+                            $death->quantity -= $reduceAmount;
+
+                            // ✅ FIX: เปลี่ยน status เสมอเมื่อมีการลด (ไม่ว่าจะลดจนหมดหรือเพียงบางส่วน)
+                            if ($reduceAmount > 0) {
+                                $death->status = 'sold';
+                            }
+                            $death->save();
+                            $remainingToReduce -= $reduceAmount;
+                        }
+
+                        if ($remainingToReduce > 0) {
+                            throw new \Exception("หมูตายในคอกนี้ไม่เพียงพอ (ขาดอีก {$remainingToReduce} ตัว)");
+                        }
+                    } else {
+                        // หมูปกติ - ลด allocation
+                        $result = PigInventoryHelper::reduceCurrentQuantityOnly(
+                            $validated['batch_id'],
+                            $penId,
+                            $quantity
+                        );
+
+                        if (!$result['success']) {
+                            throw new \Exception($result['message']);
+                        }
                     }
 
                     // เก็บข้อมูลรายละเอียดไว้สร้างทีหลัง
                     $detailsData[] = [
                         'pen_id' => $penId,
                         'quantity' => $quantity,
+                        'is_dead' => $penIsDeadPigs,
                     ];
                 }
             }
@@ -501,7 +557,7 @@ class PigSaleController extends Controller
                 'date' => $validated['date'],
                 'sell_type' => $validated['sell_type'],
                 'created_by' => auth()->id(),
-                'status' => 'completed',
+                'status' => 'pending',  // ✅ FIX: รอ admin อนุมัติ (ไม่ใช่ completed ทันที)
             ];
 
             // Generate sale_number: PS-YYYYMMDD-XXX
@@ -786,10 +842,20 @@ class PigSaleController extends Controller
         try {
             $pigSale = PigSale::findOrFail($id);
 
+            // ตรวจสอบว่า approved status เท่านั้นถึงจะขอยกเลิกได้
+            if ($pigSale->status !== 'approved') {
+                return redirect()->back()->with('error', 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น');
+            }
+
+            // เปลี่ยนสถานะเป็น cancel_requested
+            $pigSale->update([
+                'status' => 'cancel_requested',
+            ]);
+
             // สร้าง Notification สำหรับ Admin approval
             Notification::create([
                 'user_id' => auth()->id(),
-                'type' => 'cancel_pig_sale',
+                'type' => 'pig_sale_cancel_request',
                 'title' => 'ขอยกเลิกการขายหมู',
                 'message' => "ขอยกเลิกการขาย {$pigSale->quantity} ตัว (ฟาร์ม: {$pigSale->farm->farm_name}, รุ่น: {$pigSale->batch->batch_code})",
                 'related_model' => 'PigSale',
@@ -833,18 +899,28 @@ class PigSaleController extends Controller
                         ->first();
 
                     if ($allocation) {
-                        $allocation->current_quantity = ($allocation->current_quantity ?? 0) + $pigSale->quantity;
+                        // ✅ FIX: ใช้ allocated_pigs ถ้า current_quantity ไม่มีค่า
+                        $currentQty = ($allocation->current_quantity !== null && $allocation->current_quantity !== '') 
+                            ? $allocation->current_quantity 
+                            : ($allocation->allocated_pigs ?? 0);
+                        $allocation->current_quantity = $currentQty + $pigSale->quantity;
                         $allocation->save();
                     }
 
                     $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
                     if ($batch) {
-                        $batch->current_quantity = ($batch->current_quantity ?? 0) + $pigSale->quantity;
+                        // ✅ FIX: ใช้ total_pig_amount ถ้า current_quantity ไม่มีค่า
+                        $batchCurrentQty = ($batch->current_quantity !== null && $batch->current_quantity !== '') 
+                            ? $batch->current_quantity 
+                            : ($batch->total_pig_amount ?? 0);
+                        $batch->current_quantity = $batchCurrentQty + $pigSale->quantity;
                         $batch->save();
                     }
                 }
             } else {
                 // คืนหมูแต่ละคอก
+                $totalQuantityToReturn = 0;
+
                 foreach ($details as $detail) {
                     $allocation = BatchPenAllocation::where('batch_id', $pigSale->batch_id)
                         ->where('pen_id', $detail->pen_id)
@@ -852,15 +928,26 @@ class PigSaleController extends Controller
                         ->first();
 
                     if ($allocation) {
-                        $allocation->current_quantity = ($allocation->current_quantity ?? 0) + $detail->quantity;
+                        // ✅ FIX: ใช้ allocated_pigs ถ้า current_quantity ไม่มีค่า
+                        $currentQty = ($allocation->current_quantity !== null && $allocation->current_quantity !== '') 
+                            ? $allocation->current_quantity 
+                            : ($allocation->allocated_pigs ?? 0);
+                        $allocation->current_quantity = $currentQty + $detail->quantity;
                         $allocation->save();
                     }
 
-                    $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
-                    if ($batch) {
-                        $batch->current_quantity = ($batch->current_quantity ?? 0) + $detail->quantity;
-                        $batch->save();
-                    }
+                    $totalQuantityToReturn += $detail->quantity;
+                }
+
+                // ✅ อัปเดต Batch.current_quantity เพียงครั้งเดียว
+                $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
+                if ($batch) {
+                    // ✅ FIX: ใช้ total_pig_amount ถ้า current_quantity ไม่มีค่า
+                    $batchCurrentQty = ($batch->current_quantity !== null && $batch->current_quantity !== '') 
+                        ? $batch->current_quantity 
+                        : ($batch->total_pig_amount ?? 0);
+                    $batch->current_quantity = $batchCurrentQty + $totalQuantityToReturn;
+                    $batch->save();
                 }
             }
 

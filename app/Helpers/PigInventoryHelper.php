@@ -198,7 +198,7 @@ class PigInventoryHelper
      * @param string $reason เหตุผล (sale, death, culling)
      * @return array ['success' => bool, 'message' => string, 'data' => array]
      */
-    public static function reducePigInventory($batchId, $penId, $quantity, $reason = 'sale')
+    public static function reducePigInventory($batchId, $penId, $quantity, $reason = 'sale', $shouldReduceAllocatedPigs = false)
     {
         try {
             DB::beginTransaction();
@@ -235,7 +235,13 @@ class PigInventoryHelper
             // 3. ลดจำนวนหมูใน batch_pen_allocations
             $newQuantity = $currentQuantity - $quantity;
             $allocation->current_quantity = $newQuantity;
-            $allocation->allocated_pigs = $allocation->allocated_pigs - $quantity;
+
+            // ✅ เฉพาะกรณียกเลิก PigEntry ต้องลด allocated_pigs ด้วย (ต้องคืนค่าจำนวนหมูที่เข้าครั้งแรก)
+            if ($shouldReduceAllocatedPigs) {
+                $allocation->allocated_pigs = max($allocation->allocated_pigs - $quantity, 0);
+            }
+            // ❌ กรณีอื่น (dairy/sale): ไม่ลด allocated_pigs เพราะมันคือจำนวนหมูที่เข้าคอกครั้งแรก
+
             $allocation->save();
 
             // 4. ลดจำนวนหมูใน batches
@@ -393,11 +399,44 @@ class PigInventoryHelper
                     'original_quantity' => $allocation->allocated_pigs,
                     'current_quantity' => $currentQuantity,
                     'available' => $currentQuantity,
+                    'is_dead' => false,  // ✅ NEW: หมูปกติ
                     'display_name' => sprintf(
                         '%s - %s (%d ตัว)',
                         $allocation->pen->barn->barn_code ?? 'ไม่ระบุ',
                         $allocation->pen->pen_code ?? 'ไม่ระบุ',
                         $currentQuantity
+                    )
+                ];
+            }
+        }
+
+        // ✅ NEW: ดึงหมูที่ตายแล้ว และคำนวณจำนวนที่ยังไม่ได้ขาย (status = 'recorded')
+        $pigDeaths = \App\Models\PigDeath::where('batch_id', $batchId)
+            ->get()
+            ->groupBy('pen_id');
+
+        foreach ($pigDeaths as $penId => $deaths) {
+            // ✅ FIX: คำนวณเฉพาะหมูที่ยังไม่ขาย (status = 'recorded')
+            $deathQuantity = $deaths->where('status', 'recorded')->sum('quantity');
+            $totalAvailable += $deathQuantity;
+
+            // หาชื่อ barn/pen จาก pen_id
+            $pen = \App\Models\Pen::with('barn')->find($penId);
+            if ($pen && $deathQuantity > 0) {  // ✅ แสดงแค่ที่ยังมี available > 0
+                $pigs[] = [
+                    'allocation_id' => null, // ไม่ใช่ allocation เนื่องจากตายไปแล้ว
+                    'pen_id' => $penId,
+                    'pen_name' => $pen->pen_code ?? 'ไม่ระบุ',
+                    'barn_name' => $pen->barn->barn_code ?? 'ไม่ระบุ',
+                    'original_quantity' => 0,
+                    'current_quantity' => 0,
+                    'available' => $deathQuantity,
+                    'is_dead' => true, // ✅ FLAG: นี่คือหมูตาย
+                    'display_name' => sprintf(
+                        '%s - %s (หมูตาย %d ตัว)',
+                        $pen->barn->barn_code ?? 'ไม่ระบุ',
+                        $pen->pen_code ?? 'ไม่ระบุ',
+                        $deathQuantity
                     )
                 ];
             }

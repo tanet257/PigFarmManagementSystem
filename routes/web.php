@@ -243,9 +243,13 @@ Route::prefix('payment_approvals')->middleware(['auth', 'prevent.cache'])->group
     Route::patch('/{paymentId}/approve-payment', [PaymentApprovalController::class, 'approvePayment'])->name('payment_approvals.approve_payment');
     Route::patch('/{paymentId}/reject-payment', [PaymentApprovalController::class, 'rejectPayment'])->name('payment_approvals.reject_payment');
 
+    // ✅ NEW: PigSale approval (for หมูตาย and หมูปกติ)
+    Route::patch('/{pigSaleId}/approve-pig-sale', [PaymentApprovalController::class, 'approvePigSale'])->name('payment_approvals.approve_pig_sale');
+    Route::patch('/{pigSaleId}/reject-pig-sale', [PaymentApprovalController::class, 'rejectPigSale'])->name('payment_approvals.reject_pig_sale');
+
     // Cancel sale approval
-    Route::patch('/{notificationId}/approve-cancel-sale', [PaymentApprovalController::class, 'approveCancelSale'])->name('payment_approvals.approve_cancel_sale');
-    Route::patch('/{notificationId}/reject-cancel-sale', [PaymentApprovalController::class, 'rejectCancelSale'])->name('payment_approvals.reject_cancel_sale');
+    Route::patch('/{pigSaleId}/approve-cancel-sale', [PaymentApprovalController::class, 'approveCancelSale'])->name('payment_approvals.approve_cancel_sale');
+    Route::patch('/{pigSaleId}/reject-cancel-sale', [PaymentApprovalController::class, 'rejectCancelSale'])->name('payment_approvals.reject_cancel_sale');
 });
 
 //------------------- route cost payment approvals -----------//
