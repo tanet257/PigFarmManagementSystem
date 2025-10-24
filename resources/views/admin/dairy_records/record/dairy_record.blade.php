@@ -74,8 +74,6 @@
                                 <input type="hidden" name="feed_use[0][farm_id]" class="farm-id">
                                 <input type="hidden" name="feed_use[0][batch_id]" class="batch-id">
                                 <input type="hidden" name="feed_use[0][item_type]" class="item-type" value="feed">
-                                <input type="hidden" class="item-code-hidden" name="feed_use[0][item_code_hidden]">
-                                <input type="hidden" class="item-name-hidden" name="feed_use[0][item_name_hidden]">
 
                                 <div class=" card-custom-tertiary cardTemplateRow">
                                     <div class="row g-2" data-cloned="1">
@@ -154,8 +152,6 @@
                                 <input type="hidden" name="medicine_use[0][item_type]" class="item-type"
                                     value="medicine">
                                 <input type="hidden" name="medicine_use[0][barn_pen]" class="barn-pen-json">
-                                <input type="hidden" class="item-code-hidden" name="medicine_use[0][item_code_hidden]">
-                                <input type="hidden" class="item-name-hidden" name="medicine_use[0][item_name_hidden]">
 
                                 <div class="card-custom-tertiary cardTemplateRow">
                                     <!-- แถว 1: วันที่ + เล้า + คอก + ยา/วัคซีน -->
@@ -539,7 +535,7 @@
 
                             document.querySelectorAll('[data-cloned]').forEach(row => {
                                 updateFarmBatchHiddenInputs(row);
-                                
+
                                 // Reset item selections
                                 const itemBtn = row.querySelector('.item-dropdown-btn');
                                 if (itemBtn) {

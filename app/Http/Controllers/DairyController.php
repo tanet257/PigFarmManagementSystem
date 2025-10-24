@@ -385,6 +385,7 @@ class DairyController extends Controller
                         // --- Storehouse / Feed / Medicine / PigDeath ---
                         $storehouse = null;
                         if (in_array($section, ['feed', 'medicine']) && !empty($validated['item_code'])) {
+                            // Get storehouse for this farm and item_code
                             $storehouse = Storehouse::where('farm_id', $validated['farm_id'])
                                 ->where('item_code', $validated['item_code'])
                                 ->first();
