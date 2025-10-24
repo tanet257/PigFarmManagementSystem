@@ -842,9 +842,9 @@ class PigSaleController extends Controller
         try {
             $pigSale = PigSale::findOrFail($id);
 
-            // ตรวจสอบว่า approved status เท่านั้นถึงจะขอยกเลิกได้
-            if ($pigSale->status !== 'approved') {
-                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น';
+            // ✅ FIX: ตรวจสอบว่าสถานะเป็น approved หรือ completed เท่านั้นถึงจะขอยกเลิกได้
+            if (!in_array($pigSale->status, ['approved', 'completed'])) {
+                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น (สถานะปัจจุบัน: ' . $pigSale->status . ')';
                 
                 // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
                 if (request()->expectsJson()) {
@@ -852,9 +852,7 @@ class PigSaleController extends Controller
                 }
                 
                 return redirect()->back()->with('error', $errorMessage);
-            }
-
-            // เปลี่ยนสถานะเป็น cancel_requested (รอ Admin อนุมัติยกเลิก)
+            }            // เปลี่ยนสถานะเป็น cancel_requested (รอ Admin อนุมัติยกเลิก)
             $pigSale->update([
                 'status' => 'ยกเลิกการขาย_รอสอบ',  // ✅ ใช้ Thai prefix เพื่อบอกว่ารอการอนุมัติ
             ]);
@@ -875,7 +873,7 @@ class PigSaleController extends Controller
             DB::commit();
 
             $successMessage = 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
-            
+
             // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
             if (request()->expectsJson()) {
                 return response()->json(['success' => true, 'message' => $successMessage]);
@@ -886,14 +884,14 @@ class PigSaleController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSale Cancel Request Error: ' . $e->getMessage());
-            
+
             $errorMessage = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
-            
+
             // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
             if (request()->expectsJson()) {
                 return response()->json(['success' => false, 'message' => $errorMessage], 500);
             }
-            
+
             return redirect()->back()
                 ->with('error', $errorMessage);
         }
