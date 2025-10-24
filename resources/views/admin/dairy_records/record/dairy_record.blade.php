@@ -672,57 +672,61 @@
                     rowContainer.querySelectorAll('.batch-id').forEach(i => i.value = batchId);
                 }
 
-                function populateItemDropdown(rowContainer) {
-                    const typeHidden = rowContainer.querySelector('.item-type');
+                function populateItemDropdown(row) {
+                    const typeHidden = row.querySelector('.item-type');
                     const type = typeHidden?.value;
                     const batchId = parseInt(batchSelect.value);
-                    if (!type || !batchId) return;
+                    const itemDropdownMenu = row.querySelector('.item-dropdown-menu');
+                    const itemDropdownBtn = row.querySelector('.item-dropdown-btn');
+                    if (!itemDropdownMenu || !itemDropdownBtn) return;
 
-                    const btn = rowContainer.querySelector('.item-dropdown-btn');
-                    const menu = rowContainer.querySelector('.item-dropdown-menu');
-                    const hiddenCode = rowContainer.querySelector('input.item-code');
-                    const hiddenName = rowContainer.querySelector('input.item-name');
-
-                    if (!btn || !menu || !hiddenCode || !hiddenName) return;
+                    // Clear dropdown menu
+                    itemDropdownMenu.innerHTML = '';
 
                     // Determine placeholder text based on item type
                     let placeholderText;
-                    if (type === 'feed') {
+                    if (type === 'feed' || row.classList.contains('feed-row')) {
                         placeholderText = '-- เลือกชื่อประเภทอาหารหมู --';
-                    } else if (type === 'medicine') {
+                    } else if (type === 'medicine' || row.classList.contains('medicine-row')) {
                         placeholderText = '-- เลือกชื่อยา/วัคซีน --';
                     } else {
                         placeholderText = '-- เลือกสินค้า --';
                     }
-                    btn.querySelector('span').textContent = placeholderText;
+                    itemDropdownBtn.querySelector('span').textContent = placeholderText;
 
-                    menu.innerHTML = '';
-                    if (storehousesByTypeAndBatch[type] && storehousesByTypeAndBatch[type][batchId]) {
+                    if (type && batchId && storehousesByTypeAndBatch[type]?.[batchId]) {
+                        const seen = new Set();
                         Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
+                            // Skip if already added (prevent duplicates)
+                            if (seen.has(item.item_code)) return;
+                            seen.add(item.item_code);
+
                             const li = document.createElement('li');
                             const a = document.createElement('a');
                             a.className = 'dropdown-item';
                             a.href = '#';
-                            a.setAttribute('data-code', item.item_code);
-                            a.setAttribute('data-name', item.item_name);
+                            a.setAttribute('data-item-code', item.item_code);
+                            a.setAttribute('data-item-name', item.item_name);
                             a.textContent = item.item_name;
                             li.appendChild(a);
-                            menu.appendChild(li);
+                            itemDropdownMenu.appendChild(li);
 
                             a.addEventListener('click', function(e) {
                                 e.preventDefault();
-                                btn.textContent = item.item_name;
-                                hiddenCode.value = item.item_code;
-                                hiddenName.value = item.item_name;
+                                const codeHidden = row.querySelector('.item-code');
+                                const nameHidden = row.querySelector('.item-name');
+                                if (codeHidden) codeHidden.value = item.item_code;
+                                if (nameHidden) nameHidden.value = item.item_name;
+                                itemDropdownBtn.textContent = item.item_name;
                             });
                         });
                     }
 
-                    // Clear hidden inputs if no items
-                    if (!storehousesByTypeAndBatch[type] || !storehousesByTypeAndBatch[type][batchId]) {
-                        hiddenCode.value = '';
-                        hiddenName.value = '';
-                    }
+                    // Clear hidden inputs
+                    const codeHidden = row.querySelector('.item-code');
+                    const nameHidden = row.querySelector('.item-name');
+                    if (codeHidden) codeHidden.value = '';
+                    if (nameHidden) nameHidden.value = '';
                 }
 
                 function attachItemNameUpdater(root) {
