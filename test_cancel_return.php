@@ -27,7 +27,7 @@ echo "\n2. PigSale ที่สถานะ 'cancel_requested':\n";
 $cancelRequests = PigSale::where('status', 'cancel_requested')->latest()->take(3)->get();
 foreach ($cancelRequests as $sale) {
     echo "   - ID={$sale->id}, batch_id={$sale->batch_id}, qty={$sale->quantity}, pen_id={$sale->pen_id}\n";
-    
+
     $details = PigSaleDetail::where('pig_sale_id', $sale->id)->get();
     echo "     Details: " . $details->count() . " records\n";
     foreach ($details as $d) {
@@ -40,13 +40,13 @@ echo "\n3. PigSale ที่สถานะ 'ยกเลิกการขา�
 $cancelled = PigSale::where('status', 'ยกเลิกการขาย')->latest()->take(3)->get();
 foreach ($cancelled as $sale) {
     echo "   - ID={$sale->id}, batch_id={$sale->batch_id}, qty={$sale->quantity}\n";
-    
+
     // ตรวจสอบ batch.current_quantity
     $batch = Batch::find($sale->batch_id);
     if ($batch) {
         echo "     Batch current_quantity: {$batch->current_quantity}\n";
     }
-    
+
     $details = PigSaleDetail::where('pig_sale_id', $sale->id)->get();
     echo "     Details: " . $details->count() . " records\n";
     foreach ($details as $d) {

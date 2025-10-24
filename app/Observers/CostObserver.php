@@ -9,32 +9,26 @@ class CostObserver
 {
     /**
      * Handle the Cost "created" event.
-     * เมื่อสร้าง Cost ใหม่ให้อัปเดท Profit ของ Batch
+     * ❌ ลบ: ไม่ควรบันทึก Profit ทุกครั้งเพิ่มต้นทุน (ต้องบันทึกเมื่อ Batch สิ้นสุดเท่านั้น)
      *
      * @param  \App\Models\Cost  $cost
      * @return void
      */
     public function created(Cost $cost)
     {
-        // ถ้ามี batch_id ให้อัปเดท profit
-        if ($cost->batch_id) {
-            RevenueHelper::calculateAndRecordProfit($cost->batch_id);
-        }
+        // ❌ ไม่ทำอะไร
     }
 
     /**
      * Handle the Cost "updated" event.
-     * เมื่อแก้ไข Cost (เช่น payment_status เปลี่ยน) ให้อัปเดท Profit
+     * ❌ ลบ: ไม่ควรบันทึก Profit ทุกครั้งแก้ไขต้นทุน (ต้องบันทึกเมื่อ Batch สิ้นสุดเท่านั้น)
      *
      * @param  \App\Models\Cost  $cost
      * @return void
      */
     public function updated(Cost $cost)
     {
-        // ถ้ามี batch_id ให้อัปเดท profit
-        if ($cost->batch_id) {
-            RevenueHelper::calculateAndRecordProfit($cost->batch_id);
-        }
+        // ❌ ไม่ทำอะไร
     }
 
     /**

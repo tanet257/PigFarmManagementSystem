@@ -124,9 +124,10 @@ class RevenueHelper
             $grossProfit = $totalRevenue - $totalCost;
             $profitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue * 100) : 0;
 
-            // ดึงจำนวนหมู (ไม่รวม cancelled)
-            $totalPigSold = \App\Models\PigSale::where('batch_id', $batchId)
-                ->where('status', '!=', 'ยกเลิกการขาย')
+            // ✅ FIX: นับเฉพาะหมูที่มี Revenue อนุมัติแล้ว (payment approved) เท่านั้น
+            // ไม่ใช่นับทุกการขายที่ไม่เป็น cancelled
+            $totalPigSold = Revenue::where('batch_id', $batchId)
+                ->whereIn('payment_status', ['อนุมัติแล้ว', 'ชำระแล้ว'])
                 ->sum('quantity');
 
             // ใช้ sum('quantity') แทน count() เพื่อได้จำนวนหมูที่ตายจริง ๆ

@@ -199,6 +199,9 @@ class BatchController extends Controller
             // ถ้าเปลี่ยนจากไม่เสร็จสิ้น → เสร็จสิ้น
             $batch->end_date = now(); // อัปเดตเป็นเวลาปัจจุบัน
 
+            // ✅ คำนวณและบันทึก Profit เมื่อ Batch สิ้นสุด (เฉพาะครั้งนี้เท่านั้น)
+            \App\Helpers\RevenueHelper::calculateAndRecordProfit($batch->id);
+
             // Reset batch pen allocations เพื่อให้ว่างสำหรับรุ่นใหม่
             $batch->batchPenAllocations()->update([
                 'allocated_pigs' => 0,

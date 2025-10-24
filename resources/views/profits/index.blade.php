@@ -154,7 +154,7 @@
                                     </td>
                                     <td>
                                         <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#profitDetailModal{{ $profit->id }}" title="ดูรายละเอียด">
-                                            👁️ ดู
+                                            ดู
                                         </button>
                                     </td>
                                 </tr>

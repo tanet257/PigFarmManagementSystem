@@ -900,8 +900,8 @@ class PigSaleController extends Controller
 
                     if ($allocation) {
                         // ✅ FIX: ใช้ allocated_pigs ถ้า current_quantity ไม่มีค่า
-                        $currentQty = ($allocation->current_quantity !== null && $allocation->current_quantity !== '') 
-                            ? $allocation->current_quantity 
+                        $currentQty = ($allocation->current_quantity !== null && $allocation->current_quantity !== '')
+                            ? $allocation->current_quantity
                             : ($allocation->allocated_pigs ?? 0);
                         $allocation->current_quantity = $currentQty + $pigSale->quantity;
                         $allocation->save();
@@ -910,8 +910,8 @@ class PigSaleController extends Controller
                     $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
                     if ($batch) {
                         // ✅ FIX: ใช้ total_pig_amount ถ้า current_quantity ไม่มีค่า
-                        $batchCurrentQty = ($batch->current_quantity !== null && $batch->current_quantity !== '') 
-                            ? $batch->current_quantity 
+                        $batchCurrentQty = ($batch->current_quantity !== null && $batch->current_quantity !== '')
+                            ? $batch->current_quantity
                             : ($batch->total_pig_amount ?? 0);
                         $batch->current_quantity = $batchCurrentQty + $pigSale->quantity;
                         $batch->save();
@@ -929,8 +929,8 @@ class PigSaleController extends Controller
 
                     if ($allocation) {
                         // ✅ FIX: ใช้ allocated_pigs ถ้า current_quantity ไม่มีค่า
-                        $currentQty = ($allocation->current_quantity !== null && $allocation->current_quantity !== '') 
-                            ? $allocation->current_quantity 
+                        $currentQty = ($allocation->current_quantity !== null && $allocation->current_quantity !== '')
+                            ? $allocation->current_quantity
                             : ($allocation->allocated_pigs ?? 0);
                         $allocation->current_quantity = $currentQty + $detail->quantity;
                         $allocation->save();
@@ -943,8 +943,8 @@ class PigSaleController extends Controller
                 $batch = Batch::lockForUpdate()->find($pigSale->batch_id);
                 if ($batch) {
                     // ✅ FIX: ใช้ total_pig_amount ถ้า current_quantity ไม่มีค่า
-                    $batchCurrentQty = ($batch->current_quantity !== null && $batch->current_quantity !== '') 
-                        ? $batch->current_quantity 
+                    $batchCurrentQty = ($batch->current_quantity !== null && $batch->current_quantity !== '')
+                        ? $batch->current_quantity
                         : ($batch->total_pig_amount ?? 0);
                     $batch->current_quantity = $batchCurrentQty + $totalQuantityToReturn;
                     $batch->save();
