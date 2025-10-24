@@ -695,12 +695,7 @@
                     itemDropdownBtn.querySelector('span').textContent = placeholderText;
 
                     if (type && batchId && storehousesByTypeAndBatch[type]?.[batchId]) {
-                        const seen = new Set();
                         Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
-                            // Skip if already added (prevent duplicates)
-                            if (seen.has(item.item_code)) return;
-                            seen.add(item.item_code);
-
                             const li = document.createElement('li');
                             const a = document.createElement('a');
                             a.className = 'dropdown-item';

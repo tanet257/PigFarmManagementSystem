@@ -60,14 +60,17 @@ class DairyController extends Controller
             ->groupBy(fn($movement) => $movement->storehouse->item_type)
             ->map(function ($group) {
                 return $group->groupBy('batch_id')->map(function ($batchGroup) {
-                    return $batchGroup->mapWithKeys(function ($movement) {
-                        return [
-                            $movement->storehouse->item_code => [
-                                'item_code' => $movement->storehouse->item_code,
+                    $unique = [];
+                    foreach ($batchGroup as $movement) {
+                        $code = $movement->storehouse->item_code;
+                        if (!isset($unique[$code])) {
+                            $unique[$code] = [
+                                'item_code' => $code,
                                 'item_name' => $movement->storehouse->item_name,
-                            ]
-                        ];
-                    });
+                            ];
+                        }
+                    }
+                    return $unique;
                 });
             });
 
