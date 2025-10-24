@@ -323,15 +323,11 @@
                                         <i class="bi bi-x-circle"></i> ยกเลิก
                                     </span>
                                 @else
-                                    <form action="{{ route('pig_sales.cancel', $sell->id) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn btn-sm btn-danger"
-                                            onclick="event.stopPropagation(); if(confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) { this.form.submit(); }">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="event.stopPropagation(); cancelPigSale({{ $sell->id }}, '{{ csrf_token() }}');"
+                                        title="ยกเลิกการขาย">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
                                 @endif
                             </td>
                         </tr>
@@ -1446,9 +1442,64 @@
                 setTimeout(autoRefreshPigSaleStatus, 2000);
             });
 
+            // ✅ NEW: Cancel PigSale using AJAX with confirmation
+            function cancelPigSale(pigSaleId, csrfToken) {
+                if (confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) {
+                    fetch(`/pig_sales/${pigSaleId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Network response was not ok');
+                        return response.json();
+                    })
+                    .then(data => {
+                        // ✅ Show success message
+                        const sb = document.getElementById('snackbar');
+                        const sbMsg = document.getElementById('snackbarMessage');
+                        sbMsg.innerText = data.message || 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
+                        sb.style.backgroundColor = '#28a745'; // สีเขียว success
+                        sb.style.display = 'flex';
+                        sb.classList.add('show');
+                        setTimeout(() => {
+                            sb.classList.remove('show');
+                            sb.style.display = 'none';
+                        }, 5000);
+
+                        // ✅ Auto-refresh table after 1 second
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        const sb = document.getElementById('snackbar');
+                        const sbMsg = document.getElementById('snackbarMessage');
+                        sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
+                        sb.style.backgroundColor = '#dc3545'; // สีแดง error
+                        sb.style.display = 'flex';
+                        sb.classList.add('show');
+                        setTimeout(() => {
+                            sb.classList.remove('show');
+                            sb.style.display = 'none';
+                        }, 5000);
+                    });
+                }
+            }
+
             // เรียกใช้ common table click handler
             setupClickableRows();
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush
+
+    {{-- Snackbar Notification --}}
+    <div id="snackbar" class="snackbar">
+        <span id="snackbarMessage"></span>
+        <button type="button" onclick="closeSnackbar()">✕</button>
+    </div>
 @endsection

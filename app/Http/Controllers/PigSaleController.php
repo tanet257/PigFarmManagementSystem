@@ -844,7 +844,14 @@ class PigSaleController extends Controller
 
             // ตรวจสอบว่า approved status เท่านั้นถึงจะขอยกเลิกได้
             if ($pigSale->status !== 'approved') {
-                return redirect()->back()->with('error', 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น');
+                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น';
+                
+                // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
+                if (request()->expectsJson()) {
+                    return response()->json(['success' => false, 'message' => $errorMessage], 422);
+                }
+                
+                return redirect()->back()->with('error', $errorMessage);
             }
 
             // เปลี่ยนสถานะเป็น cancel_requested (รอ Admin อนุมัติยกเลิก)
@@ -867,13 +874,28 @@ class PigSaleController extends Controller
 
             DB::commit();
 
+            $successMessage = 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
+            
+            // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
+            if (request()->expectsJson()) {
+                return response()->json(['success' => true, 'message' => $successMessage]);
+            }
+
             return redirect()->route('pig_sales.index')
-                ->with('success', 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)');
+                ->with('success', $successMessage);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PigSale Cancel Request Error: ' . $e->getMessage());
+            
+            $errorMessage = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+            
+            // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $errorMessage], 500);
+            }
+            
             return redirect()->back()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', $errorMessage);
         }
     }
 
