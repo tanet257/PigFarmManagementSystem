@@ -16,7 +16,7 @@ class PigDeathObserver
     {
         try {
             Log::info('PigDeathObserver::created triggered', ['pig_death_id' => $pigDeath->id]);
-            
+
             // ✅ NEW: ส่ง notification ให้ admin
             if ($pigDeath->batch_id) {
                 $batch = $pigDeath->batch;
@@ -37,14 +37,17 @@ class PigDeathObserver
                     'related_model_id' => $pigDeath->id,  // ✅ FIX: ใช้ related_model_id ไม่ใช่ related_id
                     'is_read'    => false,  // ✅ FIX: ใช้ is_read ไม่ใช่ status
                 ]);
-                
+
                 Log::info('Notification created successfully', [
                     'notification_id' => $notification->id,
                     'type' => $notification->type,
                 ]);
             }
 
-            // ❌ ลบ: ไม่ควรบันทึก Profit ทุกครั้งมีหมูตาย (ต้องบันทึกเมื่อ Batch สิ้นสุดเท่านั้น)
+            // อัปเดท profit เมื่อมีการเพิ่มหมูตาย
+            if ($pigDeath->batch_id) {
+                RevenueHelper::calculateAndRecordProfit($pigDeath->batch_id);
+            }
         } catch (\Exception $e) {
             // Log error แต่ไม่ให้ระงับการบันทึก PigDeath
             Log::error('PigDeathObserver Error', [
@@ -60,7 +63,10 @@ class PigDeathObserver
      */
     public function updated(PigDeath $pigDeath): void
     {
-        // ❌ ลบ: ไม่ควรบันทึก Profit ทุกครั้งแก้ไขหมูตาย (ต้องบันทึกเมื่อ Batch สิ้นสุดเท่านั้น)
+        // อัปเดท profit เมื่อมีการแก้ไขจำนวนหมูตาย
+        if ($pigDeath->batch_id) {
+            RevenueHelper::calculateAndRecordProfit($pigDeath->batch_id);
+        }
     }
 
     /**
@@ -68,7 +74,10 @@ class PigDeathObserver
      */
     public function deleted(PigDeath $pigDeath): void
     {
-        // ❌ ลบ: ไม่ควรบันทึก Profit ทุกครั้งลบหมูตาย (ต้องบันทึกเมื่อ Batch สิ้นสุดเท่านั้น)
+        // อัปเดท profit เมื่อมีการลบหมูตาย
+        if ($pigDeath->batch_id) {
+            RevenueHelper::calculateAndRecordProfit($pigDeath->batch_id);
+        }
     }
 }
 

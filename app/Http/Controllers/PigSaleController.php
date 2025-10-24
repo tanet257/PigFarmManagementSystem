@@ -847,9 +847,9 @@ class PigSaleController extends Controller
                 return redirect()->back()->with('error', 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น');
             }
 
-            // เปลี่ยนสถานะเป็น cancel_requested
+            // เปลี่ยนสถานะเป็น cancel_requested (รอ Admin อนุมัติยกเลิก)
             $pigSale->update([
-                'status' => 'cancel_requested',
+                'status' => 'ยกเลิกการขาย_รอสอบ',  // ✅ ใช้ Thai prefix เพื่อบอกว่ารอการอนุมัติ
             ]);
 
             // สร้าง Notification สำหรับ Admin approval
@@ -956,6 +956,29 @@ class PigSaleController extends Controller
                 'status' => 'ยกเลิกการขาย',
                 'payment_status' => 'ยกเลิกการขาย',
             ]);
+
+            // ✅ NEW: คืนค่า PigDeath.available ถ้าเป็นการขายหมูตาย
+            if ($pigSale->sell_type === 'หมูตาย') {
+                // คืน available จาก PigSaleDetail
+                foreach ($details as $detail) {
+                    $pigDeaths = PigDeath::where('batch_id', $pigSale->batch_id)
+                        ->where('pen_id', $detail->pen_id)
+                        ->where('status', 'sold')
+                        ->orderBy('created_at')
+                        ->get();
+
+                    $remainingToRestore = $detail->quantity;
+                    foreach ($pigDeaths as $death) {
+                        if ($remainingToRestore <= 0) break;
+
+                        $restoreAmount = min($remainingToRestore, $death->quantity);
+                        $death->available = ($death->available ?? 0) + $restoreAmount;
+                        $death->status = 'recorded'; // เปลี่ยนกลับเป็น recorded
+                        $death->save();
+                        $remainingToRestore -= $restoreAmount;
+                    }
+                }
+            }
 
             // ✅ แจ้งเตือนผู้สร้างการขายว่าถูกยกเลิก
             NotificationHelper::notifyUserPigSaleCancelled($pigSale);
