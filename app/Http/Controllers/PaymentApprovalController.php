@@ -27,7 +27,7 @@ class PaymentApprovalController extends Controller
             ->paginate(15);
 
         // ดึง cancel sale requests (ขอยกเลิกการขายที่รอการอนุมัติ)
-        $pendingCancelSales = PigSale::where('status', 'ยกเลิกการขาย_รอสอบ')
+        $pendingCancelSales = PigSale::where('status', 'ยกเลิกการขาย_รออนุมัติ')
             ->with(['farm', 'batch', 'createdBy'])
             ->orderBy('created_at', 'desc')
             ->paginate(15);
@@ -184,7 +184,7 @@ class PaymentApprovalController extends Controller
             $batchId = $pigSale->batch_id;
 
             // ตรวจสอบว่า cancel_requested หรือไม่
-            if ($pigSale->status !== 'ยกเลิกการขาย_รอสอบ') {
+            if ($pigSale->status !== 'ยกเลิกการขาย_รออนุมัติ') {
                 return redirect()->back()->with('error', 'สามารถอนุมัติได้เฉพาะคำขอยกเลิกเท่านั้น');
             }
 
@@ -240,7 +240,7 @@ class PaymentApprovalController extends Controller
             $pigSale = PigSale::findOrFail($pigSaleId);
 
             // ตรวจสอบว่า cancel_requested หรือไม่
-            if ($pigSale->status !== 'ยกเลิกการขาย_รอสอบ') {
+            if ($pigSale->status !== 'ยกเลิกการขาย_รออนุมัติ') {
                 return redirect()->back()->with('error', 'สามารถปฏิเสธได้เฉพาะคำขอยกเลิกเท่านั้น');
             }
 

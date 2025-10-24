@@ -557,7 +557,7 @@ class PigSaleController extends Controller
                 'date' => $validated['date'],
                 'sell_type' => $validated['sell_type'],
                 'created_by' => auth()->id(),
-                'status' => 'pending',  // ✅ FIX: รอ admin อนุมัติ (ไม่ใช่ completed ทันที)
+                'status' => 'pending',  // รอ admin อนุมัติ
             ];
 
             // Generate sale_number: PS-YYYYMMDD-XXX
@@ -842,19 +842,21 @@ class PigSaleController extends Controller
         try {
             $pigSale = PigSale::findOrFail($id);
 
-            // ✅ FIX: ตรวจสอบว่าสถานะเป็น approved หรือ completed เท่านั้นถึงจะขอยกเลิกได้
-            if (!in_array($pigSale->status, ['approved', 'completed'])) {
-                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น (สถานะปัจจุบัน: ' . $pigSale->status . ')';
-                
-                // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
+            // ✅ ตรวจสอบว่า approved status เท่านั้นถึงจะขอยกเลิกได้
+            if ($pigSale->status !== 'approved') {
+                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น';
+
+                // ✅ ส่ง JSON response ถ้าเป็น AJAX request
                 if (request()->expectsJson()) {
                     return response()->json(['success' => false, 'message' => $errorMessage], 422);
                 }
-                
+
                 return redirect()->back()->with('error', $errorMessage);
-            }            // เปลี่ยนสถานะเป็น cancel_requested (รอ Admin อนุมัติยกเลิก)
+            }
+
+            // เปลี่ยนสถานะเป็น ยกเลิกการขาย_รอการอนุมัติ (รอ Admin อนุมัติยกเลิก)
             $pigSale->update([
-                'status' => 'ยกเลิกการขาย_รอสอบ',  // ✅ ใช้ Thai prefix เพื่อบอกว่ารอการอนุมัติ
+                'status' => 'ยกเลิกการขาย_รอการอนุมัติ',
             ]);
 
             // สร้าง Notification สำหรับ Admin approval
@@ -874,7 +876,7 @@ class PigSaleController extends Controller
 
             $successMessage = 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
 
-            // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
+            // ✅ ส่ง JSON response ถ้าเป็น AJAX request
             if (request()->expectsJson()) {
                 return response()->json(['success' => true, 'message' => $successMessage]);
             }
@@ -887,7 +889,7 @@ class PigSaleController extends Controller
 
             $errorMessage = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
 
-            // ✅ NEW: ส่ง JSON response ถ้าเป็น AJAX request
+            // ✅ ส่ง JSON response ถ้าเป็น AJAX request
             if (request()->expectsJson()) {
                 return response()->json(['success' => false, 'message' => $errorMessage], 500);
             }
