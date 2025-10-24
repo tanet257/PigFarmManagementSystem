@@ -42,6 +42,7 @@ class DairyController extends Controller
         $batches = Batch::with('farm:id,farm_name')
             ->select('id', 'batch_code', 'farm_id')
             ->where('status', '!=', 'เสร็จสิ้น')
+            ->where('status', '!=', 'cancelled')
             ->get();
 
         // barns (ผูกกับ farm_id เอาไว้ filter)
@@ -474,7 +475,7 @@ class DairyController extends Controller
                             if ($deadQuantity <= 0) continue;
 
                             $batch = Batch::find($validated['batch_id']);
-                            if (!$batch) continue;
+                            if (!$batch || $batch->status === 'cancelled') continue;
 
                             $batch->total_death += $deadQuantity;
                             $batch->current_quantity = max(($batch->current_quantity ?? 0) - $deadQuantity, 0);

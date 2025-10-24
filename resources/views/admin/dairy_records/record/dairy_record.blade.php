@@ -74,6 +74,8 @@
                                 <input type="hidden" name="feed_use[0][farm_id]" class="farm-id">
                                 <input type="hidden" name="feed_use[0][batch_id]" class="batch-id">
                                 <input type="hidden" name="feed_use[0][item_type]" class="item-type" value="feed">
+                                <input type="hidden" class="item-code-hidden" name="feed_use[0][item_code_hidden]">
+                                <input type="hidden" class="item-name-hidden" name="feed_use[0][item_name_hidden]">
 
                                 <div class=" card-custom-tertiary cardTemplateRow">
                                     <div class="row g-2" data-cloned="1">
@@ -152,6 +154,8 @@
                                 <input type="hidden" name="medicine_use[0][item_type]" class="item-type"
                                     value="medicine">
                                 <input type="hidden" name="medicine_use[0][barn_pen]" class="barn-pen-json">
+                                <input type="hidden" class="item-code-hidden" name="medicine_use[0][item_code_hidden]">
+                                <input type="hidden" class="item-name-hidden" name="medicine_use[0][item_name_hidden]">
 
                                 <div class="card-custom-tertiary cardTemplateRow">
                                     <!-- แถว 1: วันที่ + เล้า + คอก + ยา/วัคซีน -->
@@ -492,18 +496,14 @@
                                 // Reset Item dropdown
                                 const itemBtn = row.querySelector('.item-dropdown-btn');
                                 if (itemBtn) {
-                                    const isFeed = row.closest('.feed-use-row') !== null;
-                                    const isMedicine = row.closest('.medicine-use-row') !==
-                                        null;
-                                    if (isFeed) {
-                                        itemBtn.querySelector('span').textContent =
-                                            'เลือกอาหาร';
-                                    } else if (isMedicine) {
-                                        itemBtn.querySelector('span').textContent =
-                                            'เลือกยา/วัคซีน';
+                                    const typeHidden = row.querySelector('.item-type');
+                                    const type = typeHidden?.value;
+                                    if (type === 'feed') {
+                                        itemBtn.querySelector('span').textContent = '-- เลือกชื่อประเภทอาหารหมู --';
+                                    } else if (type === 'medicine') {
+                                        itemBtn.querySelector('span').textContent = '-- เลือกชื่อยา/วัคซีน --';
                                     } else {
-                                        itemBtn.querySelector('span').textContent =
-                                            'เลือกรายการ';
+                                        itemBtn.querySelector('span').textContent = '-- เลือกสินค้า --';
                                     }
                                 }
                                 const itemCode = row.querySelector('.item-code');
@@ -512,8 +512,7 @@
                                 if (itemName) itemName.value = '';
 
                                 // Reset Status dropdown (for medicine)
-                                const statusBtn = row.querySelector(
-                                    '.medicine-status-dropdown-btn');
+                                const statusBtn = row.querySelector('.medicine-status-dropdown-btn');
                                 if (statusBtn) {
                                     statusBtn.querySelector('span').textContent = 'เลือกสถานะ';
                                 }
@@ -540,12 +539,49 @@
 
                             document.querySelectorAll('[data-cloned]').forEach(row => {
                                 updateFarmBatchHiddenInputs(row);
-                                populateItemDropdown(row);
+                                
+                                // Reset item selections
+                                const itemBtn = row.querySelector('.item-dropdown-btn');
+                                if (itemBtn) {
+                                    const typeHidden = row.querySelector('.item-type');
+                                    const type = typeHidden?.value;
+                                    if (type === 'feed') {
+                                        itemBtn.querySelector('span').textContent = '-- เลือกชื่อประเภทอาหารหมู --';
+                                    } else if (type === 'medicine') {
+                                        itemBtn.querySelector('span').textContent = '-- เลือกชื่อยา/วัคซีน --';
+                                    } else {
+                                        itemBtn.querySelector('span').textContent = '-- เลือกสินค้า --';
+                                    }
+                                }
+                                const itemCode = row.querySelector('.item-code');
+                                if (itemCode) itemCode.value = '';
+                                const itemName = row.querySelector('.item-name');
+                                if (itemName) itemName.value = '';
 
-                                const hiddenBarn = row.querySelector('.barn-id');
-                                if (hiddenBarn) hiddenBarn.value = '';
-                                const hiddenPen = row.querySelector('.barn-pen-json');
-                                if (hiddenPen) hiddenPen.value = JSON.stringify([]);
+                                // Reset barn/pen selections
+                                const barnBtn = row.querySelector('.barn-select');
+                                if (barnBtn) {
+                                    barnBtn.querySelector('span').textContent = 'เลือกเล้า';
+                                }
+                                const barnId = row.querySelector('.barn-id');
+                                if (barnId) barnId.value = '';
+
+                                const penBtn = row.querySelector('.pen-select');
+                                if (penBtn) {
+                                    penBtn.querySelector('span').textContent = 'เลือกคอก';
+                                }
+                                const penJson = row.querySelector('.barn-pen-json');
+                                if (penJson) penJson.value = '';
+
+                                // Reset status for medicine
+                                const statusBtn = row.querySelector('.medicine-status-dropdown-btn');
+                                if (statusBtn) {
+                                    statusBtn.querySelector('span').textContent = 'เลือกสถานะ';
+                                }
+                                const statusValue = row.querySelector('.status-value');
+                                if (statusValue) statusValue.value = '';
+
+                                populateItemDropdown(row);
                                 attachBarnPenDropdowns(row);
                             });
                         });
@@ -641,69 +677,80 @@
                 }
 
                 function populateItemDropdown(rowContainer) {
+                    const typeHidden = rowContainer.querySelector('.item-type');
+                    const type = typeHidden?.value;
                     const batchId = parseInt(batchSelect.value);
-                    if (!batchId) return;
-
-                    const isFeed = rowContainer.closest('#feedUseContainer') !== null;
-                    const isMedicine = rowContainer.closest('#medicineUseContainer') !== null;
+                    if (!type || !batchId) return;
 
                     const btn = rowContainer.querySelector('.item-dropdown-btn');
                     const menu = rowContainer.querySelector('.item-dropdown-menu');
                     const hiddenCode = rowContainer.querySelector('input.item-code');
                     const hiddenName = rowContainer.querySelector('input.item-name');
 
-                    let hiddenType = rowContainer.querySelector('input.item-type');
-                    if (!hiddenType && hiddenCode) {
-                        hiddenType = document.createElement('input');
-                        hiddenType.type = 'hidden';
-                        hiddenType.classList.add('item-type');
-                        hiddenType.name = hiddenCode.name.replace('[item_code]', '[item_type]');
-                        rowContainer.appendChild(hiddenType);
-                    }
-
                     if (!btn || !menu || !hiddenCode || !hiddenName) return;
 
-                    const type = isFeed ? 'feed' : (isMedicine ? 'medicine' : null);
-                    if (!type) return;
-                    hiddenType.value = type;
+                    // Determine placeholder text based on item type
+                    let placeholderText;
+                    if (type === 'feed') {
+                        placeholderText = '-- เลือกชื่อประเภทอาหารหมู --';
+                    } else if (type === 'medicine') {
+                        placeholderText = '-- เลือกชื่อยา/วัคซีน --';
+                    } else {
+                        placeholderText = '-- เลือกสินค้า --';
+                    }
+                    btn.querySelector('span').textContent = placeholderText;
 
                     menu.innerHTML = '';
                     if (storehousesByTypeAndBatch[type] && storehousesByTypeAndBatch[type][batchId]) {
                         Object.values(storehousesByTypeAndBatch[type][batchId]).forEach(item => {
                             const li = document.createElement('li');
-                            li.innerHTML =
-                                `<a class="dropdown-item" href="#" data-code="${item.item_code}" data-name="${item.item_name}">${item.item_name}</a>`;
+                            const a = document.createElement('a');
+                            a.className = 'dropdown-item';
+                            a.href = '#';
+                            a.setAttribute('data-code', item.item_code);
+                            a.setAttribute('data-name', item.item_name);
+                            a.textContent = item.item_name;
+                            li.appendChild(a);
                             menu.appendChild(li);
 
-                            li.querySelector('a').addEventListener('click', function(e) {
+                            a.addEventListener('click', function(e) {
                                 e.preventDefault();
                                 btn.textContent = item.item_name;
                                 hiddenCode.value = item.item_code;
                                 hiddenName.value = item.item_name;
-                                hiddenType.value = type;
                             });
                         });
+                    }
+
+                    // Clear hidden inputs if no items
+                    if (!storehousesByTypeAndBatch[type] || !storehousesByTypeAndBatch[type][batchId]) {
+                        hiddenCode.value = '';
+                        hiddenName.value = '';
                     }
                 }
 
                 function attachItemNameUpdater(root) {
-                    (root.querySelectorAll ? root : document).querySelectorAll('select[name$="[item_code]"]').forEach(
-                        sel => {
-                            if (sel._itemAttached) return;
-                            sel._itemAttached = true;
+                    (root.querySelectorAll ? root : document).querySelectorAll('input.item-code').forEach(
+                        codeInput => {
+                            if (codeInput._itemAttached) return;
+                            codeInput._itemAttached = true;
 
-                            sel.addEventListener('change', function() {
-                                const rowContainer = sel.closest('[data-cloned]') || sel.closest(
+                            codeInput.addEventListener('change', function() {
+                                const rowContainer = codeInput.closest('[data-cloned]') || codeInput.closest(
                                     '.cardTemplateRow');
                                 if (!rowContainer) return;
-                                const hiddenInput = rowContainer.querySelector('.item-name');
-                                if (!hiddenInput) return;
 
-                                const type = sel.classList.contains('feed-item-select') ? 'feed' :
-                                    'medicine';
+                                const typeHidden = rowContainer.querySelector('.item-type');
+                                const type = typeHidden?.value;
                                 const batchId = parseInt(batchSelect.value);
-                                const itemData = storehousesByTypeAndBatch[type]?.[batchId]?.[sel.value];
-                                hiddenInput.value = itemData ? itemData.item_name : '';
+                                const nameHidden = rowContainer.querySelector('input.item-name');
+
+                                if (nameHidden && type && batchId && storehousesByTypeAndBatch[type]?.[batchId]?.[codeInput.value]) {
+                                    const itemData = storehousesByTypeAndBatch[type][batchId][codeInput.value];
+                                    nameHidden.value = itemData.item_name;
+                                } else if (nameHidden) {
+                                    nameHidden.value = '';
+                                }
                             });
                         });
                 }
@@ -732,6 +779,14 @@
                     // copy farm + batch จาก global
                     newRow.querySelectorAll('.farm-id').forEach(i => i.value = farmSelect.value || '');
                     newRow.querySelectorAll('.batch-id').forEach(i => i.value = batchSelect.value || '');
+
+                    // Set item-type based on container
+                    const typeInput = newRow.querySelector('.item-type');
+                    if (typeInput && containerId === 'feedUseContainer') {
+                        typeInput.value = 'feed';
+                    } else if (typeInput && containerId === 'medicineUseContainer') {
+                        typeInput.value = 'medicine';
+                    }
 
                     container.appendChild(newRow);
 
