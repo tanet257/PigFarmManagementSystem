@@ -88,6 +88,7 @@ class PaymentApprovalController extends Controller
             // อนุมัติ
             $pigSale->update([
                 'status' => 'approved',
+                'payment_status' => 'approved',  // ✅ อัปเดท payment_status เป็น 'approved' ด้วย
                 'approved_by' => auth()->id(),
                 'approved_at' => now(),
             ]);
