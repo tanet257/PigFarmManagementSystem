@@ -43,12 +43,17 @@ class PaymentController extends Controller
             $remainingAmount = $pigSale->net_total - $totalPaid;
 
             if ($validated['amount'] > $remainingAmount) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => "จำนวนเงินเกินกว่ายอดคงค้างที่เหลือ ($remainingAmount บาท)"
+                    ], 422);
+                }
                 return redirect()->back()
                     ->withInput()
                     ->with('error', "จำนวนเงินเกินกว่ายอดคงค้างที่เหลือ ($remainingAmount บาท)");
             }
 
-            
+
             // อัปโหลดไฟล์ (ต้องมี)
             $uploadedFileUrl = null;
             if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
@@ -61,12 +66,22 @@ class PaymentController extends Controller
                     $uploadedFileUrl = $uploadResult->getSecurePath();
                 } catch (\Exception $e) {
                     Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
+                    if ($request->expectsJson()) {
+                        return response()->json([
+                            'message' => 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')'
+                        ], 422);
+                    }
                     return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
                 }
             }
 
             // ตรวจสอบว่าอัปโหลดสำเร็จ
             if (!$uploadedFileUrl) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่'
+                    ], 422);
+                }
                 return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
             }
 
@@ -87,11 +102,25 @@ class PaymentController extends Controller
 
             DB::commit();
 
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'บันทึกการชำระเงินสำเร็จ',
+                    'data' => $payment
+                ]);
+            }
+
             return redirect()->back()
                 ->with('success', 'บันทึกการชำระเงินสำเร็จ');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PaymentController - store Error: ' . $e->getMessage());
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                ], 422);
+            }
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());

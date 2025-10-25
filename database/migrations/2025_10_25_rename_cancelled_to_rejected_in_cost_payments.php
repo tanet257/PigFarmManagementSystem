@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      * Rename cancelled_by/cancelled_at to rejected_by/rejected_at in cost_payments table
      * This standardizes terminology across Payment and CostPayment tables
      */
@@ -20,7 +20,7 @@ return new class extends Migration
                 if (Schema::hasColumn('cost_payments', 'cancelled_by') && !Schema::hasColumn('cost_payments', 'rejected_by')) {
                     $table->renameColumn('cancelled_by', 'rejected_by');
                 }
-                
+
                 // Rename cancelled_at to rejected_at
                 if (Schema::hasColumn('cost_payments', 'cancelled_at') && !Schema::hasColumn('cost_payments', 'rejected_at')) {
                     $table->renameColumn('cancelled_at', 'rejected_at');
@@ -40,7 +40,7 @@ return new class extends Migration
                 if (Schema::hasColumn('cost_payments', 'rejected_by') && !Schema::hasColumn('cost_payments', 'cancelled_by')) {
                     $table->renameColumn('rejected_by', 'cancelled_by');
                 }
-                
+
                 // Rename back to cancelled_at
                 if (Schema::hasColumn('cost_payments', 'rejected_at') && !Schema::hasColumn('cost_payments', 'cancelled_at')) {
                     $table->renameColumn('rejected_at', 'cancelled_at');

@@ -8,7 +8,7 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     * 
+     *
      * Add cost_type field to track cost type for auto-approval logic
      * Feed/Medicine costs should auto-approve without admin review
      * Piglet/Wage/Transport costs need manual admin approval
