@@ -581,13 +581,10 @@ class PigInventoryHelper
 
             $batch->save();
 
-            // Reset batch pen allocations เพื่อไม่ให้ใช้งาน (เหมือนกับ 'เสร็จสิ้น')
+            // ✅ Delete batch pen allocations entirely (ลบ allocation rows ของ batch นี้)
             BatchPenAllocation::where('batch_id', $batchId)
                 ->lockForUpdate()
-                ->update([
-                    'allocated_pigs' => 0,
-                    'current_quantity' => 0,
-                ]);
+                ->delete();
 
             // ✅ Cancel ทั้งหมดที่เกี่ยวกับ batch
             // 1. Cancel PigEntry ที่ยังไม่ cancelled
