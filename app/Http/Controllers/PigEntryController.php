@@ -241,7 +241,6 @@ class PigEntryController extends Controller
                     'total_price'          => $validated['total_pig_price'],
                     'transport_cost'       => $validated['transport_cost'] ?? 0,
                     'excess_weight_cost'   => $validated['excess_weight_cost'] ?? 0,
-                    'payment_status'       => 'pending',  // ✅ Set initial status
                     'note'                 => 'ค่าลูกหมู',
                     'receipt_file'         => $uploadedFileUrl,
                 ]);
@@ -408,7 +407,6 @@ class PigEntryController extends Controller
                     'total_price' => $validated['total_pig_price'],
                     'transport_cost' => $validated['transport_cost'] ?? 0,
                     'excess_weight_cost' => $validated['excess_weight_cost'] ?? 0,
-                    'payment_status' => 'pending',  // ✅ Ensure status is set
                     'note' => 'ค่าลูกหมู',
                     'receipt_file' => $uploadedFileUrl,
                 ]
@@ -476,19 +474,12 @@ class PigEntryController extends Controller
             // ✅ Soft Delete Cost - ยกเลิกต้นทุนทั้งหมดที่เกี่ยวกับ PigEntry นี้
             $costs = Cost::where('pig_entry_record_id', $id)->get();
             foreach ($costs as $cost) {
-                if ($cost->payment_status !== 'ยกเลิก') {
-                    // ยกเลิก Cost โดยเปลี่ยน payment_status เป็น 'ยกเลิก'
-                    $cost->update([
-                        'payment_status' => 'ยกเลิก',
-                    ]);
+                // ยกเลิก CostPayment ที่เกี่ยวข้อง (status = 'rejected')
+                $cost->payments()->update([
+                    'status' => 'rejected',
+                ]);
 
-                    // ยกเลิก CostPayment ที่เกี่ยวข้อง (ใช้ 'rejected' เพราะ enum มีเฉพาะ pending/approved/rejected)
-                    $cost->payments()->update([
-                        'status' => 'rejected',
-                    ]);
-
-                    Log::info('PigEntry Delete - Cost cancelled: Cost ID ' . $cost->id);
-                }
+                Log::info('PigEntry Delete - Cost cancelled: Cost ID ' . $cost->id);
             }
 
             // ✅ Soft Delete - อัปเดท status เป็น 'cancelled'
@@ -628,10 +619,11 @@ class PigEntryController extends Controller
                 return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
             }
 
-            // ✅ สร้าง Cost record เพื่อบันทึกการชำระเงิน (ยกเว้น cancelled costs)
-            $nonCancelledCosts = $record->batch->costs->where('payment_status', '!=', 'ยกเลิก');
-            $transportCostSum = $nonCancelledCosts->sum('transport_cost') ?? 0;
-            $excessWeightCostSum = $nonCancelledCosts->sum('excess_weight_cost') ?? 0;
+            // ✅ สร้าง Cost record เพื่อบันทึกการชำระเงิน
+            // ดึง transport_cost และ excess_weight_cost จาก batch costs
+            $batchCosts = $record->batch->costs ?? collect();
+            $transportCostSum = $batchCosts->sum('transport_cost') ?? 0;
+            $excessWeightCostSum = $batchCosts->sum('excess_weight_cost') ?? 0;
 
             $totalAmount = $record->total_pig_price + $transportCostSum + $excessWeightCostSum;
 
@@ -648,10 +640,7 @@ class PigEntryController extends Controller
                 'total_price' => $record->total_pig_price,
                 'transport_cost' => $transportCostSum,
                 'excess_weight_cost' => $excessWeightCostSum,
-                'payment_method' => $validated['payment_method'],
                 'receipt_file' => $uploadedFileUrl,
-                'payment_status' => 'pending',
-                'paid_date' => now()->toDateString(),
                 'date' => $record->pig_entry_date,
                 'note' => $validated['note'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
             ]);

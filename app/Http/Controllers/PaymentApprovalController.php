@@ -85,12 +85,9 @@ class PaymentApprovalController extends Controller
                 return redirect()->back()->with('error', 'สามารถอนุมัติได้เฉพาะการขายที่รอการอนุมัติเท่านั้น');
             }
 
-            // อนุมัติ
+            // อนุมัติ (only update status - approval details are in Payment table)
             $pigSale->update([
                 'status' => 'approved',
-                'payment_status' => 'approved',  // ✅ อัปเดท payment_status เป็น 'approved' ด้วย
-                'approved_by' => auth()->id(),
-                'approved_at' => now(),
             ]);
 
             // ✅ บันทึก Profit และ Revenue ตอนอนุมัติเท่านั้น (ไม่ใช่ตอนบันทึก)

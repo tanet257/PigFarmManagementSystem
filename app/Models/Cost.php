@@ -23,9 +23,6 @@ class Cost extends Model
         'excess_weight_cost',
         'total_price',
         'receipt_file',
-        'payment_method',
-        'paid_date',
-        'payment_status',
         'note',
         'date',
     ];

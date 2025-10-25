@@ -32,9 +32,7 @@ class RevenueHelper
                 $existingRevenue->update([
                     'total_revenue' => $pigSale->total_price,
                     'net_revenue' => $pigSale->net_total,
-                    'payment_status' => 'approved',  // ✅ เปลี่ยนเป็น 'approved' (English) เมื่ออนุมัติการขาย
                     'revenue_date' => $pigSale->date,
-                    'payment_received_date' => null,  // ยังไม่มีการชำระเงิน
                     'note' => 'ขายหมู ' . $pigSale->quantity . ' ตัว ให้ ' . $pigSale->buyer_name,
                 ]);
 
@@ -57,9 +55,7 @@ class RevenueHelper
                 'total_revenue' => $pigSale->total_price,
                 'discount' => 0,
                 'net_revenue' => $pigSale->net_total,
-                'payment_status' => 'approved',  // ✅ เปลี่ยนเป็น 'approved' (English) เมื่ออนุมัติการขาย (ไม่ต้องรอสถานะการชำระเงิน)
                 'revenue_date' => $pigSale->date,
-                'payment_received_date' => null,  // ยังไม่ได้รับการชำระเงิน
                 'note' => 'ขายหมู ' . $pigSale->quantity . ' ตัว ให้ ' . $pigSale->buyer_name,
             ]);
 
@@ -92,16 +88,24 @@ class RevenueHelper
         try {
             $batch = \App\Models\Batch::findOrFail($batchId);
 
-            // ดึงรายได้ทั้งหมดของรุ่นนี้ (เฉพาะที่ได้รับการอนุมัติแล้ว - payment_status = 'approved')
+            // ดึงรายได้ทั้งหมดของรุ่นนี้
+            // Revenue records ที่เกี่ยวข้องกับ PigSale ที่มี approved Payment
+            $approvedPigSaleIds = \App\Models\Payment::where('status', 'approved')
+                ->pluck('pig_sale_id')
+                ->toArray();
+
             $totalRevenue = Revenue::where('batch_id', $batchId)
-                ->where('payment_status', 'approved')
+                ->whereIn('pig_sale_id', $approvedPigSaleIds)
                 ->sum('net_revenue');
 
-            // ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติแล้ว และ ไม่ถูกยกเลิก)
-            // รองรับทั้ง Cost ที่มี CostPayment (payment_status = 'approved')
-            // และ Cost ที่สร้างจาก inventory_movements (payment_status = 'approved' โดยตรง)
+            // ✅ ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติแล้ว)
+            // Cost ที่มี CostPayment.status = 'approved'
+            $approvedCostIds = \App\Models\CostPayment::where('status', 'approved')
+                ->pluck('cost_id')
+                ->toArray();
+
             $approvedCosts = Cost::where('batch_id', $batchId)
-                ->where('payment_status', 'approved')
+                ->whereIn('id', $approvedCostIds)
                 ->get();
 
             // คำนวณต้นทุนตามหมวดหมู่ (เฉพาะ approved payments)
@@ -124,10 +128,9 @@ class RevenueHelper
             $grossProfit = $totalRevenue - $totalCost;
             $profitMargin = $totalRevenue > 0 ? ($grossProfit / $totalRevenue * 100) : 0;
 
-            // ✅ FIX: นับเฉพาะหมูที่มี Revenue อนุมัติแล้ว (payment approved) เท่านั้น
-            // ไม่ใช่นับทุกการขายที่ไม่เป็น cancelled
+            // ✅ นับเฉพาะหมูที่ขายกับ approved Payment เท่านั้น
             $totalPigSold = Revenue::where('batch_id', $batchId)
-                ->where('payment_status', 'approved')
+                ->whereIn('pig_sale_id', $approvedPigSaleIds)
                 ->sum('quantity');
 
             // ใช้ sum('quantity') แทน count() เพื่อได้จำนวนหมูที่ตายจริง ๆ

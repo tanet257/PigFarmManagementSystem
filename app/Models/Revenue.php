@@ -19,15 +19,12 @@ class Revenue extends Model
         'total_revenue',
         'discount',
         'net_revenue',
-        'payment_status',
         'revenue_date',
-        'payment_received_date',
         'note',
     ];
 
     protected $casts = [
         'revenue_date' => 'datetime',
-        'payment_received_date' => 'datetime',
     ];
 
     // ความสัมพันธ์

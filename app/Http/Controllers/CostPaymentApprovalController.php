@@ -75,12 +75,8 @@ class CostPaymentApprovalController extends Controller
                 'reason' => $validated['note'] ?? null,
             ]);
 
-            // อัปเดท Cost record
+            // ✅ Get cost for further processing (but don't update its payment_status)
             $cost = $payment->cost;
-            $cost->update([
-                'payment_status' => 'approved',  // ✅ Changed from 'paid' to 'approved' for profit calculation
-                'paid_date' => now(),
-            ]);
 
             // Auto-create StoreHouse record (inventory update)
             if (in_array($cost->cost_type, ['feed', 'medicine'])) {
@@ -140,8 +136,8 @@ class CostPaymentApprovalController extends Controller
             // อัปเดท payment
             $payment->update([
                 'status' => 'rejected',
-                'approved_by' => Auth::id(),
-                'approved_date' => now(),
+                'rejected_by' => Auth::id(),
+                'rejected_at' => now(),
                 'reason' => $validated['reason'],
             ]);
 

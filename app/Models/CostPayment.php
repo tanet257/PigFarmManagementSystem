@@ -11,20 +11,21 @@ class CostPayment extends Model
 
     protected $fillable = [
         'cost_id',
+        'cost_type',  // ✅ NEW: for auto-approval logic (feed/medicine auto-approve)
         'amount',
         'status',
         'approved_date',
         'approved_by',
+        'rejected_at',  // ✅ CHANGED from cancelled_at
+        'rejected_by',  // ✅ CHANGED from cancelled_by
         'reason',
         'action_type',
-        'cancelled_at',
-        'cancelled_by',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'approved_date' => 'datetime',
-        'cancelled_at' => 'datetime',
+        'rejected_at' => 'datetime',  // ✅ CHANGED from cancelled_at
     ];
 
     // ------------ Relationships ------------ //
@@ -39,9 +40,9 @@ class CostPayment extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-    public function canceller()
+    public function rejecter()  // ✅ CHANGED from canceller
     {
-        return $this->belongsTo(User::class, 'cancelled_by');
+        return $this->belongsTo(User::class, 'rejected_by');
     }
 
     // ------------ Scopes ------------ //

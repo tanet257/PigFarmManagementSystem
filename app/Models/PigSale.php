@@ -44,11 +44,7 @@ class PigSale extends Model
         // Payment Information
         'payment_method',
         'payment_term',
-        'payment_status',
-        'paid_amount',
-        'balance',
         'due_date',
-        'paid_date',
 
         // Documents
         'invoice_number',
@@ -60,23 +56,15 @@ class PigSale extends Model
         'note',
         'date',
 
-        // Approval & Rejection
+        // Approval
         'created_by',
-        'approved_by',
-        'approved_at',
         'status',
-        'rejected_by',
-        'rejected_at',
-        'rejection_reason',
     ];
 
     protected $casts = [
         'date' => 'date',
         'cpf_reference_date' => 'date',
         'due_date' => 'date',
-        'paid_date' => 'date',
-        'approved_at' => 'datetime',
-        'rejected_at' => 'datetime',
         'total_weight' => 'decimal:2',
         'estimated_weight' => 'decimal:2',
         'actual_weight' => 'decimal:2',

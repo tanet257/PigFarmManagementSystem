@@ -37,7 +37,32 @@
             </div>
         </div>
 
-        {{-- Pending Payments Table --}}
+        {{-- Tabs Navigation --}}
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending" role="tab">
+                    <i class="bi bi-hourglass-split"></i> รอการอนุมัติ
+                    <span class="badge bg-warning ms-2">{{ $pendingPayments->total() ?? 0 }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="approved-tab" data-bs-toggle="tab" href="#approved" role="tab">
+                    <i class="bi bi-check-circle"></i> อนุมัติแล้ว
+                    <span class="badge bg-success ms-2">{{ $approvedPayments->count() ?? 0 }}</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="rejected-tab" data-bs-toggle="tab" href="#rejected" role="tab">
+                    <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
+                    <span class="badge bg-danger ms-2">{{ $rejectedPayments->count() ?? 0 }}</span>
+                </a>
+            </li>
+        </ul>
+
+        {{-- Tab Content --}}
+        <div class="tab-content">
+            {{-- PENDING TAB --}}
+            <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
         @if ($pendingPayments->count() > 0)
             <div class="card">
                 <div class="card-header bg-warning text-dark">
@@ -202,7 +227,137 @@
                 <i class="bi bi-check-circle"></i> ไม่มีการอนุมัติที่รอการอนุมัติ
             </div>
         @endif
-    </div>
+            </div>
+
+            {{-- APPROVED TAB --}}
+            <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
+        @if ($approvedPayments->count() > 0)
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> อนุมัติแล้ว</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center">ลำดับ</th>
+                                <th>ประเภทค่าใช้จ่าย</th>
+                                <th>ชื่อรุ่นหมู</th>
+                                <th class="text-end">จำนวนเงิน</th>
+                                <th>อนุมัติโดย</th>
+                                <th>อนุมัติวันที่</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($approvedPayments as $payment)
+                                <tr>
+                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td class="text-end">฿{{ number_format($payment->amount, 2) }}</td>
+                                    <td>{{ $payment->approver->name ?? '-' }}</td>
+                                    <td>{{ $payment->approved_date ? $payment->approved_date->format('d/m/Y H:i') : '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox"></i> ยังไม่มีการอนุมัติ
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @else
+            <div class="alert alert-info">
+                <i class="bi bi-inbox"></i> ยังไม่มีการอนุมัติ
+            </div>
+        @endif
+            </div>
+
+            {{-- REJECTED TAB --}}
+            <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
+        @if ($rejectedPayments->count() > 0)
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-x-circle"></i> ปฏิเสธแล้ว</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="text-center">ลำดับ</th>
+                                <th>ประเภทค่าใช้จ่าย</th>
+                                <th>ชื่อรุ่นหมู</th>
+                                <th class="text-end">จำนวนเงิน</th>
+                                <th>ปฏิเสธโดย</th>
+                                <th>เหตุผล</th>
+                                <th>ปฏิเสธวันที่</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($rejectedPayments as $payment)
+                                <tr>
+                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td>
+                                        @switch($payment->cost->cost_type)
+                                            @case('piglet')
+                                                <span class="badge bg-primary">ลูกหมู</span>
+                                                @break
+                                            @case('feed')
+                                                <span class="badge bg-info">อาหาร</span>
+                                                @break
+                                            @case('medicine')
+                                                <span class="badge bg-danger">ยา</span>
+                                                @break
+                                            @case('wage')
+                                                <span class="badge bg-success">เงินเดือน</span>
+                                                @break
+                                            @case('shipping')
+                                                <span class="badge bg-secondary">ขนส่ง</span>
+                                                @break
+                                            @case('electric_bill')
+                                                <span class="badge bg-warning">ค่าไฟฟ้า</span>
+                                                @break
+                                            @case('water_bill')
+                                                <span class="badge bg-info">ค่าน้ำ</span>
+                                                @break
+                                            @case('other')
+                                                <span class="badge bg-dark">อื่น ๆ</span>
+                                                @break
+                                        @endswitch
+                                    </td>
+                                    <td>{{ $payment->cost->batch->batch_code ?? '-' }}</td>
+                                    <td class="text-end">฿{{ number_format($payment->amount, 2) }}</td>
+                                    <td>{{ $payment->rejecter->name ?? '-' }}</td>
+                                    <td>
+                                        @if($payment->reason)
+                                            <span class="d-inline-block text-truncate" style="max-width: 200px;" title="{{ $payment->reason }}">
+                                                {{ $payment->reason }}
+                                            </span>
+                                        @else
+                                            <span class="text-muted">-</span>
+                                        @endif
+                                    </td>
+                                    <td>{{ $payment->rejected_at ? $payment->rejected_at->format('d/m/Y H:i') : '-' }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted py-4">
+                                        <i class="bi bi-inbox"></i> ยังไม่มีการปฏิเสธ
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        @else
+            <div class="alert alert-info">
+                <i class="bi bi-inbox"></i> ยังไม่มีการปฏิเสธ
+            </div>
+        @endif
+            </div>
+        </div>
 
     <style>
         .card-status-summary {
