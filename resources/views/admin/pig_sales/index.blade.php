@@ -255,7 +255,21 @@
                                 @endif
                             </td>
                             <td class="text-center">
-                                @if ($sell->approved_at)
+                                @if ($sell->status === 'ยกเลิกการขาย')
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> ยกเลิกแล้ว
+                                    </span>
+                                    <small class="text-muted d-block mt-1">
+                                        โดย: {{ $sell->rejectedBy->name ?? '-' }}
+                                    </small>
+                                @elseif ($sell->status === 'rejected')
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
+                                    </span>
+                                    <small class="text-muted d-block mt-1">
+                                        โดย: {{ $sell->rejectedBy->name ?? '-' }}
+                                    </small>
+                                @elseif ($sell->approved_at)
                                     <span class="badge bg-success">
                                         <i class="bi bi-check-circle"></i> อนุมัติแล้ว
                                     </span>
@@ -409,7 +423,42 @@
                                     <tr>
                                         <td><strong>สถานะอนุมัติ:</strong></td>
                                         <td>
-                                            @if ($sell->approved_at)
+                                            @if ($sell->status === 'ยกเลิกการขาย')
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-x-circle"></i> ยกเลิกแล้ว
+                                                </span>
+                                                <div class="mt-2">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-person-x-fill"></i>
+                                                        โดย: {{ $sell->rejectedBy->name ?? '-' }}
+                                                    </small>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar-x"></i>
+                                                        {{ \Carbon\Carbon::parse($sell->rejected_at)->format('d/m/Y H:i') }}
+                                                    </small>
+                                                </div>
+                                            @elseif ($sell->status === 'rejected')
+                                                <span class="badge bg-danger">
+                                                    <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
+                                                </span>
+                                                <div class="mt-2">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-person-x-fill"></i>
+                                                        โดย: {{ $sell->rejectedBy->name ?? '-' }}
+                                                    </small>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-calendar-x"></i>
+                                                        {{ \Carbon\Carbon::parse($sell->rejected_at)->format('d/m/Y H:i') }}
+                                                    </small>
+                                                </div>
+                                                @if ($sell->rejection_reason)
+                                                    <div class="mt-2">
+                                                        <small class="text-danger"><strong>เหตุผล:</strong> {{ $sell->rejection_reason }}</small>
+                                                    </div>
+                                                @endif
+                                            @elseif ($sell->approved_at)
                                                 <span class="badge bg-success">
                                                     <i class="bi bi-check-circle"></i> อนุมัติแล้ว
                                                 </span>
