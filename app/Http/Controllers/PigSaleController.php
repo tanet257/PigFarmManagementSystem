@@ -373,10 +373,13 @@ class PigSaleController extends Controller
             'approvedBy'
         ]);
 
-        // ✅ Exclude cancelled sales (soft delete) - unless show_cancelled is true
+        // ✅ Exclude cancelled and rejected sales - unless show_cancelled is true
         if (!$request->has('show_cancelled') || !$request->show_cancelled) {
-            $query->where('status', '!=', 'ยกเลิกการขาย');
+            $query->where('status', '!=', 'ยกเลิกการขาย')
+                  ->where('status', '!=', 'rejected');
         }
+        // Always exclude pending cancel requests
+        $query->where('status', '!=', 'ยกเลิกการขาย_รอการอนุมัติ');
 
         // Search
         if ($request->filled('search')) {

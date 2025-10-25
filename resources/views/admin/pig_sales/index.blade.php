@@ -127,13 +127,13 @@
                     @endforeach
                 </select>
 
-                <!-- Show Cancelled Pig Sales Checkbox -->
+                <!-- Show Cancelled/Rejected Pig Sales Checkbox -->
                 <div class="form-check ms-2">
                     <input class="form-check-input" type="checkbox" id="showCancelledCheckboxSale"
                         {{ request('show_cancelled') ? 'checked' : '' }}
                         onchange="toggleCancelledSale()">
                     <label class="form-check-label" for="showCancelledCheckboxSale">
-                        <i class="bi bi-eye"></i> แสดงการขายที่ยกเลิก
+                        <i class="bi bi-eye"></i> แสดงการขายที่ยกเลิก/ปฏิเสธ
                     </label>
                 </div>
 
@@ -326,7 +326,7 @@
                                     </button>
                                 @endif
 
-                                @if ($sell->payment_status === 'ยกเลิกการขาย' || $sell->status === 'ยกเลิกการขาย_รอการอนุมัติ')
+                                @if ($sell->payment_status === 'ยกเลิกการขาย' || $sell->status === 'ยกเลิกการขาย_รอการอนุมัติ' || $sell->status === 'ยกเลิกการขาย' || $sell->status === 'rejected')
                                     <span class="badge bg-danger">
                                         <i class="bi bi-x-circle"></i> ยกเลิก
                                     </span>
