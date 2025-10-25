@@ -241,6 +241,7 @@ class PigEntryController extends Controller
                     'total_price'          => $validated['total_pig_price'],
                     'transport_cost'       => $validated['transport_cost'] ?? 0,
                     'excess_weight_cost'   => $validated['excess_weight_cost'] ?? 0,
+                    'payment_status'       => 'pending',  // ✅ Set initial status
                     'note'                 => 'ค่าลูกหมู',
                     'receipt_file'         => $uploadedFileUrl,
                 ]);
@@ -407,6 +408,7 @@ class PigEntryController extends Controller
                     'total_price' => $validated['total_pig_price'],
                     'transport_cost' => $validated['transport_cost'] ?? 0,
                     'excess_weight_cost' => $validated['excess_weight_cost'] ?? 0,
+                    'payment_status' => 'pending',  // ✅ Ensure status is set
                     'note' => 'ค่าลูกหมู',
                     'receipt_file' => $uploadedFileUrl,
                 ]

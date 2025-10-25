@@ -78,7 +78,7 @@ class CostPaymentApprovalController extends Controller
             // อัปเดท Cost record
             $cost = $payment->cost;
             $cost->update([
-                'payment_status' => 'paid',
+                'payment_status' => 'approved',  // ✅ Changed from 'paid' to 'approved' for profit calculation
                 'paid_date' => now(),
             ]);
 
