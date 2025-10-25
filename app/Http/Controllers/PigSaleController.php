@@ -730,7 +730,7 @@ class PigSaleController extends Controller
             // บันทึกข้อมูลการปฏิเสธ
             $pigSale->status = 'rejected';
             $pigSale->rejection_reason = $validated['rejection_reason'] ?? 'ไม่ระบุเหตุผล';
-            $pigSale->rejected_by = $user->name;
+            $pigSale->rejected_by = $user->id;  // ✅ FIX: Use user ID, not name
             $pigSale->rejected_at = now();
             $pigSale->save();
 
@@ -842,9 +842,9 @@ class PigSaleController extends Controller
         try {
             $pigSale = PigSale::findOrFail($id);
 
-            // ✅ ตรวจสอบว่า approved status เท่านั้นถึงจะขอยกเลิกได้
-            if ($pigSale->status !== 'approved') {
-                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่อนุมัติแล้วเท่านั้น';
+            // ✅ อนุญาตให้ยกเลิก pending และ approved status เท่านั้น
+            if (!in_array($pigSale->status, ['pending', 'approved'])) {
+                $errorMessage = 'สามารถขอยกเลิกได้เฉพาะการขายที่ยังไม่ชำระเงินหรืออนุมัติแล้วเท่านั้น (สถานะปัจจุบัน: ' . $pigSale->status . ')';
 
                 // ✅ ส่ง JSON response ถ้าเป็น AJAX request
                 if (request()->expectsJson()) {
@@ -977,6 +977,8 @@ class PigSaleController extends Controller
             $pigSale->update([
                 'status' => 'ยกเลิกการขาย',
                 'payment_status' => 'ยกเลิกการขาย',
+                'rejected_by' => auth()->id(),  // ✅ NEW: Record who approved the cancel
+                'rejected_at' => now(),  // ✅ NEW: Record when it was approved
             ]);
 
             // ✅ NEW: คืนค่า PigDeath.available ถ้าเป็นการขายหมูตาย

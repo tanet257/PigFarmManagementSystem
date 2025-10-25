@@ -297,28 +297,22 @@
                                     {{ $sell->createdBy->name ?? '-' }}
                                 </small>
                             </td>
-                            <td class="text-center">
+                            <td class="text-end">
                                 <button type="button" class="btn btn-sm btn-info"
                                     onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $sell->id }}')).show();">
                                     <i class="bi bi-eye"></i>
                                 </button>
 
-                                @if (!$sell->approved_at && auth()->user()->hasPermission('approve_sales'))
-                                    <button type="button" class="btn btn-sm btn-primary"
-                                        onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('approveModal{{ $sell->id }}')).show();"
-                                        title="อนุมัติการขาย">
-                                        <i class="bi bi-check-circle"></i>
-                                    </button>
-                                @endif
 
-                                @if ($sell->payment_status != 'ชำระแล้ว' && $sell->payment_status != 'ยกเลิกการขาย')
+
+                                @if ($sell->payment_status != 'ชำระแล้ว' && $sell->payment_status != 'ยกเลิกการขาย' && $sell->status != 'ยกเลิกการขาย_รอการอนุมัติ')
                                     <button type="button" class="btn btn-sm btn-success"
                                         onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('paymentModal{{ $sell->id }}')).show();">
                                         <i class="bi bi-cash"></i>
                                     </button>
                                 @endif
 
-                                @if ($sell->payment_status === 'ยกเลิกการขาย')
+                                @if ($sell->payment_status === 'ยกเลิกการขาย' || $sell->status === 'ยกเลิกการขาย_รอการอนุมัติ')
                                     <span class="badge bg-danger">
                                         <i class="bi bi-x-circle"></i> ยกเลิก
                                     </span>
@@ -622,7 +616,7 @@
                         <h5 class="modal-title">บันทึกการชำระเงิน</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <form action="{{ route('payments.store') }}" method="POST" enctype="multipart/form-data">
+                    <form id="paymentForm{{ $sell->id }}" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="pig_sale_id" value="{{ $sell->id }}">
 
@@ -689,7 +683,7 @@
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                            <button type="submit" class="btn btn-primary">บันทึกการชำระเงิน</button>
+                            <button type="button" class="btn btn-primary" onclick="submitPaymentForm({{ $sell->id }})">บันทึกการชำระเงิน</button>
                         </div>
                     </form>
                 </div>
@@ -1454,15 +1448,24 @@
                         }
                     })
                     .then(response => {
-                        if (!response.ok) throw new Error('Network response was not ok');
-                        return response.json();
+                        return response.json().then(data => {
+                            return { ok: response.ok, status: response.status, data: data };
+                        });
                     })
-                    .then(data => {
-                        // ✅ Show success message
+                    .then(result => {
                         const sb = document.getElementById('snackbar');
                         const sbMsg = document.getElementById('snackbarMessage');
-                        sbMsg.innerText = data.message || 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
-                        sb.style.backgroundColor = '#28a745'; // สีเขียว success
+
+                        if (result.ok) {
+                            // ✅ Success
+                            sbMsg.innerText = result.data.message || 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
+                            sb.style.backgroundColor = '#28a745'; // สีเขียว
+                        } else {
+                            // ❌ Error but got JSON response
+                            sbMsg.innerText = result.data.message || 'เกิดข้อผิดพลาด';
+                            sb.style.backgroundColor = '#dc3545'; // สีแดง
+                        }
+
                         sb.style.display = 'flex';
                         sb.classList.add('show');
                         setTimeout(() => {
@@ -1470,17 +1473,19 @@
                             sb.style.display = 'none';
                         }, 5000);
 
-                        // ✅ Auto-refresh table after 1 second
-                        setTimeout(() => {
-                            location.reload();
-                        }, 1500);
+                        // ✅ Reload page after 2 seconds if success
+                        if (result.ok) {
+                            setTimeout(() => {
+                                location.reload();
+                            }, 2000);
+                        }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         const sb = document.getElementById('snackbar');
                         const sbMsg = document.getElementById('snackbarMessage');
                         sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
-                        sb.style.backgroundColor = '#dc3545'; // สีแดง error
+                        sb.style.backgroundColor = '#dc3545'; // สีแดง
                         sb.style.display = 'flex';
                         sb.classList.add('show');
                         setTimeout(() => {
@@ -1489,6 +1494,74 @@
                         }, 5000);
                     });
                 }
+            }
+
+            // ✅ NEW: Submit Payment Form using AJAX
+            function submitPaymentForm(pigSaleId) {
+                const form = document.getElementById(`paymentForm${pigSaleId}`);
+                if (!form) return;
+
+                const formData = new FormData(form);
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                fetch('{{ route("payments.store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    return response.json().then(data => {
+                        return { ok: response.ok, status: response.status, data: data };
+                    });
+                })
+                .then(result => {
+                    const sb = document.getElementById('snackbar');
+                    const sbMsg = document.getElementById('snackbarMessage');
+
+                    if (result.ok) {
+                        // ✅ Success
+                        sbMsg.innerText = result.data.message || 'บันทึกการชำระเงินสำเร็จ';
+                        sb.style.backgroundColor = '#28a745'; // สีเขียว
+
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById(`paymentModal${pigSaleId}`));
+                        if (modal) modal.hide();
+                    } else {
+                        // ❌ Error
+                        sbMsg.innerText = result.data.message || 'เกิดข้อผิดพลาด';
+                        sb.style.backgroundColor = '#dc3545'; // สีแดง
+                    }
+
+                    sb.style.display = 'flex';
+                    sb.classList.add('show');
+                    setTimeout(() => {
+                        sb.classList.remove('show');
+                        sb.style.display = 'none';
+                    }, 5000);
+
+                    // ✅ Reload page if success
+                    if (result.ok) {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const sb = document.getElementById('snackbar');
+                    const sbMsg = document.getElementById('snackbarMessage');
+                    sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
+                    sb.style.backgroundColor = '#dc3545';
+                    sb.style.display = 'flex';
+                    sb.classList.add('show');
+                    setTimeout(() => {
+                        sb.classList.remove('show');
+                        sb.style.display = 'none';
+                    }, 5000);
+                });
             }
 
             // เรียกใช้ common table click handler
