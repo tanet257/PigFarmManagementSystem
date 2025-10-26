@@ -381,7 +381,7 @@
 
                     @empty
                         <tr>
-                            <td colspan="12" class="text-danger">❌ ไม่มีข้อมูล</td>
+                            <td colspan="12" class="text-danger">ไม่มีข้อมูล</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -814,8 +814,8 @@
                 const amountInput = form.querySelector('input[name="amount"]');
                 const receiptInput = form.querySelector('input[name="receipt_file"]');
 
-                // 🔍 DEBUG: Log all fields
-                console.log('🔍 Payment Form Debug:', {
+                // DEBUG: Log all fields
+                console.log('Payment Form Debug:', {
                     recordId,
                     paymentMethodValue: paymentMethodInput?.value,
                     amount: amountInput?.value,
@@ -826,30 +826,30 @@
                 let errors = [];
 
                 if (!paymentMethodInput || !paymentMethodInput.value) {
-                    errors.push('❌ กรุณาเลือกวิธีชำระเงิน');
+                    errors.push('กรุณาเลือกวิธีชำระเงิน');
                 }
 
                 if (!amountInput || !amountInput.value || parseFloat(amountInput.value) <= 0) {
-                    errors.push('❌ กรุณากรอกจำนวนเงิน');
+                    errors.push('กรุณากรอกจำนวนเงิน');
                 }
 
                 if (!receiptInput || !receiptInput.files || receiptInput.files.length === 0) {
-                    errors.push('❌ กรุณาอัปโหลดหลักฐานการชำระเงิน');
+                    errors.push('กรุณาอัปโหลดหลักฐานการชำระเงิน');
                 }
 
                 if (errors.length > 0) {
-                    console.error('❌ Validation errors:', errors);
+                    console.error('Validation errors:', errors);
                     showSnackbar(errors.join('\n'));
                     return;
                 }
 
-                console.log('✅ Validation passed, sending form...');
+                console.log('Validation passed, sending form...');
 
                 // Create FormData
                 const formData = new FormData(form);
 
-                // 🔍 DEBUG: Log FormData
-                console.log('📋 FormData contents:');
+                // DEBUG: Log FormData
+                console.log('FormData contents:');
                 for (let [key, value] of formData.entries()) {
                     if (value instanceof File) {
                         console.log(`  ${key}: File(${value.name})`);
@@ -880,7 +880,7 @@
                     const sbMsg = document.getElementById('snackbarMessage');
 
                     if (status === 200 && data.success) {
-                        // ✅ Success
+                        // Success
                         sbMsg.innerText = data.message || 'บันทึกการชำระเงินสำเร็จ';
                         sb.style.backgroundColor = '#28a745'; // สีเขียว
                         sb.style.display = 'flex';
@@ -895,7 +895,7 @@
                             location.reload();
                         }, 2000);
                     } else {
-                        // ❌ Error
+                        // Error
                         sbMsg.innerText = data.message || 'เกิดข้อผิดพลาด';
                         sb.style.backgroundColor = '#dc3545'; // สีแดง
                         sb.style.display = 'flex';
@@ -988,7 +988,7 @@
 
                                         const isDisabled = isFull ? 'disabled' : '';
                                         const statusText = isFull ?
-                                            `<span class="text-danger"> ❌ เต็มแล้ว</span>` :
+                                            `<span class="text-danger">เต็มแล้ว</span>` :
                                             `<span class="text-success"> (เหลือ ${available} ตัว)</span>`;
 
                                         div.innerHTML = `
@@ -1131,7 +1131,7 @@
                 setupClickableRows();
             });
 
-            // ✅ DELETE PigEntry using AJAX with confirmation
+            // DELETE PigEntry using AJAX with confirmation
             function deletePigEntry(pigEntryId, csrfToken) {
                 fetch(`{{ route('pig_entry_records.delete', '') }}/${pigEntryId}`, {
                     method: 'DELETE',
@@ -1151,11 +1151,11 @@
                     const sbMsg = document.getElementById('snackbarMessage');
 
                     if (result.ok) {
-                        // ✅ Success
+                        // Success
                         sbMsg.innerText = result.data.message || 'ลบรายการสำเร็จ';
                         sb.style.backgroundColor = '#28a745'; // สีเขียว
                     } else {
-                        // ❌ Error but got JSON response
+                        // Error but got JSON response
                         sbMsg.innerText = result.data.message || 'เกิดข้อผิดพลาด';
                         sb.style.backgroundColor = '#dc3545'; // สีแดง
                     }
@@ -1167,7 +1167,7 @@
                         sb.style.display = 'none';
                     }, 5000);
 
-                    // ✅ Reload page after 2 seconds if success
+                    // Reload page after 2 seconds if success
                     if (result.ok) {
                         setTimeout(() => {
                             location.reload();
@@ -1192,7 +1192,7 @@
 
         {{-- Export Functions --}}
         <script>
-            // ✅ Export to CSV with Thai font support
+            // Export to CSV with Thai font support
             function exportToCSV(event) {
                 event.preventDefault();
                 // Exclude "จัดการ" column (last column)

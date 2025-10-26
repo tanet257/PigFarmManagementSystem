@@ -219,7 +219,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="text-center text-danger">❌ ไม่มีข้อมูลความเคลื่อนไหว</td>
+                            <td colspan="11" class="text-center text-danger">ไม่มีข้อมูลความเคลื่อนไหว</td>
                         </tr>
                     @endforelse
                 </tbody>

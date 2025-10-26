@@ -64,7 +64,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>❌ คำขอลงทะเบียนถูกปฏิเสธ</h1>
+            <h1>คำขอลงทะเบียนถูกปฏิเสธ</h1>
         </div>
         <div class="content">
             <p>สวัสดี {{ $user->name }},</p>

@@ -213,11 +213,13 @@ class BatchPenAllocationController extends Controller
             ];
         });
 
-        $filename = "batch_pen_allocations_" . date('Y-m-d_H-i-s') . ".csv";
+        $filename = "การจัดสรรหมู_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($barnSummaries) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Farm', 'Batch', 'Barn', 'Capacity', 'Total Allocated']);
+            // Add UTF-8 BOM for Thai character support in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['ฟาร์ม', 'รุ่น', 'เล้า', 'ความจุ', 'จำนวนที่จัดสรร']);
             foreach ($barnSummaries as $summary) {
                 fputcsv($handle, [
                     $summary['farm_name'],
@@ -228,6 +230,7 @@ class BatchPenAllocationController extends Controller
                 ]);
             }
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, ['Content-Type' => 'text/csv;charset=utf-8']);
+
     }
 }

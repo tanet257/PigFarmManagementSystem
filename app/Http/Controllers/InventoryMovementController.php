@@ -140,23 +140,25 @@ class InventoryMovementController extends Controller
     public function exportCsv()
     {
         $movements = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record'])->get();
-        $filename = "inventory_movements_" . date('Y-m-d_H-i-s') . ".csv";
+        $filename = "ความเคลื่อนไหวของสต็อก_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($movements) {
             $handle = fopen('php://output', 'w');
+            // Add UTF-8 BOM for Thai character support in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($handle, [
-                'ID',
-                'Farm',
-                'Storehouse Item Code',
-                'Storehouse Item Name',
-                'Batch',
-                'Barn',
-                'Dairy record',
-                'Change Type',
-                'Quantity',
-                'Note',
-                'Date',
-                'Created At'
+                'ลำดับ',
+                'ฟาร์ม',
+                'รหัสสินค้า',
+                'ชื่อสินค้า',
+                'รุ่น',
+                'เล้า',
+                'บันทึกประจำวัน',
+                'ประเภทการเปลี่ยนแปลง',
+                'จำนวน',
+                'หมายเหตุ',
+                'วันที่',
+                'สร้างเมื่อ'
             ]);
 
             foreach ($movements as $m) {
@@ -176,6 +178,6 @@ class InventoryMovementController extends Controller
                 ]);
             }
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, ['Content-Type' => 'text/csv;charset=utf-8']);
     }
 }

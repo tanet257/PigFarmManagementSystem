@@ -60,9 +60,35 @@
                 </li>
             </ul>
             <!-- Export Button -->
-            <button class="btn btn-sm btn-success ms-2" onclick="exportTableToCSV('.table-responsive', 'อนุมัติการชำระเงิน')" title="ส่งออก CSV">
+            <button class="btn btn-sm btn-success ms-2" onclick="exportActiveTable()" title="ส่งออก CSV">
                 <i class="bi bi-file-earmark-spreadsheet"></i> CSV
             </button>
+        </div>
+
+        {{-- JavaScript สำหรับ Export CSV ตามแต่ละ Tab --}}
+        <script>
+            function exportActiveTable() {
+                const activeTab = document.querySelector('.tab-pane.active table');
+                if (!activeTab) {
+                    alert('ไม่พบตารางข้อมูลในแท็บนี้');
+                    return;
+                }
+
+                const tableId = activeTab.id;
+                const selector = '#' + tableId;
+                let filename = 'อนุมัติการชำระเงินค่าใช้จ่าย_' + new Date().toISOString().split('T')[0];
+
+                // Export ตามแท็บที่ active
+                const activeTabId = document.querySelector('.nav-link.active').id;
+                if (activeTabId.includes('approved')) {
+                    filename = 'อนุมัติการชำระเงินค่าใช้จ่าย_อนุมัติแล้ว_' + new Date().toISOString().split('T')[0];
+                } else if (activeTabId.includes('rejected')) {
+                    filename = 'อนุมัติการชำระเงินค่าใช้จ่าย_ปฏิเสธแล้ว_' + new Date().toISOString().split('T')[0];
+                }
+
+                exportTableToCSV(selector, filename, [5]);
+            }
+        </script>
         </div>
 
         {{-- Tab Content --}}
@@ -71,7 +97,7 @@
             <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
         @if ($pendingPayments->count() > 0)
             <div class="table-responsive">
-                <table class="table table-primary mb-0">
+                <table class="table table-primary mb-0" id="costPaymentsTable">
                     <thead class="table-header-custom">
                             <tr>
                                 <th class="text-center">ลำดับ</th>
@@ -235,7 +261,7 @@
             <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
         @if ($approvedPayments->count() > 0)
             <div class="table-responsive">
-                <table class="table table-primary mb-0">
+                <table class="table table-primary mb-0" id="approvedTable">
                     <thead class="table-header-custom">
                             <tr>
                                 <th class="text-center">ลำดับ</th>
@@ -250,7 +276,36 @@
                             @forelse($approvedPayments as $payment)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>
-                                    <td class="text-end">฿{{ number_format($payment->amount, 2) }}</td>
+                                    <td>
+                                        @switch($payment->cost->cost_type)
+                                            @case('piglet')
+                                                <span class="badge bg-primary">ลูกหมู</span>
+                                                @break
+                                            @case('feed')
+                                                <span class="badge bg-info">อาหาร</span>
+                                                @break
+                                            @case('medicine')
+                                                <span class="badge bg-danger">ยา</span>
+                                                @break
+                                            @case('wage')
+                                                <span class="badge bg-success">เงินเดือน</span>
+                                                @break
+                                            @case('shipping')
+                                                <span class="badge bg-secondary">ขนส่ง</span>
+                                                @break
+                                            @case('electric_bill')
+                                                <span class="badge bg-warning">ค่าไฟฟ้า</span>
+                                                @break
+                                            @case('water_bill')
+                                                <span class="badge bg-info">ค่าน้ำ</span>
+                                                @break
+                                            @case('other')
+                                                <span class="badge bg-dark">อื่น ๆ</span>
+                                                @break
+                                        @endswitch
+                                    </td>
+                                    <td>{{ $payment->cost->batch->batch_code ?? 'N/A' }}</td>
+                                    <td class="text-end"><strong>฿{{ number_format($payment->amount, 2) }}</strong></td>
                                     <td>{{ $payment->approver->name ?? '-' }}</td>
                                     <td>{{ $payment->approved_date ? $payment->approved_date->format('d/m/Y H:i') : '-' }}</td>
                                 </tr>
@@ -276,7 +331,7 @@
             <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
         @if ($rejectedPayments->count() > 0)
             <div class="table-responsive">
-                <table class="table table-primary mb-0">
+                <table class="table table-primary mb-0" id="rejectedTable">
                     <thead class="table-header-custom">
                             <tr>
                                 <th class="text-center">ลำดับ</th>

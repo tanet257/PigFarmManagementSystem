@@ -26,7 +26,7 @@
                     style="width:100%; padding:0.5rem; border:2px solid #FF5B22; border-radius:6px; transition:border-color 0.3s;"
                     onfocus="this.style.borderColor='#e65a00';" onblur="this.style.borderColor='#FF5B22';" />
                 <small style="color: #666; display: block; margin-top: 0.25rem;">
-                    ⚠️ ต้องใช้ Gmail (@gmail.com) เท่านั้น
+                    ต้องใช้ Gmail (@gmail.com) เท่านั้น
                 </small>
             </div>
 

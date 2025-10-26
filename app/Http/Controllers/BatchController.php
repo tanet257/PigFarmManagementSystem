@@ -261,39 +261,25 @@ class BatchController extends Controller
     {
         $batches = Batch::all();
 
-        $filename = "batches_" . date('Y-m-d_H-i-s') . ".csv";
-        $handle = fopen('php://output', 'w');
-        fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
-
-        foreach ($batches as $batch) {
-            fputcsv($handle, [
-                $batch->batch_code,
-                $batch->farm->name ?? '-',
-                $batch->barn->name ?? '-',
-                $batch->pen->name ?? '-',
-                $batch->status,
-                $batch->start_date,
-                $batch->end_date,
-            ]);
-        }
-
-        fclose($handle);
+        $filename = "ข้อมูลรุ่นหมู_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($batches) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Batch Code', 'Farm', 'Barn', 'Pen', 'Status', 'Start Date', 'End Date']);
+            // Add UTF-8 BOM for Thai character support in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['รหัสรุ่น', 'ฟาร์ม', 'เล้า', 'ปากกา', 'สถานะ', 'วันที่เริ่ม', 'วันที่สิ้นสุด']);
             foreach ($batches as $batch) {
                 fputcsv($handle, [
                     $batch->batch_code,
-                    $batch->farm->name ?? '-',
-                    $batch->barn->name ?? '-',
-                    $batch->pen->name ?? '-',
+                    $batch->farm->farm_name ?? '-',
+                    $batch->barn->barn_code ?? '-',
+                    $batch->pen->pen_code ?? '-',
                     $batch->status,
                     $batch->start_date,
                     $batch->end_date,
                 ]);
             }
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, ['Content-Type' => 'text/csv;charset=utf-8']);
     }
 }

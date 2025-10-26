@@ -77,7 +77,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📋 บทบาท (Role) ถูกเปลี่ยนแล้ว</h1>
+            <h1>บทบาท (Role) ถูกเปลี่ยนแล้ว</h1>
         </div>
         <div class="content">
             <p>สวัสดี {{ $user->name }},</p>
@@ -90,14 +90,14 @@
                 <div class="role-box">
                     <p style="margin: 0 0 10px 0;"><strong>บทบาทเดิม:</strong></p>
                     <div class="old-role">
-                        <i style="color: #ef4444;">❌</i> {{ $oldRole }}
+                        {{ $oldRole }}
                     </div>
 
                     <p style="margin: 15px 0 10px 0; text-align: center;"><strong>↓ เปลี่ยนเป็น ↓</strong></p>
 
                     <p style="margin: 10px 0 0 0;"><strong>บทบาทใหม่:</strong></p>
                     <div class="new-role">
-                        <i style="color: #10b981;">✅</i> {{ $newRole }}
+                        {{ $newRole }}
                     </div>
                 </div>
             @else

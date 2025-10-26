@@ -537,43 +537,25 @@ class StoreHouseController extends Controller
     {
         $storehouses = StoreHouse::all();
 
-        $filename = "storehouses" . date('Y-m-d_H-i-s') . ".csv";
-        $handle = fopen('php://output', 'w');
-        fputcsv($handle, ['Farm', 'Item Code', 'Item Name', 'Type', 'Unit', 'Stock', 'Status']);
-
-        foreach ($storehouses as $storehouse) {
-            fputcsv($handle, [
-                $storehouse->farm->name ?? '-',
-                $storehouse->item->type ?? '-',
-                $storehouse->item->code ?? '-',
-                $storehouse->item->name ?? '-',
-                $storehouse->unit ?? '-',
-                $storehouse->stock ?? '-',
-                $storehouse->status,
-                $storehouse->start_date,
-                $storehouse->end_date,
-            ]);
-        }
-
-        fclose($handle);
+        $filename = "คลังสินค้า_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($storehouses) {
             $handle = fopen('php://output', 'w');
-            fputcsv($handle, ['Farm', 'Item Code', 'Item Name', 'Type', 'Unit', 'Stock', 'Status']);
+            // Add UTF-8 BOM for Thai character support in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['ฟาร์ม', 'รหัสสินค้า', 'ชื่อสินค้า', 'ประเภท', 'หน่วย', 'จำนวน', 'สถานะ']);
             foreach ($storehouses as $storehouse) {
                 fputcsv($handle, [
-                    $storehouse->farm->name ?? '-',
-                    $storehouse->item->type ?? '-',
+                    $storehouse->farm->farm_name ?? '-',
                     $storehouse->item->code ?? '-',
                     $storehouse->item->name ?? '-',
+                    $storehouse->item->type ?? '-',
                     $storehouse->unit ?? '-',
                     $storehouse->stock ?? '-',
                     $storehouse->status,
-                    $storehouse->start_date,
-                    $storehouse->end_date,
                 ]);
             }
             fclose($handle);
-        }, $filename, ['Content-Type' => 'text/csv']);
+        }, $filename, ['Content-Type' => 'text/csv;charset=utf-8']);
     }
 }

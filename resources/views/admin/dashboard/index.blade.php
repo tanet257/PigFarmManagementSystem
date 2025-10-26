@@ -20,7 +20,7 @@
                     <button class="btn btn-sm btn-primary dropdown-toggle" type="button" id="farmFilterBtn"
                         data-bs-toggle="dropdown">
                         <i class="bi bi-building"></i>
-                        {{ request('farm_id') ? $farms->find(request('farm_id'))->name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
+                        {{ request('farm_id') ? $farms->find(request('farm_id'))->farm_name ?? 'ฟาร์ม' : 'ฟาร์มทั้งหมด' }}
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item {{ request('farm_id') == '' ? 'active' : '' }}"
@@ -28,7 +28,7 @@
                         </li>
                         @foreach ($farms as $farm)
                             <li><a class="dropdown-item {{ request('farm_id') == $farm->id ? 'active' : '' }}"
-                                    href="{{ route('dashboard.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">{{ $farm->name }}</a>
+                                    href="{{ route('dashboard.index', array_merge(request()->all(), ['farm_id' => $farm->id])) }}">{{ $farm->farm_name }}</a>
                             </li>
                         @endforeach
                     </ul>
@@ -156,9 +156,12 @@
                 $avgFcg = $avgFcg / $profitCount;
             @endphp
             <div class="col-md-3">
-                <div class="card border-primary">
+                <div class="card border-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+                     title="น้ำหนักที่เพิ่มขึ้นเฉลี่ยต่อตัวต่อวัน (กิโลกรัม/ตัว/วัน) ยิ่งสูงยิ่งดี">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">ADG (kg/ตัว/วัน)</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-graph-up"></i> ADG (kg/ตัว/วัน)
+                        </h5>
                         <h3 class="text-primary">{{ $avgAdg > 0 ? number_format($avgAdg, 2) : '-' }}</h3>
                         <small class="text-muted">Average Daily Gain</small>
                     </div>
@@ -166,9 +169,12 @@
             </div>
 
             <div class="col-md-3">
-                <div class="card border-secondary">
+                <div class="card border-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+                     title="อัตราการแปลงอาหาร: น้ำหนักอาหารที่ใช้ต่อน้ำหนักที่เพิ่ม (kg/kg) ยิ่งต่ำยิ่งดี">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">FCR (kg/kg)</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-percent"></i> FCR (kg/kg)
+                        </h5>
                         <h3 class="text-secondary">{{ $avgFcr > 0 ? number_format($avgFcr, 3) : '-' }}</h3>
                         <small class="text-muted">Feed Conversion Ratio</small>
                     </div>
@@ -176,9 +182,12 @@
             </div>
 
             <div class="col-md-3">
-                <div class="card border-dark">
+                <div class="card border-dark" data-bs-toggle="tooltip" data-bs-placement="top"
+                     title="ต้นทุนอาหารต่อน้ำหนักที่เพิ่ม (บาท/กิโลกรัม) ยิ่งต่ำยิ่งดี">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">FCG (บาท/kg)</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-cash-coin"></i> FCG (บาท/kg)
+                        </h5>
                         <h3 class="text-dark">{{ $avgFcg > 0 ? '฿' . number_format($avgFcg, 2) : '-' }}</h3>
                         <small class="text-muted">Feed Cost per kg Gain</small>
                     </div>
@@ -186,9 +195,12 @@
             </div>
 
             <div class="col-md-3">
-                <div class="card border-secondary">
+                <div class="card border-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
+                     title="จำนวนอาหารที่ใช้ทั้งหมดในการเลี้ยงหมู">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">อาหารรวม</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-bag"></i> อาหารรวม
+                        </h5>
                         <h3 class="text-secondary">{{ $totalFeedBags > 0 ? number_format($totalFeedBags) : '0' }}</h3>
                         <small class="text-muted">กระสอบ / {{ number_format($totalFeedKg, 2) }} กก.</small>
                     </div>
@@ -256,8 +268,11 @@
 
         <!-- Profits Table -->
         <div class="card">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-table"></i> รายละเอียดกำไรแต่ละรุ่น</h5>
+                <button class="btn btn-sm btn-success" onclick="exportTableToCSV('#profitsTable', 'ข้อมูลกำไร_' + new Date().toISOString().split('T')[0] + '.csv', [13])">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+                </button>
             </div>
             <div class="card-body">
                 @if ($profits->isEmpty())
@@ -266,7 +281,7 @@
                     </div>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-hover">
+                        <table class="table table-hover" id="profitsTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>รหัสรุ่น</th>
@@ -291,7 +306,7 @@
                                         <td>
                                             <strong>{{ $profit->batch?->batch_code ?? 'N/A' }}</strong>
                                         </td>
-                                        <td>{{ $profit->farm?->name ?? 'N/A' }}</td>
+                                        <td>{{ $profit->farm?->farm_name ?? 'N/A' }}</td>
                                         <td class="text-primary">฿{{ number_format($profit->total_revenue, 2) }}</td>
                                         <td class="text-warning">฿{{ number_format($profit->total_cost, 2) }}</td>
                                         <td class="text-success fw-bold">฿{{ number_format($profit->gross_profit, 2) }}
@@ -394,7 +409,7 @@
                     <div class="modal-body">
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <strong>ฟาร์ม:</strong> {{ $profit->farm?->name ?? 'N/A' }}<br>
+                                <strong>ฟาร์ม:</strong> {{ $profit->farm?->farm_name ?? 'N/A' }}<br>
                                 <strong>รุ่น:</strong> {{ $profit->batch?->batch_code ?? 'N/A' }}<br>
                                 <strong>สถานะ:</strong> {{ $profit->status }}
                             </div>
@@ -519,7 +534,7 @@
                         <!-- Profit Details Items -->
                         @if ($profit->profitDetails->isNotEmpty())
                             <hr>
-                            <h6 class="mb-3">🔍 รายละเอียดต้นทุนแต่ละรายการ</h6>
+                            <h6 class="mb-3">รายละเอียดต้นทุนแต่ละรายการ</h6>
                             <div class="table-responsive">
                                 <table class="table table-sm">
                                     <thead class="table-light">
@@ -926,3 +941,15 @@
     </script>
 
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize Bootstrap tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+    </script>
+@endpush

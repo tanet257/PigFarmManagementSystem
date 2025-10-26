@@ -164,16 +164,12 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
-                <!-- Export CSV Button -->
-                <button class="btn btn-sm btn-success" onclick="exportTableToCSV('.table-responsive', 'บันทึกประจำวัน', [7])" title="ส่งออก CSV">
-                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-                </button>
+
 
                 <!-- Show Cancelled Batches Checkbox -->
                 <div class="form-check ms-2">
                     <input class="form-check-input" type="checkbox" id="showCancelledCheckboxDairy"
-                        {{ request('show_cancelled') ? 'checked' : '' }}
-                        onchange="toggleCancelledDairy()">
+                        {{ request('show_cancelled') ? 'checked' : '' }} onchange="toggleCancelledDairy()">
                     <label class="form-check-label" for="showCancelledCheckboxDairy" title="แสดงรายการที่ยกเลิก">
                         <i class="bi bi-eye"></i>
                     </label>
@@ -181,9 +177,11 @@
 
                 <!-- Right side buttons -->
                 <div class="ms-auto d-flex gap-2">
-                    <a class="btn btn-outline-success btn-sm" href="{{ route('dairy_records.export.csv') }}">
-                        <i class="bi bi-file-earmark-spreadsheet me-1"></i> CSV
-                    </a>
+                    <!-- Export CSV Button -->
+                    <button class="btn btn-sm btn-success"
+                        onclick="exportTableToCSV('.table-responsive', 'บันทึกประจำวัน', [7])" title="ส่งออก CSV">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                    </button>
                     <a class="btn btn-outline-danger btn-sm" href="{{ route('dairy_records.export.pdf') }}">
                         <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                     </a>
@@ -223,38 +221,38 @@
                 <tbody>
                     @forelse ($dairyRecords as $index => $record)
                         @if ($record->batch->status !== 'cancelled' || request('show_cancelled'))
-                        <tr class="clickable-row" data-row-click="#viewModal{{ $record->id }}">
-                            <td class="text-center">{{ $dairyRecords->firstItem() + $index }}</td>
-                            <td class="text-center">{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</td>
-                            <td class="text-center">{{ $record->batch->farm->farm_name ?? '-' }}</td>
-                            <td class="text-center">{{ $record->batch->batch_code ?? '-' }}</td>
-                            <td class="text-center">{{ $record->display_barn }}</td>
-                            <td class="text-center">
-                                @php
-                                    $typeBadge = '-';
-                                    if ($record->dairy_storehouse_uses->count()) {
-                                        $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-                                    } elseif ($record->batch_treatments->count()) {
-                                        $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-                                    } elseif ($record->pig_deaths->count()) {
-                                        $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
-                                    }
-                                @endphp
-                                {!! $typeBadge !!}
-                            </td>
-                            <td class="text-center">{{ Str::limit($record->display_details ?? '-', 30) }}</td>
-                            <td class="text-center">{{ $record->display_quantity }}</td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                    data-bs-target="#viewModal{{ $record->id }}" onclick="event.stopPropagation()">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                    data-bs-target="#editModal{{ $record->id }}" onclick="event.stopPropagation()">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                            </td>
-                        </tr>
+                            <tr class="clickable-row" data-row-click="#viewModal{{ $record->id }}">
+                                <td class="text-center">{{ $dairyRecords->firstItem() + $index }}</td>
+                                <td class="text-center">{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</td>
+                                <td class="text-center">{{ $record->batch->farm->farm_name ?? '-' }}</td>
+                                <td class="text-center">{{ $record->batch->batch_code ?? '-' }}</td>
+                                <td class="text-center">{{ $record->display_barn }}</td>
+                                <td class="text-center">
+                                    @php
+                                        $typeBadge = '-';
+                                        if ($record->dairy_storehouse_uses->count()) {
+                                            $typeBadge = '<span class="badge bg-success">อาหาร</span>';
+                                        } elseif ($record->batch_treatments->count()) {
+                                            $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
+                                        } elseif ($record->pig_deaths->count()) {
+                                            $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
+                                        }
+                                    @endphp
+                                    {!! $typeBadge !!}
+                                </td>
+                                <td class="text-center">{{ Str::limit($record->display_details ?? '-', 30) }}</td>
+                                <td class="text-center">{{ $record->display_quantity }}</td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                        data-bs-target="#viewModal{{ $record->id }}" onclick="event.stopPropagation()">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                        data-bs-target="#editModal{{ $record->id }}" onclick="event.stopPropagation()">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         @endif
                     @empty
                         <tr>
@@ -285,6 +283,16 @@
             $isDeath = $record->pig_deaths->count();
             $formAction = '#';
             $methodField = '';
+
+            // ✅ Calculate typeBadge for this record
+            $typeBadge = '-';
+            if ($isFeed) {
+                $typeBadge = '<span class="badge bg-success">อาหาร</span>';
+            } elseif ($isMedicine) {
+                $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
+            } elseif ($isDeath) {
+                $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
+            }
 
             if ($isFeed) {
                 $useId = $record->dairy_storehouse_uses->first()->id ?? 0;

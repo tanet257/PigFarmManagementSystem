@@ -65,10 +65,12 @@
                     </a>
                 </li>
             </ul>
-            <!-- Export Button -->
-            <button class="btn btn-sm btn-success ms-2" onclick="exportTableToCSV('.table-responsive', 'การอนุมัติชำระเงิน')" title="ส่งออก CSV">
-                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-            </button>
+            <!-- Export Buttons for each tab -->
+            <div class="ms-2 d-flex gap-2">
+                <button class="btn btn-sm btn-success" id="exportPendingBtn" onclick="exportTableToCSV('#pendingTable', 'การอนุมัติชำระเงิน_' + new Date().toISOString().split('T')[0], [5])" title="ส่งออก CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                </button>
+            </div>
         </div>
 
         {{-- Tab Content --}}
@@ -77,7 +79,7 @@
             <div class="tab-pane fade show active" id="pending" role="tabpanel">
                 @if($pendingPayments->count() > 0 || $pendingPigSales->count() > 0)
                     <div class="table-responsive">
-                        <table class="table table-primary mb-0">
+                        <table class="table table-primary mb-0" id="pendingTable">
                             <thead class="table-header-custom">
                                 <tr>
                                     <th class="text-center">ลำดับ</th>
@@ -89,7 +91,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {{-- ✅ Display Pending Payments --}}
+                                {{-- Display Pending Payments --}}
                                 @forelse($pendingPayments as $index => $payment)
                                     <tr>
                                         <td class="text-center">{{ $loop->iteration }}</td>
@@ -313,7 +315,7 @@
                                                         ราคารวม: {{ number_format($pigSale->net_total, 2) }} ฿
                                                     </div>
                                                     <div class="alert alert-warning">
-                                                        <strong>⚠️ หมายเหตุ:</strong><br>
+                                                        <strong>หมายเหตุ:</strong><br>
                                                         หลังจากอนุมัติการยกเลิกนี้ การขายหมูจะถูกยกเลิกและหมูจะถูกคืนไปยังหมวด "บันทึกแล้ว"
                                                     </div>
                                                 </div>
@@ -433,7 +435,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{-- ✅ Display Rejected PigSales --}}
+                            {{--  Display Rejected PigSales --}}
                             @forelse($rejectedPigSales as $index => $pigSale)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>

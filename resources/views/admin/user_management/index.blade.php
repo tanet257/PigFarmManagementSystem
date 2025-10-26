@@ -135,9 +135,12 @@
                 @include('components.per-page-dropdown')
 
                 <!-- Export CSV Button -->
-                <button class="btn btn-sm btn-success" onclick="exportTableToCSV('.table-responsive', 'จัดการผู้ใช้งาน', [7])" title="ส่งออก CSV">
-                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
-                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button class="btn btn-sm btn-success"
+                        onclick="exportTableToCSV('.table-responsive', 'จัดการผู้ใช้งาน', [7])" title="ส่งออก CSV">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                    </button>
+                </div>
             </form>
         </div>
 
@@ -220,17 +223,22 @@
                                             {{-- ปุ่มยกเลิกลงทะเบียน (ถ้ากำลังมีคำขอยกเลิก) --}}
                                             @if ($user->hasCancellationRequest())
                                                 <div class="btn-group" role="group">
-                                                    <form action="{{ route('user_management.approve_cancel', $user->id) }}" method="POST" class="d-inline">
+                                                    <form
+                                                        action="{{ route('user_management.approve_cancel', $user->id) }}"
+                                                        method="POST" class="d-inline">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="btn btn-sm btn-warning" title="อนุมัติการยกเลิก">
+                                                        <button type="submit" class="btn btn-sm btn-warning"
+                                                            title="อนุมัติการยกเลิก">
                                                             <i class="bi bi-check"></i> อนุมัติยกเลิก
                                                         </button>
                                                     </form>
-                                                    <form action="{{ route('user_management.reject_cancel', $user->id) }}" method="POST" class="d-inline">
+                                                    <form action="{{ route('user_management.reject_cancel', $user->id) }}"
+                                                        method="POST" class="d-inline">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="btn btn-sm btn-secondary" title="ปฏิเสธการยกเลิก">
+                                                        <button type="submit" class="btn btn-sm btn-secondary"
+                                                            title="ปฏิเสธการยกเลิก">
                                                             <i class="bi bi-x"></i> ปฏิเสธยกเลิก
                                                         </button>
                                                     </form>
@@ -265,7 +273,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center text-danger">❌ ไม่มีข้อมูลผู้ใช้</td>
+                                <td colspan="8" class="text-center text-danger">ไม่มีข้อมูลผู้ใช้</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -544,7 +552,7 @@
         const selectedRole = form.querySelector('input[name="selected_role"]:checked');
 
         if (!selectedRole) {
-            alert('⚠️ กรุณาเลือก Role ก่อนอนุมัติ');
+            alert('กรุณาเลือก Role ก่อนอนุมัติ');
             return false;
         }
 
@@ -555,41 +563,41 @@
         // Set hidden field value
         const hiddenField = form.querySelector(`input[id="role_ids_${userId}"]`);
         if (hiddenField) {
-    function validateRoleSelection(button) {
-        // หาพ่อ form ของปุ่มนี้
-        const form = button.closest('form');
-        // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
-        const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
+            function validateRoleSelection(button) {
+                // หาพ่อ form ของปุ่มนี้
+                const form = button.closest('form');
+                // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
+                const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
 
-        if (!selectedRole) {
-            showSnackbar('⚠️ กรุณาเลือก Role ก่อนอนุมัติ', 'warning');
-            return false;
-        }
+                if (!selectedRole) {
+                    showSnackbar('กรุณาเลือก Role ก่อนอนุมัติ', 'warning');
+                    return false;
+                }
 
-        return true;
-    }
+                return true;
+            }
 
-    function validateUpdateRoleSelection(button) {
-        // หาพ่อ form ของปุ่มนี้
-        const form = button.closest('form');
-        // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
-        const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
+            function validateUpdateRoleSelection(button) {
+                // หาพ่อ form ของปุ่มนี้
+                const form = button.closest('form');
+                // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
+                const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
 
-        if (!selectedRole) {
-            showSnackbar('⚠️ กรุณาเลือก Role ก่อนบันทึก', 'warning');
-            return false;
-        }
+                if (!selectedRole) {
+                    showSnackbar('กรุณาเลือก Role ก่อนบันทึก', 'warning');
+                    return false;
+                }
 
-        return true;
-    }
+                return true;
+            }
 
-    /**
-     * Show Snackbar notification
-     */
-    function showSnackbar(message, type = 'info') {
-        const snackbar = document.createElement('div');
-        snackbar.className = `alert alert-${type} alert-dismissible fade show`;
-        snackbar.style.cssText = `
+            /**
+             * Show Snackbar notification
+             */
+            function showSnackbar(message, type = 'info') {
+                const snackbar = document.createElement('div');
+                snackbar.className = `alert alert-${type} alert-dismissible fade show`;
+                snackbar.style.cssText = `
             position: fixed;
             bottom: 20px;
             right: 20px;
@@ -597,16 +605,16 @@
             min-width: 300px;
             max-width: 500px;
         `;
-        snackbar.innerHTML = `
+                snackbar.innerHTML = `
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         `;
 
-        document.body.appendChild(snackbar);
+                document.body.appendChild(snackbar);
 
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            snackbar.remove();
-        }, 5000);
-    }
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    snackbar.remove();
+                }, 5000);
+            }
 </script>

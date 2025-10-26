@@ -55,7 +55,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>✅ บัญชีของคุณได้รับการอนุมัติแล้ว</h1>
+            <h1>บัญชีของคุณได้รับการอนุมัติแล้ว</h1>
         </div>
         <div class="content">
             <p>สวัสดี {{ $user->name }},</p>

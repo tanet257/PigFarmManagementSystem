@@ -1014,7 +1014,7 @@ class PigSaleController extends Controller
     public function exportCsv()
     {
         $pigSales = PigSale::with(['farm', 'batch', 'pigLoss'])->get();
-        $filename = "pig_sales_" . date('Y-m-d_H-i-s') . ".csv";
+        $filename = "บันทึกการขายหมู_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($pigSales) {
             $handle = fopen('php://output', 'w');
