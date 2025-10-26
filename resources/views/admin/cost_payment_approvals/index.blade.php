@@ -64,13 +64,9 @@
             {{-- PENDING TAB --}}
             <div class="tab-pane fade show active" id="pending" role="tabpanel" aria-labelledby="pending-tab">
         @if ($pendingPayments->count() > 0)
-            <div class="card">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="bi bi-hourglass-split"></i> รอการอนุมัติ</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+            <div class="table-responsive">
+                <table class="table table-primary mb-0">
+                    <thead class="table-header-custom">
                             <tr>
                                 <th class="text-center">ลำดับ</th>
                                 <th>ประเภทค่าใช้จ่าย</th>
@@ -118,19 +114,19 @@
                                     <td class="text-center">
                                         <a href="{{ route('cost_payment_approvals.show', $payment->id) }}"
                                             class="btn btn-sm btn-info" title="ดูรายละเอียด">
-                                            <i class="bi bi-eye"></i>
+                                            <i class="bi bi-eye"></i> ดู
                                         </a>
                                         <button type="button" class="btn btn-sm btn-success"
                                             data-bs-toggle="modal"
                                             data-bs-target="#approveModal{{ $payment->id }}"
                                             title="อนุมัติ">
-                                            <i class="bi bi-check"></i>
+                                            <i class="bi bi-check"></i> อนุมัติ
                                         </button>
                                         <button type="button" class="btn btn-sm btn-danger"
                                             data-bs-toggle="modal"
                                             data-bs-target="#rejectModal{{ $payment->id }}"
                                             title="ปฏิเสธ">
-                                            <i class="bi bi-x"></i>
+                                            <i class="bi bi-x"></i> ปฏิเสธ
                                         </button>
                                     </td>
                                 </tr>
@@ -139,9 +135,9 @@
                                 <div class="modal fade" id="approveModal{{ $payment->id }}" tabindex="-1">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
-                                            <div class="modal-header">
+                                            <div class="modal-header bg-success text-white">
                                                 <h5 class="modal-title">ยืนยันการอนุมัติ</h5>
-                                                <button type="button" class="btn-close"
+                                                <button type="button" class="btn-close btn-close-white"
                                                     data-bs-dismiss="modal"></button>
                                             </div>
                                             <form id="approveForm{{ $payment->id }}"
@@ -177,9 +173,9 @@
                                 <div class="modal fade" id="rejectModal{{ $payment->id }}" tabindex="-1">
                                     <div class="modal-dialog">
                                         <div class="modal-content">
-                                            <div class="modal-header">
+                                            <div class="modal-header bg-danger text-white">
                                                 <h5 class="modal-title">ยืนยันการปฏิเสธ</h5>
-                                                <button type="button" class="btn-close"
+                                                <button type="button" class="btn-close btn-close-white"
                                                     data-bs-dismiss="modal"></button>
                                             </div>
                                             <form id="rejectForm{{ $payment->id }}"
@@ -223,7 +219,7 @@
                 {{ $pendingPayments->links() }}
             </div>
         @else
-            <div class="alert alert-success">
+            <div class="alert alert-info">
                 <i class="bi bi-check-circle"></i> ไม่มีการอนุมัติที่รอการอนุมัติ
             </div>
         @endif
@@ -232,13 +228,9 @@
             {{-- APPROVED TAB --}}
             <div class="tab-pane fade" id="approved" role="tabpanel" aria-labelledby="approved-tab">
         @if ($approvedPayments->count() > 0)
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> อนุมัติแล้ว</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+            <div class="table-responsive">
+                <table class="table table-primary mb-0">
+                    <thead class="table-header-custom">
                             <tr>
                                 <th class="text-center">ลำดับ</th>
                                 <th>ประเภทค่าใช้จ่าย</th>
@@ -277,13 +269,9 @@
             {{-- REJECTED TAB --}}
             <div class="tab-pane fade" id="rejected" role="tabpanel" aria-labelledby="rejected-tab">
         @if ($rejectedPayments->count() > 0)
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0"><i class="bi bi-x-circle"></i> ปฏิเสธแล้ว</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
+            <div class="table-responsive">
+                <table class="table table-primary mb-0">
+                    <thead class="table-header-custom">
                             <tr>
                                 <th class="text-center">ลำดับ</th>
                                 <th>ประเภทค่าใช้จ่าย</th>

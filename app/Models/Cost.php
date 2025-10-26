@@ -18,6 +18,7 @@ class Cost extends Model
         'item_code',
         'quantity',
         'unit',
+        'amount',
         'price_per_unit',
         'transport_cost',
         'excess_weight_cost',

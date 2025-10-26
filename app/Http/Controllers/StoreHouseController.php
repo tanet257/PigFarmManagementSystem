@@ -221,6 +221,7 @@ class StoreHouseController extends Controller
                             $existingCost->note = $validated['note'] ?? $existingCost->note;
                             if ($uploadedFileUrl) $existingCost->receipt_file = $uploadedFileUrl;
                             $existingCost->save();
+                            // ✅ CostObserver จะ auto-approve เมื่อ update
                         } else {
                             Cost::create([
                                 'farm_id'        => $batch->farm_id,
@@ -231,10 +232,10 @@ class StoreHouseController extends Controller
                                 'price_per_unit' => $validated['price_per_unit'] ?? 0,
                                 'unit'           => $validated['unit'] ?? null,
                                 'total_price'    => $validated['price_per_unit'] ?? 0,
-                                'payment_status' => 'approved',
                                 'note'           => $validated['note'] ?? null,
                                 'receipt_file'   => $uploadedFileUrl,
                             ]);
+                            // ✅ CostObserver จะ auto-create CostPayment ถ้า cost_type = wage/electric_bill/water_bill
                         }
                     } else {
                         $dt = Carbon::createFromFormat('d/m/Y H:i', $validated['date']);
@@ -252,10 +253,10 @@ class StoreHouseController extends Controller
                             'transport_cost' => $validated['transport_cost'] ?? 0,
                             'unit'           => $validated['unit'] ?? null,
                             'total_price'    => $total,
-                            'payment_status' => 'approved',
                             'note'           => $validated['note'] ?? null,
                             'receipt_file'   => $uploadedFileUrl ?? null,
                         ]);
+                        // ✅ CostObserver จะ auto-create CostPayment ถ้า cost_type = feed/medicine
 
                         InventoryMovement::create([
                             'storehouse_id' => $storehouse->id,

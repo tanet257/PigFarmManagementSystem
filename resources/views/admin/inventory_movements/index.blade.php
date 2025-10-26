@@ -123,6 +123,16 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
+                <!-- Show Cancelled Batches Checkbox -->
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="showCancelledCheckboxInventory"
+                        {{ request('show_cancelled') ? 'checked' : '' }}
+                        onchange="toggleCancelledInventory()">
+                    <label class="form-check-label" for="showCancelledCheckboxInventory" title="แสดงรายการที่ยกเลิก">
+                        <i class="bi bi-eye"></i>
+                    </label>
+                </div>
+
                 <div class="ms-auto d-flex gap-2">
                     <a class="btn btn-success btn-sm" href="{{ route('inventory_movements.export.csv') }}">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
@@ -338,6 +348,30 @@
     @endforeach
 
     @push('scripts')
+        <!-- Toggle Show Cancelled Batches -->
+        <script>
+            function toggleCancelledInventory() {
+                const checkbox = document.getElementById('showCancelledCheckboxInventory');
+                const form = document.getElementById('filterForm');
+
+                if (checkbox.checked) {
+                    // Add show_cancelled parameter
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'show_cancelled';
+                    input.value = '1';
+                    form.appendChild(input);
+                } else {
+                    // Remove show_cancelled parameter
+                    const input = form.querySelector('input[name="show_cancelled"]');
+                    if (input) {
+                        input.remove();
+                    }
+                }
+                form.submit();
+            }
+        </script>
+
         {{-- Auto-submit filters --}}
         <script>
             document.addEventListener('DOMContentLoaded', function() {

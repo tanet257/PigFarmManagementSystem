@@ -203,19 +203,19 @@
                             <td class="text-center">{{ $batch->farm->barns->first()->pens->count() ?? '-' }}</td>
 
                             <td class="text-center">
-                                <strong>{{ number_format($batch->pig_entry_records->sum('total_pig_weight') ?? 0, 2) }}</strong>
+                                <strong>{{ number_format($batch->pig_entry_records()->where('status', '!=', 'cancelled')->sum('total_pig_weight') ?? 0, 2) }}</strong>
                                 กก.
                             </td>
                             <td class="text-center">
                                 @php
-                                    $totalWeight = $batch->pig_entry_records->sum('total_pig_weight') ?? 0;
-                                    $totalAmount = $batch->pig_entry_records->sum('total_pig_amount') ?? 0;
+                                    $totalWeight = $batch->pig_entry_records()->where('status', '!=', 'cancelled')->sum('total_pig_weight') ?? 0;
+                                    $totalAmount = $batch->pig_entry_records()->where('status', '!=', 'cancelled')->sum('total_pig_amount') ?? 0;
                                     $avgWeight = $totalAmount > 0 ? $totalWeight / $totalAmount : 0;
                                 @endphp
                                 {{ number_format($avgWeight, 2) }} กก.
                             </td>
                             <td class="text-center">
-                                <strong>{{ number_format($batch->pig_entry_records->sum('total_pig_amount') ?? 0) }}</strong>
+                                <strong>{{ number_format($batch->pig_entry_records()->where('status', '!=', 'cancelled')->sum('total_pig_amount') ?? 0) }}</strong>
                             </td>
                             <td class="text-center">
                                 <strong>{{ number_format($batch->current_quantity ?? $batch->total_pig_amount) }}</strong>
@@ -360,7 +360,7 @@
                                         <td width="35%"><strong>น้ำหนักรวม:</strong></td>
                                         <td>
                                             <strong class="text-success">
-                                                {{ number_format($batch->pig_entry_records->sum('total_pig_weight') ?? 0, 2) }}
+                                                {{ number_format($batch->pig_entry_records()->where('status', '!=', 'cancelled')->sum('total_pig_weight') ?? 0, 2) }}
                                                 กก.
                                             </strong>
                                         </td>
@@ -376,6 +376,68 @@
                                 </table>
                             </div>
                         </div>
+
+                        {{-- ✅ KPI Metrics Cards --}}
+                        @php
+                            $profit = $batch->profit;
+                        @endphp
+                        @if ($profit)
+                            <hr>
+                            <h6 class="text-primary mb-3">
+                                <i class="bi bi-speedometer2"></i> ตัวชี้วัดประสิทธิภาพ (KPI)
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="card border-success shadow-sm">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">ADG</h6>
+                                            <h5 class="card-text text-success">
+                                                <strong>{{ number_format($profit->adg ?? 0, 2) }}</strong>
+                                            </h5>
+                                            <small class="text-muted">kg/ตัว/วัน</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-info shadow-sm">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">FCR</h6>
+                                            <h5 class="card-text text-info">
+                                                <strong>{{ number_format($profit->fcr ?? 0, 3) }}</strong>
+                                            </h5>
+                                            <small class="text-muted">kg/kg</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-warning shadow-sm">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">FCG</h6>
+                                            <h5 class="card-text text-warning">
+                                                <strong>{{ number_format($profit->fcg ?? 0, 2) }}</strong>
+                                            </h5>
+                                            <small class="text-muted">บาท/kg</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="card border-secondary shadow-sm">
+                                        <div class="card-body text-center">
+                                            <h6 class="card-title text-muted">อาหารรวม</h6>
+                                            <h5 class="card-text text-secondary">
+                                                <strong>{{ number_format($profit->total_feed_bags ?? 0) }}</strong>
+                                            </h5>
+                                            <small class="text-muted">กระสอบ</small>
+                                            <br>
+                                            <h6 class="card-text text-secondary mt-2">
+                                                <strong>{{ number_format($profit->total_feed_kg ?? 0, 2) }}</strong> กก.
+                                            </h6>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if ($batch->note)
                             <hr>
                             <h6 class="text-primary mb-2">

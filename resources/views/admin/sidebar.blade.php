@@ -22,9 +22,9 @@
                  </div>
              @endif
 
-             <li class="active"><a href="{{ url('admin_index') }}"><i class="icon-home"></i>Home</a></li>
+             {{-- <li class="active"><a href="{{ url('admin_index') }}"><i class="icon-home"></i>Home</a></li> --}}
 
-             <li ><a href="{{ route('profits.index') }}"><i class="bi bi-bar-chart"></i>Revenue Dashboard</a></li>
+             <li class="active"><a href="{{ route('dashboard.index') }}"><i class="bi bi-bar-chart"></i>Dashboard</a></li>
 
              <li><a href="#batchMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Add Batch </a>
@@ -63,13 +63,19 @@
                      <li><a href="{{ route('pig_sales.index') }}">View Pig Sale</a></li>
                  </ul>
              </li>
+             <li><a href="#RequestsApprovalDropdown" aria-expanded="false" data-toggle="collapse"> <i
+                         class="bi bi-clipboard-check"></i> การอนุมัติคำขอ </a>
+                 <ul id="RequestsApprovalDropdown" class="collapse list-unstyled">
+                     <li><a href="{{ route('payment_approvals.index') }}"><i class="bi bi-clipboard-check"></i>
+                         อนุมัติการชำระเงิน</a></li>
 
-             <li><a href="{{ route('payment_approvals.index') }}"><i class="bi bi-clipboard-check"></i> อนุมัติการชำระเงิน</a></li>
+                     <li><a href="{{ route('user_management.index') }}"><i class="bi bi-clipboard-check"></i>
+                         จัดการผู้ใช้</a></li>
 
-             <li><a href="{{ route('user_management.index') }}"><i class="bi bi-clipboard-check"></i> จัดการผู้ใช้</a></li>
-
-             <li ><a href="{{ route('cost_payment_approvals.index') }}"><i class="bi bi-clipboard-check"></i>Cost Payment Approvals</a></li>
-             
+                     <li><a href="{{ route('cost_payment_approvals.index') }}"><i
+                         class="bi bi-clipboard-check"></i>Cost Payment Approvals</a></li>
+                 </ul>
+             </li>
              <li><a href="#farmMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="icon-windows"></i>Farm / Barn / Pen </a>
                  <ul id="farmMenuDropdown" class="collapse list-unstyled ">

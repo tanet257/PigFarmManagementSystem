@@ -20,8 +20,9 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfitController;
 
 //------------------- route home/admin -------------------------//
-Route::get('/', [HomeController::class, 'my_home'])->middleware(['prevent.cache'])->name('home.my_home');
-Route::get('/home', [HomeController::class, 'index'])->middleware(['prevent.cache'])->name('home');
+// Dashboard is now the main home page
+Route::get('/', [ProfitController::class, 'index'])->middleware(['auth', 'prevent.cache'])->name('dashboard');
+Route::get('/home', [HomeController::class, 'index'])->middleware(['prevent.cache'])->name('home.legacy');
 
 // Route สำหรับตรวจสอบ session status
 Route::get('/check-session', function () {
@@ -184,8 +185,6 @@ Route::prefix('pig_sales')->middleware(['auth', 'prevent.cache'])->group(functio
     Route::put('/{id}', [PigSaleController::class, 'update'])->name('pig_sales.update');
     Route::delete('/{id}', [PigSaleController::class, 'destroy'])->name('pig_sales.cancel');
     Route::patch('/{id}/confirm-cancel', [PigSaleController::class, 'confirmCancel'])->name('pig_sales.confirm_cancel');
-    Route::post('/{id}/approve', [PigSaleController::class, 'approve'])->name('pig_sales.approve')->middleware('permission:approve_sales');
-    Route::post('/{id}/reject', [PigSaleController::class, 'reject'])->name('pig_sales.reject')->middleware('permission:approve_sales');
     Route::post('/{id}/upload_receipt', [PigSaleController::class, 'uploadReceipt'])->name('pig_sales.upload_receipt');
 
     //------------------- route AJAX helpers ---------------------//
@@ -260,21 +259,18 @@ Route::prefix('cost_payment_approvals')->middleware(['auth', 'prevent.cache'])->
     Route::post('/{id}/reject', [CostPaymentApprovalController::class, 'reject'])->name('cost_payment_approvals.reject');
 });
 
-//------------------- route profits -------------------------//
-Route::prefix('profits')->middleware(['auth', 'prevent.cache'])->group(function () {
-    Route::get('/', [ProfitController::class, 'index'])->name('profits.index');
-    Route::get('/{id}', [ProfitController::class, 'show'])->name('profits.show');
-    Route::post('/{batchId}/recalculate', [ProfitController::class, 'recalculateBatchProfit'])->name('profits.recalculate');
-    Route::get('/export/pdf', [ProfitController::class, 'exportPdf'])->name('profits.export.pdf');
+//------------------- route dashboard -------------------------//
+Route::prefix('dashboard')->middleware(['auth', 'prevent.cache'])->group(function () {
+    Route::get('/', [ProfitController::class, 'index'])->name('dashboard.index');
+    Route::get('/{id}', [ProfitController::class, 'show'])->name('dashboard.show');
+    Route::post('/{batchId}/recalculate', [ProfitController::class, 'recalculateBatchProfit'])->name('dashboard.recalculate');
+    Route::get('/export/pdf', [ProfitController::class, 'exportPdf'])->name('dashboard.export.pdf');
 });
 
-//------------------- route dashboard ------------------------//
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified'
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+// ✅ API endpoints สำหรับ AJAX chart refresh (outside prefix)
+Route::middleware('auth')->group(function () {
+    Route::get('/api/dashboard/chart-data', [ProfitController::class, 'getChartData'])->name('api.dashboard.chart_data');
+    Route::get('/api/dashboard/monthly-cost-profit', [ProfitController::class, 'getMonthlyCostProfitData'])->name('api.dashboard.monthly_cost_profit');
+    Route::get('/api/dashboard/fcg-performance', [ProfitController::class, 'getFcgPerformanceData'])->name('api.dashboard.fcg_performance');
 });
+

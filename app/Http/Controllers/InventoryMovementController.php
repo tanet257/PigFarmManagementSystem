@@ -74,14 +74,40 @@ class InventoryMovementController extends Controller
             $query->where('batch_id', $request->batch_id);
         }
 
-        // sort
-        $sortBy = $request->get('sort_by', 'date');
-        $sortOrder = $request->get('sort_order', 'desc');
+        // ✅ Filter cancelled batches (unless show_cancelled is true)
+        if (!$request->has('show_cancelled') || !$request->show_cancelled) {
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+        }
 
-        if (in_array($sortBy, ['date', 'quantity', 'created_at'])) {
-            $query->orderBy($sortBy, $sortOrder);
-        } else {
-            $query->orderBy('date', 'desc');
+        // ✅ APPLY SORT
+        $sort = $request->get('sort', 'date_desc');  // ดึง sort parameter จาก view
+
+        // Join storehouse เพื่อเรียงตามชื่อสินค้า
+        if (strpos($sort, 'name_') === 0) {
+            $query->join('storehouses', 'inventory_movements.storehouse_id', '=', 'storehouses.id');
+        }
+
+        switch ($sort) {
+            case 'name_asc':
+                $query->orderBy('storehouses.item_name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('storehouses.item_name', 'desc');
+                break;
+            case 'quantity_asc':
+                $query->orderBy('inventory_movements.quantity', 'asc');
+                break;
+            case 'quantity_desc':
+                $query->orderBy('inventory_movements.quantity', 'desc');
+                break;
+            case 'date_asc':
+                $query->orderBy('inventory_movements.date', 'asc');
+                break;
+            default: // date_desc
+                $query->orderBy('inventory_movements.date', 'desc');
+                break;
         }
 
         // pagination

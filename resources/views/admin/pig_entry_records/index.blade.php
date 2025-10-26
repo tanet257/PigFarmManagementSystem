@@ -203,6 +203,8 @@
                         <th class="text-center">ราคารวม</th>
                         <th class="text-center">โน๊ต</th>
                         <th class="text-center">ใบเสร็จ</th>
+                        <th class="text-center">สถานะการชำระเงิน</th>
+                        <th class="text-center">การอนุมัติ</th>
                         <th class="text-center">จัดการ</th>
                     </tr>
                 </thead>
@@ -263,7 +265,74 @@
                                 @endif
                             </td>
 
+                            {{-- ✅ สถานะการชำระเงิน (Clickable) --}}
+                            <td class="text-center" id="paymentStatus{{ $record->id }}">
+                                @php
+                                    // ดึง Cost สำหรับรายการ pig entry นี้โดยเฉพาะ
+                                    $cost = \App\Models\Cost::where('pig_entry_record_id', $record->id)
+                                        ->latest()
+                                        ->first();
+                                    $lastPayment = $cost?->latestPayment;
+                                @endphp
+                                <a href="#"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#paymentModal{{ $record->id }}"
+                                   onclick="event.preventDefault(); event.stopPropagation();"
+                                   style="text-decoration: none; cursor: pointer;">
+                                    @if ($lastPayment && $lastPayment->status === 'approved')
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> ชำระแล้ว
+                                        </span>
+                                    @elseif ($lastPayment && $lastPayment->status === 'pending')
+                                        <span class="badge bg-info">บันทึกแล้ว</span>
+                                        <small class="d-block mt-1">รออนุมัติ</small>
+                                    @elseif ($lastPayment && $lastPayment->status === 'rejected')
+                                        <span class="badge bg-danger">ปฏิเสธ</span>
+                                    @else
+                                        <span class="badge bg-secondary">รอชำระ</span>
+                                    @endif
+                                </a>
+                            </td>
+
+                            {{-- ✅ การอนุมัติ (Clickable) --}}
                             <td class="text-center">
+                                @php
+                                    // ดึง Cost สำหรับรายการ pig entry นี้โดยเฉพาะ
+                                    $cost = \App\Models\Cost::where('pig_entry_record_id', $record->id)
+                                        ->latest()
+                                        ->first();
+                                    $lastPayment = $cost?->latestPayment;
+                                @endphp
+                                <a href="#"
+                                   data-bs-toggle="modal"
+                                   data-bs-target="#paymentModal{{ $record->id }}"
+                                   onclick="event.preventDefault(); event.stopPropagation();"
+                                   style="text-decoration: none; cursor: pointer;">
+                                    @if ($lastPayment && $lastPayment->status === 'approved')
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> อนุมัติแล้ว
+                                        </span>
+                                        <small class="d-block text-muted mt-1">
+                                            โดย: {{ $lastPayment->approvedByUser->name ?? '-' }}
+                                        </small>
+                                    @elseif ($lastPayment && $lastPayment->status === 'rejected')
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
+                                        </span>
+                                        <small class="d-block text-muted mt-1">
+                                            โดย: {{ $lastPayment->rejectedByUser->name ?? '-' }}
+                                        </small>
+                                    @elseif ($lastPayment && $lastPayment->status === 'pending')
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock"></i> รออนุมัติ
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary">รอบันทึกการชำระเงิน</span>
+                                    @endif
+                                </a>
+                            </td>
+
+                            <td class="text-end">
                                 {{-- View Button --}}
                                 <button type="button" class="btn btn-sm btn-info"
                                     onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('viewModal{{ $record->id }}')).show();">
@@ -271,9 +340,18 @@
                                 </button>
 
                                 {{-- Payment Button --}}
-                                @if ($record->status !== 'cancelled' && $record->payment_status !== 'approved')
-                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
-                                        data-bs-target="#paymentModal{{ $record->id }}" onclick="event.stopPropagation();">
+                                @php
+                                    // ดึง Cost สำหรับรายการ pig entry นี้โดยเฉพาะ
+                                    $cost = \App\Models\Cost::where('pig_entry_record_id', $record->id)
+                                        ->latest()
+                                        ->first();
+                                    $lastPayment = $cost?->latestPayment;
+                                    // ซ่อนปุ่มเมื่อมี CostPayment status 'approved'
+                                    $hasApprovedPayment = $lastPayment && $lastPayment->status === 'approved';
+                                @endphp
+                                @if (!$hasApprovedPayment && $record->status !== 'cancelled')
+                                    <button type="button" id="paymentBtn{{ $record->id }}" class="btn btn-sm btn-success"
+                                        onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('paymentModal{{ $record->id }}')).show();">
                                         <i class="bi bi-cash"></i>
                                     </button>
                                 @endif
@@ -284,15 +362,11 @@
                                         <i class="bi bi-x-circle"></i> ยกเลิก
                                     </span>
                                 @else
-                                    <form action="{{ route('pig_entry_records.delete', $record->id) }}" method="POST"
-                                        class="d-inline">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn btn-sm btn-danger"
-                                            onclick="event.stopPropagation(); if(confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')) { this.form.submit(); }">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-danger"
+                                        onclick="event.stopPropagation(); if(confirm('คุณแน่ใจไหมว่าจะลบรายการนี้?')) { deletePigEntry({{ $record->id }}, '{{ csrf_token() }}'); }"
+                                        title="ลบรายการ">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
                                 @endif
                             </td>
                         </tr>
@@ -422,11 +496,6 @@
                             <textarea name="note" class="form-control"></textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label>ใบเสร็จ</label>
-                            <input type="file" name="receipt_file" class="form-control"
-                                accept=".jpg,.jpeg,.png,.pdf">
-                        </div>
 
                         <div class="modal-footer">
                             <button type="submit" class="btn btn-primary">บันทึก</button>
@@ -562,10 +631,9 @@
                         <h5 class="modal-title">บันทึกการชำระเงิน</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <form action="{{ route('pig_entry_records.update_payment', $record->id) }}" method="POST"
-                        enctype="multipart/form-data">
+                    <form id="paymentForm{{ $record->id }}" enctype="multipart/form-data">
                         @csrf
-                        @method('PUT')
+                        <input type="hidden" name="pig_entry_id" value="{{ $record->id }}">
                         <div class="modal-body">
                             <div class="mb-3">
                                 <label class="form-label">ยอดที่ต้องชำระ</label>
@@ -574,10 +642,15 @@
                                     readonly>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">จำนวนเงินที่ชำระ</label>
+                                <label class="form-label">จำนวนเงินที่ชำระ <span class="text-danger">*</span></label>
                                 <input type="number" name="paid_amount" class="form-control" step="0.01"
-                                    min="0"
-                                    value="{{ $record->total_pig_price + ($record->batch->costs->sum('excess_weight_cost') ?? 0) + ($record->batch->costs->sum('transport_cost') ?? 0) }}">
+                                    min="0.01"
+                                    value="{{ $record->total_pig_price + ($record->batch->costs->sum('excess_weight_cost') ?? 0) + ($record->batch->costs->sum('transport_cost') ?? 0) }}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">วันที่ชำระ <span class="text-danger">*</span></label>
+                                <input type="date" name="payment_date" class="form-control"
+                                    value="{{ date('Y-m-d') }}" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">วิธีชำระเงิน <span class="text-danger">*</span></label>
@@ -595,21 +668,38 @@
                                         <li><a class="dropdown-item" href="#" data-payment-method="โอนเงิน"
                                                 onclick="updatePaymentMethod(event, {{ $record->id }})">โอนเงิน</a>
                                         </li>
+                                        <li><a class="dropdown-item" href="#" data-payment-method="เช็ค"
+                                                onclick="updatePaymentMethod(event, {{ $record->id }})">เช็ค</a>
+                                        </li>
                                     </ul>
                                     <input type="hidden" name="payment_method" id="paymentMethod{{ $record->id }}"
-                                        value="">
+                                        value="" required>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">เลขที่อ้างอิง (โอนเงิน/เช็ค)</label>
+                                <input type="text" name="reference_number" class="form-control"
+                                    placeholder="เช่น เลขเช็ค, เลขอ้างอิงการโอน">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">ชื่อธนาคาร</label>
+                                <input type="text" name="bank_name" class="form-control"
+                                    placeholder="เช่น ธนาคารกรุงไทย">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">อัปโหลดหลักฐานการชำระ <span class="text-danger">*</span></label>
                                 <input type="file" class="form-control" name="receipt_file"
-                                    accept="image/*,application/pdf">
+                                    accept="image/*,application/pdf" required>
                                 <small class="text-muted">รองรับไฟล์: JPG, PNG, PDF (สูงสุด 5MB)</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">หมายเหตุ</label>
+                                <textarea name="note" class="form-control" rows="2"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-                            <button type="submit" class="btn btn-primary" id="paymentSubmitBtn{{ $record->id }}">บันทึก</button>
+                            <button type="button" class="btn btn-primary" onclick="submitPaymentForm({{ $record->id }})">บันทึกการชำระเงิน</button>
                         </div>
                     </form>
                 </div>
@@ -718,63 +808,101 @@
                 }
             }
 
-            // Add form submission validation for all payment forms
-            document.addEventListener('DOMContentLoaded', function() {
-                // Find all payment modals and add form validation
-                document.querySelectorAll('[id^="paymentModal"]').forEach(modal => {
-                    const form = modal.querySelector('form');
-                    if (form) {
-                        console.log('Found payment form in modal:', modal.id, 'Form action:', form.action);
+            // Add form submission validation for all payment forms - AJAX Version
+            function submitPaymentForm(recordId) {
+                const form = document.getElementById('paymentForm' + recordId);
+                if (!form) {
+                    console.error('Form not found:', 'paymentForm' + recordId);
+                    return;
+                }
 
-                        // Add additional console logging on modal open
-                        const modalBsModal = new bootstrap.Modal(modal);
-                        modal.addEventListener('shown.bs.modal', function() {
-                            const recordId = modal.id.replace('paymentModal', '');
-                            const paymentBtn = document.getElementById('paymentSubmitBtn' + recordId);
-                            console.log('Modal opened:', modal.id, 'Submit button:', paymentBtn?.id, 'Enabled:', !paymentBtn?.disabled);
-                        });
+                const paymentMethodInput = document.getElementById('paymentMethod' + recordId);
+                const receiptInput = form.querySelector('input[name="receipt_file"]');
+                const paidAmountInput = form.querySelector('input[name="paid_amount"]');
 
-                        form.addEventListener('submit', function(e) {
-                            console.log('Payment form submit triggered for modal:', modal.id);
-                            const recordId = modal.id.replace('paymentModal', '');
-                            const paymentMethodInput = document.getElementById('paymentMethod' + recordId);
-                            const receiptInput = form.querySelector('input[name="receipt_file"]');
-                            const paidAmountInput = form.querySelector('input[name="paid_amount"]');
+                // Validation
+                let errors = [];
 
-                            console.log('Validation check:', {
-                                paid_amount: paidAmountInput?.value,
-                                payment_method: paymentMethodInput?.value,
-                                receipt_files: receiptInput?.files?.length,
-                                form_action: form.action
-                            });
+                if (!paidAmountInput.value || parseFloat(paidAmountInput.value) <= 0) {
+                    errors.push('❌ จำนวนเงินที่ชำระต้องมากกว่า 0');
+                }
 
-                            let errors = [];
+                if (!paymentMethodInput.value) {
+                    errors.push('❌ กรุณาเลือกวิธีชำระเงิน');
+                }
 
-                            if (!paidAmountInput.value || parseFloat(paidAmountInput.value) <= 0) {
-                                errors.push('❌ จำนวนเงินที่ชำระต้องมากกว่า 0');
-                            }
+                if (!receiptInput.files.length) {
+                    errors.push('❌ กรุณาอัปโหลดหลักฐานการชำระเงิน');
+                }
 
-                            if (!paymentMethodInput.value) {
-                                errors.push('❌ กรุณาเลือกวิธีชำระเงิน');
-                            }
+                if (errors.length > 0) {
+                    showSnackbar(errors.join('\n'));
+                    return;
+                }
 
-                            if (!receiptInput.files.length) {
-                                errors.push('❌ กรุณาอัปโหลดหลักฐานการชำระเงิน');
-                            }
+                // Create FormData for multipart upload
+                const formData = new FormData(form);
 
-                            if (errors.length > 0) {
-                                console.log('Validation errors found:', errors);
-                                e.preventDefault();
-                                showSnackbar(errors.join('\n'));
-                                return false;
-                            } else {
-                                console.log('Validation passed, allowing form submission');
-                            }
-                        });
+                // Submit via AJAX
+                fetch('{{ route("pig_entry_records.update_payment", "") }}/' + recordId, {
+                    method: 'PUT',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json',
+                    },
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    const sb = document.getElementById('snackbar');
+                    const sbMsg = document.getElementById('snackbarMessage');
+
+                    if (data.success) {
+                        // ✅ Success
+                        sbMsg.innerText = data.message || 'บันทึกการชำระเงินสำเร็จ';
+                        sb.style.backgroundColor = '#28a745'; // สีเขียว
+                        sb.style.display = 'flex';
+                        sb.classList.add('show');
+
+                        // Close modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('paymentModal' + recordId));
+                        if (modal) modal.hide();
+
+                        // Reload page after 2 seconds
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    } else {
+                        // ❌ Error
+                        sbMsg.innerText = data.message || 'เกิดข้อผิดพลาด';
+                        sb.style.backgroundColor = '#dc3545'; // สีแดง
+                        sb.style.display = 'flex';
+                        sb.classList.add('show');
                     }
+
+                    setTimeout(() => {
+                        sb.classList.remove('show');
+                        sb.style.display = 'none';
+                    }, 5000);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const sb = document.getElementById('snackbar');
+                    const sbMsg = document.getElementById('snackbarMessage');
+                    sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
+                    sb.style.backgroundColor = '#dc3545'; // สีแดง
+                    sb.style.display = 'flex';
+                    sb.classList.add('show');
+                    setTimeout(() => {
+                        sb.classList.remove('show');
+                        sb.style.display = 'none';
+                    }, 5000);
                 });
-            });
+            }
         </script>
+
+        {{-- Payment Form AJAX Submission --}}
+        <script>
 
         {{-- JS สำหรับ fetch barns + batches --}}        <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -982,6 +1110,64 @@
                 // เรียกใช้ common table click handler
                 setupClickableRows();
             });
+
+            // ✅ DELETE PigEntry using AJAX with confirmation
+            function deletePigEntry(pigEntryId, csrfToken) {
+                fetch(`{{ route('pig_entry_records.delete', '') }}/${pigEntryId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    return response.json().then(data => {
+                        return { ok: response.ok, status: response.status, data: data };
+                    });
+                })
+                .then(result => {
+                    const sb = document.getElementById('snackbar');
+                    const sbMsg = document.getElementById('snackbarMessage');
+
+                    if (result.ok) {
+                        // ✅ Success
+                        sbMsg.innerText = result.data.message || 'ลบรายการสำเร็จ';
+                        sb.style.backgroundColor = '#28a745'; // สีเขียว
+                    } else {
+                        // ❌ Error but got JSON response
+                        sbMsg.innerText = result.data.message || 'เกิดข้อผิดพลาด';
+                        sb.style.backgroundColor = '#dc3545'; // สีแดง
+                    }
+
+                    sb.style.display = 'flex';
+                    sb.classList.add('show');
+                    setTimeout(() => {
+                        sb.classList.remove('show');
+                        sb.style.display = 'none';
+                    }, 5000);
+
+                    // ✅ Reload page after 2 seconds if success
+                    if (result.ok) {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const sb = document.getElementById('snackbar');
+                    const sbMsg = document.getElementById('snackbarMessage');
+                    sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
+                    sb.style.backgroundColor = '#dc3545'; // สีแดง
+                    sb.style.display = 'flex';
+                    sb.classList.add('show');
+                    setTimeout(() => {
+                        sb.classList.remove('show');
+                        sb.style.display = 'none';
+                    }, 5000);
+                });
+            }
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

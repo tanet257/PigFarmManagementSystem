@@ -21,7 +21,8 @@ class AdminController extends Controller
     //--------------------------------------- VIEW ------------------------------------------//
     public function admin_index()
     {
-        return view('admin.admin_index');
+        // Redirect to new Dashboard
+        return redirect()->route('dashboard.index');
     }
 
     //-------------------function_add----------------------//

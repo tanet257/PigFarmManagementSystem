@@ -9,6 +9,8 @@ use App\Models\Cost;
 use \App\Models\PigDeath;
 use App\Models\StoreHouse;
 use App\Models\InventoryMovement;
+use App\Models\DairyStorehouseUse;
+use App\Models\DairyRecord;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -88,14 +90,13 @@ class RevenueHelper
         try {
             $batch = \App\Models\Batch::findOrFail($batchId);
 
-            // ดึงรายได้ทั้งหมดของรุ่นนี้
-            // Revenue records ที่เกี่ยวข้องกับ PigSale ที่มี approved Payment
-            $approvedPigSaleIds = \App\Models\Payment::where('status', 'approved')
+            // ✅ FIXED: ดึงจาก Payment ที่ approved (ไม่ใช่ PigSale.status)
+            $approvedPaymentIds = \App\Models\Payment::where('status', 'approved')
                 ->pluck('pig_sale_id')
                 ->toArray();
 
             $totalRevenue = Revenue::where('batch_id', $batchId)
-                ->whereIn('pig_sale_id', $approvedPigSaleIds)
+                ->whereIn('pig_sale_id', $approvedPaymentIds)
                 ->sum('net_revenue');
 
             // ✅ ดึงต้นทุนทั้งหมด (เฉพาะที่ได้อนุมัติแล้ว)
@@ -130,11 +131,20 @@ class RevenueHelper
 
             // ✅ นับเฉพาะหมูที่ขายกับ approved Payment เท่านั้น
             $totalPigSold = Revenue::where('batch_id', $batchId)
-                ->whereIn('pig_sale_id', $approvedPigSaleIds)
+                ->whereIn('pig_sale_id', $approvedPaymentIds)
                 ->sum('quantity');
 
-            // ใช้ sum('quantity') แทน count() เพื่อได้จำนวนหมูที่ตายจริง ๆ
-            $totalPigDead = \App\Models\PigDeath::where('batch_id', $batchId)->sum('quantity');
+            // ✅ NEW: หมูตายที่ขายไปแล้ว = sum(quantity_sold_total)
+            // (ไม่ใช่ sum(quantity) เพราะ quantity ยังคงเดิม ไม่ลด)
+            $totalPigDeadSold = \App\Models\PigDeath::where('batch_id', $batchId)
+                ->where('status', 'sold')  // ✅ เฉพาะที่ขายไปแล้ว
+                ->sum('quantity_sold_total');
+
+            // 🔴 BUG FIX: ลบการคำนวณ deadPigRevenue เพราะบันทึกไว้ใน Revenue table แล้ว
+            // ไม่ควรคำนวณเพิ่มเติมอีก ด้านบนแล้ว ($totalRevenue จาก Revenue table)
+            // $deadPigRevenue = ...
+            // $totalRevenue += $deadPigRevenue;  ← ลบออก (คำนวณเบิ้ล)
+
             $profitPerPig = $totalPigSold > 0 ? ($grossProfit / $totalPigSold) : 0;
 
             // ตรวจสอบว่ามี Profit record แล้วหรือไม่
@@ -155,7 +165,7 @@ class RevenueHelper
                     'utility_cost' => $utilityCost,
                     'other_cost' => $otherCost,
                     'total_pig_sold' => $totalPigSold,
-                    'total_pig_dead' => $totalPigDead,
+                    'total_pig_dead' => $totalPigDeadSold,
                     'profit_per_pig' => $profitPerPig,
                     'period_start' => $batch->created_at,
                     'period_end' => now(),
@@ -177,7 +187,7 @@ class RevenueHelper
                     'utility_cost' => $utilityCost,
                     'other_cost' => $otherCost,
                     'total_pig_sold' => $totalPigSold,
-                    'total_pig_dead' => $totalPigDead,
+                    'total_pig_dead' => $totalPigDeadSold,
                     'profit_per_pig' => $profitPerPig,
                     'period_start' => $batch->created_at,
                     'period_end' => now(),
@@ -361,6 +371,21 @@ class RevenueHelper
                 'date' => $inventoryMovement->date,
             ]);
 
+            // ✅ AUTO-APPROVE: สร้าง CostPayment และ auto-approve เลย
+            \App\Models\CostPayment::create([
+                'cost_id' => $cost->id,
+                'amount' => $totalPrice,
+                'status' => 'approved', // ✅ auto-approve
+                'approved_by' => 1, // System user (admin)
+                'approved_date' => now(),
+                'reason' => 'Auto-approved from InventoryMovement (Stock In)',
+            ]);
+
+            // ✅ บันทึก Profit ทันที
+            if ($inventoryMovement->batch_id) {
+                self::calculateAndRecordProfit($inventoryMovement->batch_id);
+            }
+
             DB::commit();
 
             return [
@@ -376,6 +401,112 @@ class RevenueHelper
                 'message' => 'ไม่สามารถบันทึกต้นทุนได้: ' . $e->getMessage(),
                 'cost' => null,
             ];
+        }
+    }
+
+    /**
+     * ✅ NEW: คำนวณ KPI metrics (ADG, FCR, FCG) - ใช้ข้อมูลจริงจาก Dairy/Inventory
+     */
+    public static function calculateKPIMetrics($batch)
+    {
+        try {
+            $profit = Profit::where('batch_id', $batch->id)->first();
+
+            if (!$profit) {
+                return [];
+            }
+
+            // ✅ ดึงข้อมูลจริง: อาหารที่ใช้จากการบันทึก Dairy (DairyStorehouseUse)
+            $totalFeedKg = 0;
+            $totalFeedBags = 0;
+
+            // ดึงจาก DairyStorehouseUse ที่สัมพันธ์กับ batch นี้
+            $dairyRecords = \App\Models\DairyRecord::where('batch_id', $batch->id)->get();
+
+            foreach ($dairyRecords as $dairy) {
+                // ดึงการใช้สินค้าอาหาร
+                $feedUses = DairyStorehouseUse::where('dairy_record_id', $dairy->id)->get();
+
+                foreach ($feedUses as $feedUse) {
+                    // ✅ FIX: quantity เป็น kg แล้ว ไม่ต้องคูณ 50
+                    $totalFeedKg += $feedUse->quantity;
+                    $totalFeedBags += ceil($feedUse->quantity / 50); // convert to bags (1 bag = 50 kg)
+                }
+            }
+
+            // ✅ Alternative: ดึงจาก InventoryMovement (out movement)
+            // ถ้าไม่มี DairyStorehouseUse ให้ใช้ inventory
+            if ($totalFeedKg == 0) {
+                $inventoryOut = \App\Models\InventoryMovement::where('batch_id', $batch->id)
+                    ->where('change_type', 'out')
+                    ->sum('quantity');
+                $totalFeedKg = $inventoryOut; // ปริมาณเป็น kg โดยตรง
+                $totalFeedBags = ceil($totalFeedKg / 50); // convert to bags
+            }
+
+            // Weight calculations
+            // ✅ ดึง starting weight จาก PigEntryRecord ให้แม่นยำ
+            $pigEntry = \App\Models\PigEntryRecord::where('batch_id', $batch->id)->first();
+            $startingWeight = $pigEntry ? $pigEntry->average_weight_per_pig : ($profit->starting_avg_weight ?? 0);
+            $endingWeight = $batch->average_weight_per_pig ?? $profit->ending_avg_weight ?? 0;
+            $weightGainPerPig = max($endingWeight - $startingWeight, 0);
+
+            // ✅ FIX: total_pig_sold อาจ 0 ให้ใช้ current_quantity แทน
+            $pigsForCalculation = max($profit->total_pig_sold, $batch->current_quantity, 1);
+            $totalWeightGained = $weightGainPerPig * $pigsForCalculation;
+
+            // ✅ FIX: Days in farm ต้องคำนวณจาก PigEntryRecord.pig_entry_date
+            $daysInFarm = 1;
+            if ($pigEntry && $pigEntry->pig_entry_date) {
+                $daysInFarm = max(\Carbon\Carbon::parse($pigEntry->pig_entry_date)->diffInDays(\Carbon\Carbon::now()), 1);
+            } elseif ($batch->entry_date) {
+                // Fallback: ใช้ batch.entry_date ถ้ามี
+                $daysInFarm = max(\Carbon\Carbon::parse($batch->entry_date)->diffInDays(\Carbon\Carbon::now()), 1);
+            }
+            // Note: ไม่ใช้ $profit->days_in_farm เพราะมันเก่า ให้คำนวณจริง
+
+            // ADG = Average Daily Gain (kg/head/day)
+            $adg = $daysInFarm > 0 ? ($weightGainPerPig / $daysInFarm) : 0;
+
+            // FCR = Feed Conversion Ratio (kg feed / kg gain)
+            $fcr = $totalWeightGained > 0 ? ($totalFeedKg / $totalWeightGained) : 0;
+
+            // FCG = Feed Cost per kg Gain (baht/kg gain)
+            $fcg = $totalWeightGained > 0 ? ($profit->feed_cost / $totalWeightGained) : 0;
+
+            // Update profit record
+            $profit->update([
+                'adg' => round($adg, 3),
+                'fcr' => round($fcr, 3),
+                'fcg' => round($fcg, 2),
+                'starting_avg_weight' => $startingWeight,
+                'ending_avg_weight' => $endingWeight,
+                'total_feed_bags' => $totalFeedBags,
+                'total_feed_kg' => round($totalFeedKg, 2),
+                'total_weight_gained' => round($totalWeightGained, 2),
+                'days_in_farm' => $daysInFarm,
+            ]);
+
+            Log::info('KPI Calculated for batch', [
+                'batch_id' => $batch->id,
+                'adg' => $adg,
+                'fcr' => $fcr,
+                'fcg' => $fcg,
+                'total_feed_kg' => $totalFeedKg,
+                'daysInFarm' => $daysInFarm,
+            ]);
+
+            return [
+                'adg' => $adg,
+                'fcr' => $fcr,
+                'fcg' => $fcg,
+                'total_feed_kg' => $totalFeedKg,
+                'total_weight_gained' => $totalWeightGained,
+                'days_in_farm' => $daysInFarm,
+            ];
+        } catch (\Exception $e) {
+            Log::error('RevenueHelper - calculateKPIMetrics Error: ' . $e->getMessage());
+            return [];
         }
     }
 }

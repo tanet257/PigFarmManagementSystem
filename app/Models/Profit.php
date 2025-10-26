@@ -30,6 +30,15 @@ class Profit extends Model
         'period_end',
         'days_in_farm',
         'status',
+        // ✅ KPI metrics
+        'adg',
+        'fcr',
+        'fcg',
+        'starting_avg_weight',
+        'ending_avg_weight',
+        'total_feed_bags',
+        'total_feed_kg',
+        'total_weight_gained',
     ];
 
     protected $casts = [
@@ -46,6 +55,14 @@ class Profit extends Model
         'utility_cost' => 'float',
         'other_cost' => 'float',
         'profit_per_pig' => 'float',
+        // ✅ KPI metrics
+        'adg' => 'float',
+        'fcr' => 'float',
+        'fcg' => 'float',
+        'starting_avg_weight' => 'float',
+        'ending_avg_weight' => 'float',
+        'total_feed_kg' => 'float',
+        'total_weight_gained' => 'float',
     ];
 
     // ความสัมพันธ์

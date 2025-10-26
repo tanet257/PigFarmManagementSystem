@@ -100,6 +100,17 @@ class PaymentController extends Controller
                 'recorded_by' => auth()->id(),
             ]);
 
+            // ✅ NEW: สร้าง notification ให้ admin อนุมัติ
+            \App\Models\Notification::create([
+                'user_id' => null, // ส่งให้ admin ทั้งหมด
+                'title' => ' บันทึกการชำระเงิน - รอการอนุมัติ',
+                'message' => "การชำระเงิน " . $payment->payment_number . "\nจำนวน ฿" . number_format((float)$payment->amount, 2) . "\nผู้บันทึก: " . auth()->user()->name,
+                'type' => 'payment_recorded',
+                'related_model' => 'Payment',
+                'related_model_id' => $payment->id,
+                'is_read' => false,
+            ]);
+
             DB::commit();
 
             if ($request->expectsJson()) {

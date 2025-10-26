@@ -566,7 +566,10 @@ class PigEntryController extends Controller
                 $validated = $request->validate(
                     [
                         'paid_amount' => 'required|numeric|min:0.01',
-                        'payment_method' => 'required|in:เงินสด,โอนเงิน',
+                        'payment_date' => 'required|date',
+                        'payment_method' => 'required|in:เงินสด,โอนเงิน,เช็ค',
+                        'reference_number' => 'nullable|string',
+                        'bank_name' => 'nullable|string',
                         'receipt_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
                         'note' => 'nullable|string',
                     ],
@@ -574,6 +577,8 @@ class PigEntryController extends Controller
                         'paid_amount.required' => 'จำนวนเงินที่ชำระเป็นบังคับ',
                         'paid_amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
                         'paid_amount.min' => 'จำนวนเงินต้องมากกว่า 0',
+                        'payment_date.required' => 'วันที่ชำระเป็นบังคับ',
+                        'payment_date.date' => 'วันที่ชำระไม่ถูกต้อง',
                         'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
                         'payment_method.in' => 'วิธีชำระเงินไม่ถูกต้อง',
                         'receipt_file.required' => 'กรุณาอัปโหลดหลักฐานการชำระเงิน',
@@ -590,10 +595,11 @@ class PigEntryController extends Controller
                 }
                 $errorText = implode("\n", $errorMessages);
 
-                // Return validation errors
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', $errorText);
+                // Return validation errors as JSON
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorText
+                ], 422);
             }
 
             DB::beginTransaction();
@@ -609,14 +615,22 @@ class PigEntryController extends Controller
                     // CloudinaryEngine::upload() returns the engine instance
                     $uploadedFileUrl = $uploadResult->getSecurePath();
                 } catch (\Exception $e) {
-                    Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
-                    return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
+                    DB::rollBack();
+                    Log::error('Cloudinary upload error in PigEntry: ' . $e->getMessage());
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')'
+                    ], 500);
                 }
             }
 
             // ตรวจสอบว่าอัปโหลดสำเร็จ
             if (!$uploadedFileUrl) {
-                return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่'
+                ], 500);
             }
 
             // ✅ สร้าง Cost record เพื่อบันทึกการชำระเงิน
@@ -641,15 +655,17 @@ class PigEntryController extends Controller
                 'transport_cost' => $transportCostSum,
                 'excess_weight_cost' => $excessWeightCostSum,
                 'receipt_file' => $uploadedFileUrl,
-                'date' => $record->pig_entry_date,
+                'date' => $validated['payment_date'] ?? $record->pig_entry_date,
                 'note' => $validated['note'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
             ]);
 
             // ✅ สร้าง CostPayment record (pending approval)
             $costPayment = \App\Models\CostPayment::create([
                 'cost_id' => $cost->id,
+                'cost_type' => 'piglet',
                 'amount' => $totalAmount,
                 'status' => 'pending',
+                'action_type' => $validated['payment_method'],
             ]);
 
             // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน (ใช้ CostPayment notification)
@@ -657,14 +673,17 @@ class PigEntryController extends Controller
 
             DB::commit();
 
-            return redirect()->route('pig_entry_records.index')
-                ->with('success', 'บันทึกการชำระเงินเรียบร้อยแล้ว - รอ admin อนุมัติ');
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการชำระเงินเรียบร้อยแล้ว - รอ admin อนุมัติ'
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Payment update error: ' . $e->getMessage());
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

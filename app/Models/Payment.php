@@ -49,11 +49,13 @@ class Payment extends Model
 
     public function approvedByUser()
     {
+        // approved_by is stored as user name (varchar) in database
         return $this->belongsTo(User::class, 'approved_by', 'name');
     }
 
     public function rejectedByUser()
     {
+        // rejected_by is stored as user name (varchar) in database
         return $this->belongsTo(User::class, 'rejected_by', 'name');
     }
 

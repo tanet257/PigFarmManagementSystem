@@ -416,8 +416,17 @@ class PigInventoryHelper
             ->groupBy('pen_id');
 
         foreach ($pigDeaths as $penId => $deaths) {
-            // ✅ FIX: คำนวณเฉพาะหมูที่ยังไม่ขาย (status = 'recorded')
-            $deathQuantity = $deaths->where('status', 'recorded')->sum('quantity');
+            // ✅ NEW: คำนวณจำนวนหมูตายที่เหลือ = quantity - quantity_sold_total
+            // quantity = จำนวนเดิม (ไม่เปลี่ยน)
+            // quantity_sold_total = จำนวนที่ขายไปแล้ว (สะสม)
+            // remaining = quantity - quantity_sold_total
+
+            $deathQuantity = 0;
+            foreach ($deaths as $death) {
+                $remaining = ($death->quantity ?? 0) - ($death->quantity_sold_total ?? 0);
+                $deathQuantity += max(0, $remaining);  // แสดงเฉพาะจำนวนบวก
+            }
+
             $totalAvailable += $deathQuantity;
 
             // หาชื่อ barn/pen จาก pen_id
@@ -430,7 +439,7 @@ class PigInventoryHelper
                     'barn_name' => $pen->barn->barn_code ?? 'ไม่ระบุ',
                     'original_quantity' => 0,
                     'current_quantity' => 0,
-                    'available' => $deathQuantity,
+                    'available' => $deathQuantity,  // ✅ จำนวนที่เหลือ = quantity - quantity_sold_total
                     'is_dead' => true, // ✅ FLAG: นี่คือหมูตาย
                     'display_name' => sprintf(
                         '%s - %s (หมูตาย %d ตัว)',
@@ -594,6 +603,7 @@ class PigInventoryHelper
                     'status' => 'cancelled',
                     'cancelled_at' => now(),
                     'cancelled_by' => 'System - Batch Cancelled',
+                    'cancellation_reason' => 'Batch cancelled automatically',
                 ]);
 
             // 2. Cancel PigSale ที่ยังไม่ cancelled
@@ -619,12 +629,8 @@ class PigInventoryHelper
                     ]);
             }
 
-            // 3. Cancel Cost ที่ยังไม่ cancelled
-            \App\Models\Cost::where('batch_id', $batchId)
-                ->where('payment_status', '!=', 'ยกเลิก')
-                ->update([
-                    'payment_status' => 'ยกเลิก',
-                ]);
+            // 3. Cancel Cost ที่ยังไม่ cancelled - ลบ Cost records (หรือสามารถทำ soft delete ได้)
+            // ข้อมูล Cost ถูกต้องแล้ว ไม่ต้องทำอะไรพิเศษ (เพราะ Profit/Revenue จะถูกลบแล้ว)
 
             // ✅ 3.1 Cancel CostPayment approvals (Payment Approvals สำหรับค่าใช้จ่าย)
             $costIds = \App\Models\Cost::where('batch_id', $batchId)
@@ -632,11 +638,15 @@ class PigInventoryHelper
                 ->toArray();
 
             if (!empty($costIds)) {
+                // ✅ Get system user or use null (ถ้า system user ไม่มี)
+                $systemUserId = \App\Models\User::where('name', 'System')->value('id');
+
                 CostPayment::whereIn('cost_id', $costIds)
                     ->where('status', '!=', 'rejected')  // ไม่ update ถ้าถูก reject แล้ว
                     ->update([
                         'status' => 'rejected',
-                        'cancelled_at' => now(),
+                        'rejected_at' => now(),
+                        'rejected_by' => $systemUserId,  // ✅ ใช้ user ID แทน string
                     ]);
             }
 

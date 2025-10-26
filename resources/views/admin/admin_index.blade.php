@@ -1,9 +1,11 @@
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     @include('admin.css')
-  </head>
-  <body>
+</head>
+
+<body>
 
     @include('admin.header')
 
@@ -15,25 +17,13 @@
             <div class="container-fluid">
                 <link rel="stylesheet"
                     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-            @include('admin.body')
+                @include('admin.body')
 
             </div>
-      </div>
+        </div>
     </div>
     <!-- JavaScript files-->
-   @include('admin.js')
-  </body>
+    @include('admin.js')
+</body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

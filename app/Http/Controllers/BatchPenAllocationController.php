@@ -27,8 +27,7 @@ class BatchPenAllocationController extends Controller
         $farmId  = $request->get('farm_id');
         $batchId = $request->get('batch_id');
         $search  = $request->get('search');
-        $sortBy  = $request->get('sort_by', 'barn_code');
-        $sortOrder = $request->get('sort_order', 'asc');
+        $sort    = $request->get('sort', 'name_asc');  // ✅ เปลี่ยนจาก sort_by/sort_order เป็น sort
         $perPage = $request->get('per_page', 10);
         $page    = $request->get('page', 1);
 
@@ -98,6 +97,23 @@ class BatchPenAllocationController extends Controller
                 'pens' => $pensInfo->toArray(), // แปลงเป็น array
             ];
         })->values(); // แปลง collection เป็น array
+
+        // ✅ APPLY SORT
+        $sort = $request->get('sort', 'name_asc');
+        $barnSummariesCollection = $barnSummariesCollection->sortBy(function ($barn) use ($sort) {
+            return match ($sort) {
+                'name_asc' => $barn['barn_code'],                    // ชื่อ (ก-ฮ)
+                'name_desc' => $barn['barn_code'],                   // ชื่อ (ฮ-ก) - reverse later
+                'quantity_asc' => $barn['total_allocated'],          // จำนวนน้อย
+                'quantity_desc' => $barn['total_allocated'],         // จำนวนมาก - reverse later
+                default => $barn['barn_code'],
+            };
+        });
+
+        // ✅ Reverse for descending sorts
+        if (in_array($sort, ['name_desc', 'quantity_desc'])) {
+            $barnSummariesCollection = $barnSummariesCollection->reverse()->values();
+        }
 
         // Pagination
         $perPage = $request->get('per_page', 10);

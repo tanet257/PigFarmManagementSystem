@@ -44,10 +44,8 @@ class PigDeathObserver
                 ]);
             }
 
-            // อัปเดท profit เมื่อมีการเพิ่มหมูตาย
-            if ($pigDeath->batch_id) {
-                RevenueHelper::calculateAndRecordProfit($pigDeath->batch_id);
-            }
+            // 🔴 BUG FIX: ไม่ควรคำนวณ profit ตรงนี้
+            // Profit จะถูกคำนวณเฉพาะตอน approve Payment (PaymentApprovalController)
         } catch (\Exception $e) {
             // Log error แต่ไม่ให้ระงับการบันทึก PigDeath
             Log::error('PigDeathObserver Error', [
@@ -63,10 +61,8 @@ class PigDeathObserver
      */
     public function updated(PigDeath $pigDeath): void
     {
-        // อัปเดท profit เมื่อมีการแก้ไขจำนวนหมูตาย
-        if ($pigDeath->batch_id) {
-            RevenueHelper::calculateAndRecordProfit($pigDeath->batch_id);
-        }
+        // 🔴 BUG FIX: ไม่ควรคำนวณ profit ตรงนี้
+        // Profit จะถูกคำนวณเฉพาะตอน approve Payment (PaymentApprovalController)
     }
 
     /**
@@ -74,10 +70,8 @@ class PigDeathObserver
      */
     public function deleted(PigDeath $pigDeath): void
     {
-        // อัปเดท profit เมื่อมีการลบหมูตาย
-        if ($pigDeath->batch_id) {
-            RevenueHelper::calculateAndRecordProfit($pigDeath->batch_id);
-        }
+        // 🔴 BUG FIX: ไม่ควรคำนวณ profit ตรงนี้
+        // Profit จะถูกคำนวณเฉพาะตอน approve Payment (PaymentApprovalController)
     }
 }
 

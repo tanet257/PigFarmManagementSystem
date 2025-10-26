@@ -235,11 +235,21 @@
                                         {{ number_format($sell->shipping_cost, 2) }}</small>
                                 @endif
                             </td>
-                            <td class="text-center">
+                            <td class="text-center" id="paymentStatus{{ $sell->id }}">
+                                @php
+                                    $lastPayment = $sell->payments->sortByDesc('created_at')->first();
+                                @endphp
                                 @if ($sell->payment_status == 'ยกเลิกการขาย')
                                     <span class="badge bg-danger">ยกเลิก</span>
-                                @elseif ($sell->payment_status == 'ชำระแล้ว')
-                                    <span class="badge bg-success">ชำระแล้ว</span>
+                                @elseif ($lastPayment)
+                                    @if ($lastPayment->status === 'pending')
+                                        <span class="badge bg-info">บันทึกแล้ว</span>
+                                        <small class="d-block mt-1">รออนุมัติ</small>
+                                    @elseif ($lastPayment->status === 'approved')
+                                        <span class="badge bg-success">ชำระแล้ว</span>
+                                    @elseif ($lastPayment->status === 'rejected')
+                                        <span class="badge bg-danger">ปฏิเสธ</span>
+                                    @endif
                                 @elseif ($sell->payment_status == 'ชำระบางส่วน')
                                     <span class="badge bg-warning">ชำระบางส่วน</span>
                                     <small class="d-block mt-1">คงเหลือ:
@@ -255,30 +265,46 @@
                                 @endif
                             </td>
                             <td class="text-center">
+                                @php
+                                    $lastPayment = $sell->payments->sortByDesc('created_at')->first();
+                                @endphp
                                 @if ($sell->status === 'ยกเลิกการขาย')
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> ยกเลิกแล้ว
+                                        <i class="bi bi-trash"></i> ยกเลิกการขาย
                                     </span>
                                     <small class="text-muted d-block mt-1">
                                         โดย: {{ $sell->rejectedBy->name ?? '-' }}
                                     </small>
                                 @elseif ($sell->status === 'rejected')
                                     <span class="badge bg-danger">
-                                        <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
+                                        <i class="bi bi-trash"></i> ปฏิเสธแล้ว
                                     </span>
                                     <small class="text-muted d-block mt-1">
                                         โดย: {{ $sell->rejectedBy->name ?? '-' }}
                                     </small>
-                                @elseif ($sell->approved_at)
-                                    <span class="badge bg-success">
-                                        <i class="bi bi-check-circle"></i> อนุมัติแล้ว
-                                    </span>
-                                    <small class="text-muted d-block mt-1">
-                                        โดย: {{ $sell->approvedBy->name ?? '-' }}
-                                    </small>
+                                @elseif ($lastPayment)
+                                    @if ($lastPayment->status === 'approved')
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> อนุมัติแล้ว
+                                        </span>
+                                        <small class="text-muted d-block mt-1">
+                                            โดย: {{ $lastPayment->approvedByUser->name ?? '-' }}
+                                        </small>
+                                    @elseif ($lastPayment->status === 'rejected')
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-trash"></i> ปฏิเสธแล้ว
+                                        </span>
+                                        <small class="text-muted d-block mt-1">
+                                            โดย: {{ $lastPayment->rejectedByUser->name ?? '-' }}
+                                        </small>
+                                    @else
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-clock"></i> รออนุมัติ (Payment)
+                                        </span>
+                                    @endif
                                 @else
                                     <span class="badge bg-warning">
-                                        <i class="bi bi-clock"></i> รออนุมัติ
+                                        <i class="bi bi-clock"></i> รอบันทึกการชำระเงิน
                                     </span>
                                 @endif
                             </td>
@@ -317,10 +343,12 @@
                                     <i class="bi bi-eye"></i>
                                 </button>
 
+                                @php
+                                    $hasApprovedPayment = $sell->payments->where('status', 'approved')->isNotEmpty();
+                                @endphp
 
-
-                                @if ($sell->payment_status != 'ชำระแล้ว' && $sell->payment_status != 'ยกเลิกการขาย' && $sell->status != 'ยกเลิกการขาย_รอการอนุมัติ')
-                                    <button type="button" class="btn btn-sm btn-success"
+                                @if (!$hasApprovedPayment && $sell->payment_status != 'ชำระแล้ว' && $sell->payment_status != 'ยกเลิกการขาย' && $sell->status != 'ยกเลิกการขาย_รอการอนุมัติ')
+                                    <button type="button" id="paymentBtn{{ $sell->id }}" class="btn btn-sm btn-success"
                                         onclick="event.stopPropagation(); new bootstrap.Modal(document.getElementById('paymentModal{{ $sell->id }}')).show();">
                                         <i class="bi bi-cash"></i>
                                     </button>
@@ -334,7 +362,7 @@
                                     <button type="button" class="btn btn-sm btn-danger"
                                         onclick="event.stopPropagation(); cancelPigSale({{ $sell->id }}, '{{ csrf_token() }}');"
                                         title="ยกเลิกการขาย">
-                                        <i class="bi bi-x-circle"></i>
+                                        <i class="bi bi-trash"></i>
                                     </button>
                                 @endif
                             </td>
@@ -591,71 +619,7 @@
             </div>
         </div>
 
-        {{-- Approve Modal --}}
-        <div class="modal fade" id="approveModal{{ $sell->id }}" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="bi bi-check-circle"></i> ยืนยันการอนุมัติการขาย
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <form action="{{ route('pig_sales.approve', $sell->id) }}" method="POST">
-                        @csrf
-                        <div class="modal-body">
-                            <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i>
-                                คุณกำลังจะอนุมัติการขายนี้ กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนอนุมัติ
-                            </div>
 
-                            <table class="table table-secondary table-sm table-hover table-bordered">
-                                <tr>
-                                    <td class="bg-light" width="40%"><strong>เลขที่การขาย:</strong></td>
-                                    <td>{{ $sell->sale_number }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="bg-light"><strong>ลูกค้า:</strong></td>
-                                    <td>{{ $sell->customer->customer_name ?? $sell->buyer_name }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="bg-light"><strong>จำนวน:</strong></td>
-                                    <td>{{ number_format($sell->quantity) }} ตัว</td>
-                                </tr>
-                                <tr>
-                                    <td class="bg-light"><strong>ราคาสุทธิ:</strong></td>
-                                    <td><strong
-                                            class="text-success">{{ number_format($sell->net_total ?? $sell->total_price, 2) }}
-                                            บาท</strong></td>
-                                </tr>
-                                <tr>
-                                    <td class="bg-light"><strong>บันทึกโดย:</strong></td>
-                                    <td>
-                                        <i class="bi bi-person-fill text-primary"></i>
-                                        {{ $sell->created_by ?? '-' }}
-                                    </td>
-                                </tr>
-                            </table>
-
-                            @if ($sell->created_by === auth()->user()->name)
-                                <div class="alert alert-warning">
-                                    <i class="bi bi-exclamation-triangle"></i>
-                                    <strong>คำเตือน:</strong> คุณกำลังอนุมัติการขายที่ตัวเองสร้าง
-                                </div>
-                            @endif
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <i class="bi bi-x-circle"></i> ยกเลิก
-                            </button>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-check-circle"></i> ยืนยันอนุมัติ
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
 
         {{-- Payment Modal --}}
         <div class="modal fade" id="paymentModal{{ $sell->id }}" tabindex="-1">
@@ -1591,11 +1555,22 @@
                         sb.style.display = 'none';
                     }, 5000);
 
-                    // ✅ Reload page if success
+                    // ✅ Update row UI after success (don't reload, keep row visible)
                     if (result.ok) {
-                        setTimeout(() => {
-                            location.reload();
-                        }, 2000);
+                        // Hide the payment button (no longer needed)
+                        const paymentBtn = document.querySelector(`#paymentBtn${pigSaleId}`);
+                        if (paymentBtn) paymentBtn.style.display = 'none';
+
+                        // Update payment status in the row
+                        const paymentStatusBadge = document.querySelector(`#paymentStatus${pigSaleId}`);
+                        if (paymentStatusBadge) {
+                            paymentStatusBadge.innerHTML = '<span class="badge bg-success">ชำระแล้ว</span>';
+                        }
+
+                        // ✅ Don't reload - keep row visible!
+                        // setTimeout(() => {
+                        //     location.reload();
+                        // }, 2000);
                     }
                 })
                 .catch(error => {

@@ -20,6 +20,12 @@ class PaymentApprovalController extends Controller
      */
     public function index()
     {
+        // ✅ NEW: ดึง pending Payment approvals (การชำระเงินที่รอการอนุมัติ)
+        $pendingPayments = \App\Models\Payment::where('status', 'pending')
+            ->with(['pigSale.farm', 'pigSale.batch', 'recordedBy'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
         // ดึง pending PigSale approvals (การขายหมูที่รอการอนุมัติ)
         $pendingPigSales = PigSale::where('status', 'pending')
             ->with(['farm', 'batch', 'createdBy'])
@@ -35,16 +41,17 @@ class PaymentApprovalController extends Controller
         // ดึง approved PigSales
         $approvedPigSales = PigSale::where('status', 'approved')
             ->with(['farm', 'batch', 'approvedBy'])
-            ->orderBy('approved_at', 'desc')
+            ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         // ดึง rejected PigSales
         $rejectedPigSales = PigSale::where('status', 'rejected')
             ->with(['farm', 'batch'])
-            ->orderBy('rejected_at', 'desc')
+            ->orderBy('created_at', 'desc')
             ->paginate(15);
 
         return view('admin.payment_approvals.index', compact(
+            'pendingPayments',
             'pendingPigSales',
             'pendingCancelSales',
             'approvedPigSales',
@@ -90,9 +97,8 @@ class PaymentApprovalController extends Controller
                 'status' => 'approved',
             ]);
 
-            // ✅ บันทึก Profit และ Revenue ตอนอนุมัติเท่านั้น (ไม่ใช่ตอนบันทึก)
-            RevenueHelper::recordPigSaleRevenue($pigSale);
-            RevenueHelper::calculateAndRecordProfit($pigSale->batch_id);
+            // ✅ NOTE: Revenue จะถูกบันทึกตอนที่ Payment ถูกอนุมัติแล้ว (ไม่ใช่ตรงนี้)
+            // ☝️ เพราะรายได้ต้องบันทึกเมื่อมีการชำระเงินจริง ไม่ใช่แค่การอนุมัติการขาย
 
             // ✅ สร้าง Notification ให้ผู้บันทึก
             Notification::create([
@@ -264,6 +270,121 @@ class PaymentApprovalController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('PaymentApprovalController - rejectCancelSale Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ NEW: อนุมัติการชำระเงิน (Payment table)
+     * อัปเดท Payment status เป็น 'approved' และบันทึก Profit/Revenue
+     */
+    public function approvePayment($paymentId)
+    {
+        DB::beginTransaction();
+        try {
+            $payment = Payment::findOrFail($paymentId);
+
+            // ตรวจสอบว่า pending หรือไม่
+            if ($payment->status !== 'pending') {
+                return redirect()->back()->with('error', 'สามารถอนุมัติได้เฉพาะการชำระเงินที่รอการอนุมัติเท่านั้น');
+            }
+
+            // อนุมัติการชำระเงิน
+            $payment->update([
+                'status' => 'approved',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+            ]);
+
+            // ✅ บันทึก Revenue เมื่อ Payment อนุมัติ
+            $pigSale = $payment->pigSale;
+            RevenueHelper::recordPigSaleRevenue($pigSale);
+
+            // ✅ UPDATE PigSale status ตามยอดชำระ
+            $totalPaid = Payment::where('pig_sale_id', $pigSale->id)
+                ->where('status', 'approved')
+                ->sum('amount');
+
+            if ($totalPaid >= $pigSale->net_total) {
+                // ✅ ชำระครบ
+                $pigSale->update([
+                    'status' => 'paid', // ✅ เปลี่ยนจาก pending → paid
+                    'payment_status' => 'ชำระแล้ว',
+                    'paid_amount' => $totalPaid,
+                    'balance' => 0,
+                ]);
+            } else {
+                // ✅ ชำระบางส่วน
+                $pigSale->update([
+                    'status' => 'partial_paid', // ✅ เปลี่ยนจาก pending → partial_paid
+                    'payment_status' => 'ชำระบางส่วน',
+                    'paid_amount' => $totalPaid,
+                    'balance' => $pigSale->net_total - $totalPaid,
+                ]);
+            }
+
+            // ✅ บันทึก Profit และ Revenue สำหรับ Batch
+            RevenueHelper::calculateAndRecordProfit($pigSale->batch_id);
+
+            // ✅ สร้าง Notification ให้ผู้บันทึก
+            Notification::create([
+                'user_id' => $payment->recorded_by,
+                'title' => '✅ การชำระเงินของคุณได้รับการอนุมัติ',
+                'message' => "การชำระเงิน เลขที่ {$payment->payment_number}\nจำนวน ฿" . number_format((float)$payment->amount, 2) . "\nได้รับการอนุมัติโดย: " . auth()->user()->name,
+                'type' => 'payment_approved',
+                'related_model' => 'Payment',
+                'related_model_id' => $payment->id,
+                'is_read' => false,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'อนุมัติการชำระเงินสำเร็จ (บันทึก Profit แล้ว)');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('PaymentApprovalController - approvePayment Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ✅ NEW: ปฏิเสธการชำระเงิน (Payment table)
+     */
+    public function rejectPayment(Request $request, $paymentId)
+    {
+        DB::beginTransaction();
+        try {
+            $payment = Payment::findOrFail($paymentId);
+
+            // ตรวจสอบว่า pending หรือไม่
+            if ($payment->status !== 'pending') {
+                return redirect()->back()->with('error', 'สามารถปฏิเสธได้เฉพาะการชำระเงินที่รอการอนุมัติเท่านั้น');
+            }
+
+            // ปฏิเสธการชำระเงิน
+            $payment->update([
+                'status' => 'rejected',
+                'approved_by' => auth()->id(),
+                'approved_at' => now(),
+            ]);
+
+            // ✅ สร้าง Notification ให้ผู้บันทึก
+            Notification::create([
+                'user_id' => $payment->recorded_by,
+                'title' => '❌ การชำระเงินของคุณถูกปฏิเสธ',
+                'message' => "การชำระเงิน เลขที่ {$payment->payment_number}\nจำนวน ฿" . number_format((float)$payment->amount, 2) . "\nถูกปฏิเสธโดย: " . auth()->user()->name,
+                'type' => 'payment_rejected',
+                'related_model' => 'Payment',
+                'related_model_id' => $payment->id,
+                'is_read' => false,
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'ปฏิเสธการชำระเงินสำเร็จ');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('PaymentApprovalController - rejectPayment Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }

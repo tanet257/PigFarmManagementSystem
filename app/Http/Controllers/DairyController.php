@@ -288,13 +288,14 @@ class DairyController extends Controller
             ];
 
             // --- Filter row ที่ add จริง ---
+            // ✅ FIX: Feed/Medicine ต้องมี item_code AND barn_id ทั้งคู่ (ใช้ && ไม่ใช่ ||)
             $feedUses = collect($request->feed_use ?? [])
-                ->filter(fn($row) => !empty($row['item_code']) || !empty($row['barn_id']))
+                ->filter(fn($row) => !empty($row['item_code']) && !empty($row['barn_id']))
                 ->values()
                 ->all();
 
             $medicineUses = collect($request->medicine_use ?? [])
-                ->filter(fn($row) => !empty($row['item_code']) || !empty($row['barn_id']))
+                ->filter(fn($row) => !empty($row['item_code']) && !empty($row['barn_id']))
                 ->values()
                 ->all();
 
@@ -461,21 +462,24 @@ class DairyController extends Controller
                                 'note'            => $validated['note'] ?? null,
                             ]);
 
+                            // ✅ ทำให้ InventoryMovement ถูกสร้างทุกครั้ง (ไม่ว่า quantity เป็นเท่าไหร่)
+                            // เพราะ Observer ต้องใช้ change_type='out' เพื่อ trigger KPI calculation
+                            InventoryMovement::create([
+                                'storehouse_id' => $storehouse->id,
+                                'batch_id'      => $validated['batch_id'],
+                                'change_type'   => 'out',
+                                'quantity'      => max($usedQuantity, 1), // ✅ Minimum 1 เพื่อ trigger Observer
+                                'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
+                                'date'          => $formattedDate,
+                            ]);
+
+                            // ✅ ลดสต็อกเฉพาะเมื่อ usedQuantity > 0
                             if ($usedQuantity > 0) {
                                 if ($storehouse->stock < $usedQuantity) {
                                     throw new \Exception("สินค้า {$validated['item_name']} ({$validated['item_code']}) สต็อกไม่พอ (เหลือ {$storehouse->stock}, ต้องการ {$usedQuantity})");
                                 }
                                 $storehouse->stock -= $usedQuantity;
                                 $storehouse->save();
-
-                                InventoryMovement::create([
-                                    'storehouse_id' => $storehouse->id,
-                                    'batch_id'      => $validated['batch_id'],
-                                    'change_type'   => 'out',
-                                    'quantity'      => $usedQuantity,
-                                    'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
-                                    'date'          => $formattedDate,
-                                ]);
                             }
                         }
 
@@ -505,21 +509,24 @@ class DairyController extends Controller
                                 'note'            => $validated['note'] ?? null,
                             ]);
 
+                            // ✅ ทำให้ InventoryMovement ถูกสร้างทุกครั้ง (ไม่ว่า quantity เป็นเท่าไหร่)
+                            // เพราะ Observer ต้องใช้ change_type='out' เพื่อ trigger KPI calculation
+                            InventoryMovement::create([
+                                'storehouse_id' => $storehouse->id,
+                                'batch_id'      => $validated['batch_id'],
+                                'change_type'   => 'out',
+                                'quantity'      => max($usedQuantity, 1), // ✅ Minimum 1 เพื่อ trigger Observer
+                                'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
+                                'date'          => $formattedDate,
+                            ]);
+
+                            // ✅ ลดสต็อกเฉพาะเมื่อ usedQuantity > 0
                             if ($usedQuantity > 0) {
                                 if ($storehouse->stock < $usedQuantity) {
                                     throw new \Exception("สินค้า {$validated['item_name']} ({$validated['item_code']}) สต็อกไม่พอ (เหลือ {$storehouse->stock}, ต้องการ {$usedQuantity})");
                                 }
                                 $storehouse->stock -= $usedQuantity;
                                 $storehouse->save();
-
-                                InventoryMovement::create([
-                                    'storehouse_id' => $storehouse->id,
-                                    'batch_id'      => $validated['batch_id'],
-                                    'change_type'   => 'out',
-                                    'quantity'      => $usedQuantity,
-                                    'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
-                                    'date'          => $formattedDate,
-                                ]);
                             }
                         }
 
@@ -638,12 +645,15 @@ class DairyController extends Controller
             }
 
             // ✅ NEW: อัปเดท profit หลังบันทึกหมูตายเสร็จ
+            // ✅ FIX: ใช้ batch_id จาก first row ของ request (ทุก row มี batch_id เดียวกัน)
             try {
-                RevenueHelper::calculateAndRecordProfit($batch->id);
-                Log::info('Profit recalculated for batch', ['batch_id' => $batch->id]);
+                if (!empty($deadPigs) && !empty($deadPigs[0]['batch_id'])) {
+                    $batchId = $deadPigs[0]['batch_id'];
+                    RevenueHelper::calculateAndRecordProfit($batchId);
+                    Log::info('Profit recalculated for batch', ['batch_id' => $batchId]);
+                }
             } catch (\Exception $profitError) {
                 Log::error('Failed to recalculate profit', [
-                    'batch_id' => $batch->id,
                     'error' => $profitError->getMessage()
                 ]);
             }

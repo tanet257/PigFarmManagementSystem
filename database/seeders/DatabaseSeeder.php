@@ -20,7 +20,8 @@ class DatabaseSeeder extends Seeder
             //FarmSeeder::class,
             //BarnSeeder::class,
             //PenSeeder::class,
-            StorehouseSeeder::class
+            StorehouseNewBatchSeeder::class,
+            //StorehouseSeeder::class,
             //RoleSeeder::class,
             //PermissionSeeder::class,
             //RolePermissionSeeder::class,

@@ -164,6 +164,16 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
+                <!-- Show Cancelled Batches Checkbox -->
+                <div class="form-check ms-2">
+                    <input class="form-check-input" type="checkbox" id="showCancelledCheckboxDairy"
+                        {{ request('show_cancelled') ? 'checked' : '' }}
+                        onchange="toggleCancelledDairy()">
+                    <label class="form-check-label" for="showCancelledCheckboxDairy" title="แสดงรายการที่ยกเลิก">
+                        <i class="bi bi-eye"></i>
+                    </label>
+                </div>
+
                 <!-- Right side buttons -->
                 <div class="ms-auto d-flex gap-2">
                     <a class="btn btn-outline-success btn-sm" href="{{ route('dairy_records.export.csv') }}">
@@ -207,6 +217,7 @@
                 </thead>
                 <tbody>
                     @forelse ($dairyRecords as $index => $record)
+                        @if ($record->batch->status !== 'cancelled' || request('show_cancelled'))
                         <tr class="clickable-row" data-row-click="#viewModal{{ $record->id }}">
                             <td class="text-center">{{ $dairyRecords->firstItem() + $index }}</td>
                             <td class="text-center">{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</td>
@@ -239,6 +250,7 @@
                                 </button>
                             </td>
                         </tr>
+                        @endif
                     @empty
                         <tr>
                             <td colspan="9" class="text-center text-danger">❌ ไม่มีข้อมูลบันทึกประจำวัน</td>
@@ -446,6 +458,30 @@
     @endforeach
 
     @push('scripts')
+        <!-- Toggle Show Cancelled Batches -->
+        <script>
+            function toggleCancelledDairy() {
+                const checkbox = document.getElementById('showCancelledCheckboxDairy');
+                const form = document.querySelector('form[method="GET"]');
+
+                if (checkbox.checked) {
+                    // Add show_cancelled parameter
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'show_cancelled';
+                    input.value = '1';
+                    form.appendChild(input);
+                } else {
+                    // Remove show_cancelled parameter
+                    const input = form.querySelector('input[name="show_cancelled"]');
+                    if (input) {
+                        input.remove();
+                    }
+                }
+                form.submit();
+            }
+        </script>
+
         <!-- Datepicker JS (flatpickr) -->
         <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <script src="https://npmcdn.com/flatpickr/dist/l10n/th.js"></script>
