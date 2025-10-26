@@ -10,6 +10,7 @@ module.exports = {
     extend: {
       fontFamily: {
         sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+        prompt: ['Prompt', 'sans-serif'],
       },
       colors: {
         darkbg: "#1e1b29",     // ดำอมน้ำเงิน

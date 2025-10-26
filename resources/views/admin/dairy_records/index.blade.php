@@ -164,6 +164,11 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
+                <!-- Export CSV Button -->
+                <button class="btn btn-sm btn-success" onclick="exportTableToCSV('.table-responsive', 'บันทึกประจำวัน', [7])" title="ส่งออก CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                </button>
+
                 <!-- Show Cancelled Batches Checkbox -->
                 <div class="form-check ms-2">
                     <input class="form-check-input" type="checkbox" id="showCancelledCheckboxDairy"

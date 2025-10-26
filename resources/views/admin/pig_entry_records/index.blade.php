@@ -139,6 +139,14 @@
                 </div>
 
                 <div class="ms-auto d-flex gap-2">
+                    {{-- Export Buttons (No Dropdown) --}}
+                    <button class="btn btn-success btn-sm" onclick="exportToCSV(event)" title="ส่งออกเป็น CSV">
+                        <i class="bi bi-file-earmark-excel me-1"></i> CSV
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="exportToPDF(event)" title="ส่งออกเป็น PDF">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
+                    </button>
+
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                         data-bs-target="#createModal">
                         <i class="bi bi-plus-circle me-1"></i> เพิ่มหมูเข้า
@@ -633,6 +641,7 @@
                     </div>
                     <form id="paymentForm{{ $record->id }}" enctype="multipart/form-data">
                         @csrf
+                        <input type="hidden" name="cost_type" value="piglet">
                         <input type="hidden" name="pig_entry_id" value="{{ $record->id }}">
                         <div class="modal-body">
                             <div class="mb-3">
@@ -643,14 +652,9 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">จำนวนเงินที่ชำระ <span class="text-danger">*</span></label>
-                                <input type="number" name="paid_amount" class="form-control" step="0.01"
+                                <input type="number" name="amount" class="form-control" step="0.01"
                                     min="0.01"
                                     value="{{ $record->total_pig_price + ($record->batch->costs->sum('excess_weight_cost') ?? 0) + ($record->batch->costs->sum('transport_cost') ?? 0) }}" required>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">วันที่ชำระ <span class="text-danger">*</span></label>
-                                <input type="date" name="payment_date" class="form-control"
-                                    value="{{ date('Y-m-d') }}" required>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">วิธีชำระเงิน <span class="text-danger">*</span></label>
@@ -672,19 +676,9 @@
                                                 onclick="updatePaymentMethod(event, {{ $record->id }})">เช็ค</a>
                                         </li>
                                     </ul>
-                                    <input type="hidden" name="payment_method" id="paymentMethod{{ $record->id }}"
+                                    <input type="hidden" name="action_type" id="paymentMethod{{ $record->id }}"
                                         value="" required>
                                 </div>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">เลขที่อ้างอิง (โอนเงิน/เช็ค)</label>
-                                <input type="text" name="reference_number" class="form-control"
-                                    placeholder="เช่น เลขเช็ค, เลขอ้างอิงการโอน">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">ชื่อธนาคาร</label>
-                                <input type="text" name="bank_name" class="form-control"
-                                    placeholder="เช่น ธนาคารกรุงไทย">
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">อัปโหลดหลักฐานการชำระ <span class="text-danger">*</span></label>
@@ -694,7 +688,7 @@
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">หมายเหตุ</label>
-                                <textarea name="note" class="form-control" rows="2"></textarea>
+                                <textarea name="reason" class="form-control" rows="2" placeholder="เช่น ลูกหมูจากฟาร์ม XYZ"></textarea>
                             </div>
                         </div>
                         <div class="modal-footer">
@@ -816,48 +810,76 @@
                     return;
                 }
 
-                const paymentMethodInput = document.getElementById('paymentMethod' + recordId);
+                const paymentMethodInput = document.getElementById('paymentMethod' + recordId);  // name="payment_method"
+                const amountInput = form.querySelector('input[name="amount"]');
                 const receiptInput = form.querySelector('input[name="receipt_file"]');
-                const paidAmountInput = form.querySelector('input[name="paid_amount"]');
 
-                // Validation
+                // 🔍 DEBUG: Log all fields
+                console.log('🔍 Payment Form Debug:', {
+                    recordId,
+                    paymentMethodValue: paymentMethodInput?.value,
+                    amount: amountInput?.value,
+                    receiptFiles: receiptInput?.files?.length,
+                });
+
+                // Validation - เฉพาะ field ที่ต้องกรอก
                 let errors = [];
 
-                if (!paidAmountInput.value || parseFloat(paidAmountInput.value) <= 0) {
-                    errors.push('❌ จำนวนเงินที่ชำระต้องมากกว่า 0');
-                }
-
-                if (!paymentMethodInput.value) {
+                if (!paymentMethodInput || !paymentMethodInput.value) {
                     errors.push('❌ กรุณาเลือกวิธีชำระเงิน');
                 }
 
-                if (!receiptInput.files.length) {
+                if (!amountInput || !amountInput.value || parseFloat(amountInput.value) <= 0) {
+                    errors.push('❌ กรุณากรอกจำนวนเงิน');
+                }
+
+                if (!receiptInput || !receiptInput.files || receiptInput.files.length === 0) {
                     errors.push('❌ กรุณาอัปโหลดหลักฐานการชำระเงิน');
                 }
 
                 if (errors.length > 0) {
+                    console.error('❌ Validation errors:', errors);
                     showSnackbar(errors.join('\n'));
                     return;
                 }
 
-                // Create FormData for multipart upload
+                console.log('✅ Validation passed, sending form...');
+
+                // Create FormData
                 const formData = new FormData(form);
 
-                // Submit via AJAX
-                fetch('{{ route("pig_entry_records.update_payment", "") }}/' + recordId, {
-                    method: 'PUT',
+                // 🔍 DEBUG: Log FormData
+                console.log('📋 FormData contents:');
+                for (let [key, value] of formData.entries()) {
+                    if (value instanceof File) {
+                        console.log(`  ${key}: File(${value.name})`);
+                    } else {
+                        console.log(`  ${key}: ${value}`);
+                    }
+                }
+
+                // Submit via AJAX with proper multipart headers
+                fetch(`/pigentryrecord/${recordId}/payment`, {
+                    method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                     },
                     body: formData
                 })
-                .then(response => response.json())
-                .then(data => {
+                .then(response => {
+                    console.log('Response status:', response.status);
+                    return response.json().then(data => ({
+                        status: response.status,
+                        data: data
+                    }));
+                })
+                .then(({ status, data }) => {
+                    console.log('Response data:', data);
                     const sb = document.getElementById('snackbar');
                     const sbMsg = document.getElementById('snackbarMessage');
 
-                    if (data.success) {
+                    if (status === 200 && data.success) {
                         // ✅ Success
                         sbMsg.innerText = data.message || 'บันทึกการชำระเงินสำเร็จ';
                         sb.style.backgroundColor = '#28a745'; // สีเขียว
@@ -886,7 +908,7 @@
                     }, 5000);
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Fetch Error:', error);
                     const sb = document.getElementById('snackbar');
                     const sbMsg = document.getElementById('snackbarMessage');
                     sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
@@ -901,10 +923,8 @@
             }
         </script>
 
-        {{-- Payment Form AJAX Submission --}}
+        {{-- JS สำหรับ fetch barns + batches --}}
         <script>
-
-        {{-- JS สำหรับ fetch barns + batches --}}        <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const batches = @json($batches);
                 const farms = @json($farms);
@@ -1167,6 +1187,86 @@
                         sb.style.display = 'none';
                     }, 5000);
                 });
+            }
+        </script>
+
+        {{-- Export Functions --}}
+        <script>
+            // ✅ Export to CSV with Thai font support
+            function exportToCSV(event) {
+                event.preventDefault();
+                // Exclude "จัดการ" column (last column)
+                exportTableToCSV('.table-responsive', 'บันทึกหมูเข้า', [7]);
+            }
+
+            // ✅ Export to PDF with Thai font support
+            async function exportToPDF(event) {
+                event.preventDefault();
+
+                // Wait for libraries to be loaded
+                await window.librariesReady;
+
+                try {
+                    const table = document.querySelector('.table-responsive');
+                    if (!table) {
+                        alert('ไม่พบตารางข้อมูล');
+                        return;
+                    }
+
+                    console.log('Starting PDF export...');
+                    const canvas = await html2canvas(table, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#fff',
+                        logging: true
+                    });
+                    console.log('Canvas created successfully');
+                    const imgData = canvas.toDataURL('image/png');
+                    const { jsPDF } = window.jspdf;
+                    if (!jsPDF) {
+                        throw new Error('jsPDF not loaded');
+                    }
+                    const pdf = new jsPDF('l', 'mm', 'a4');
+                    console.log('PDF created successfully');
+
+                    // Set Thai font support - use default (Thai text will render as images)
+                    // PDF will contain the table as image, so Thai text will display correctly
+
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const pageHeight = pdf.internal.pageSize.getHeight();
+                    const imgWidth = pageWidth - 20;
+                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                    let yPosition = 10;
+                    pdf.text('บันทึกหมูเข้า (Pig Entry Records)', 10, yPosition);
+                    yPosition += 10;
+
+                    if (imgHeight > pageHeight - 20) {
+                        let remainingHeight = imgHeight;
+                        let position = 0;
+
+                        while (remainingHeight > 0) {
+                            const pageCanvasHeight = (pageHeight - 20) * (canvas.width / imgWidth);
+
+                            if (position > 0) {
+                                pdf.addPage();
+                                yPosition = 10;
+                            }
+
+                            pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, Math.min(imgHeight - position * (pageHeight - 20), pageHeight - 20));
+                            remainingHeight -= pageHeight - 20;
+                            position++;
+                        }
+                    } else {
+                        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
+                    }
+
+                    pdf.save('บันทึกหมูเข้า_' + new Date().toISOString().split('T')[0] + '.pdf');
+                } catch (error) {
+                    console.error('PDF export error:', error);
+                    alert('เกิดข้อผิดพลาดในการส่งออก PDF');
+                }
             }
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>

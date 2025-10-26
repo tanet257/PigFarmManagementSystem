@@ -16,4 +16,16 @@ class TrimStrings extends Middleware
         'password',
         'password_confirmation',
     ];
+
+    /**
+     * Determine if the request has a URI that should be ignored.
+     */
+    protected function shouldSkip($request)
+    {
+        // Skip trimming for multipart form data (file uploads)
+        if ($request->isMethod('post') && $request->header('content-type') && str_contains($request->header('content-type'), 'multipart/form-data')) {
+            return true;
+        }
+        return false;
+    }
 }

@@ -11,9 +11,28 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+    <!-- Export Libraries (jsPDF + html2canvas) - Preload -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+
+    <!-- Script to ensure libraries are loaded before export -->
+    <script>
+        window.librariesReady = new Promise((resolve) => {
+            function checkLibraries() {
+                if (typeof html2canvas !== 'undefined' && typeof jsPDF !== 'undefined') {
+                    resolve();
+                } else {
+                    setTimeout(checkLibraries, 100);
+                }
+            }
+            checkLibraries();
+        });
+    </script>
 
     <!-- Styles -->
     @livewireStyles

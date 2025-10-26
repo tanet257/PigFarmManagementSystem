@@ -133,6 +133,11 @@
 
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
+
+                <!-- Export CSV Button -->
+                <button class="btn btn-sm btn-success" onclick="exportTableToCSV('.table-responsive', 'จัดการผู้ใช้งาน', [7])" title="ส่งออก CSV">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                </button>
             </form>
         </div>
 

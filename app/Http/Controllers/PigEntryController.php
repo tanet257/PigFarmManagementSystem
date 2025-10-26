@@ -561,32 +561,54 @@ class PigEntryController extends Controller
         try {
             $record = PigEntryRecord::with(['batch.costs'])->findOrFail($id);
 
-            // Validate input - แยก validation logic เพื่อให้ messages ออกมาชัดเจน
+            // 🔍 DEBUG: Log RAW incoming request
+            Log::info('Payment Request Raw Debug:', [
+                'method' => $request->method(),
+                'content_type' => $request->header('content-type'),
+                'path' => $request->path(),
+                'all_data_count' => count($request->all()),
+                'has_file_input' => $request->hasFile('receipt_file'),
+                'files_count' => count($request->files->all()),
+            ]);
+
+            // Log each field individually
+            Log::info('Payment Request Fields:', [
+                'pig_entry_id' => $request->input('pig_entry_id'),
+                'cost_type' => $request->input('cost_type'),
+                'amount' => $request->input('amount'),
+                'action_type' => $request->input('action_type'),
+                'reason' => $request->input('reason'),
+                'receipt_file_name' => $request->file('receipt_file') ? $request->file('receipt_file')->getClientOriginalName() : 'NO FILE',
+            ]);
+
+            // Validate input - ตรงกับ CostPayment schema
             try {
                 $validated = $request->validate(
                     [
-                        'paid_amount' => 'required|numeric|min:0.01',
-                        'payment_date' => 'required|date',
-                        'payment_method' => 'required|in:เงินสด,โอนเงิน,เช็ค',
-                        'reference_number' => 'nullable|string',
-                        'bank_name' => 'nullable|string',
-                        'receipt_file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
-                        'note' => 'nullable|string',
+                        'cost_type' => 'required|in:piglet,feed,medicine,wage,transport,water_bill,electric_bill,other',
+                        'amount' => 'required|numeric|min:0.01',
+                        'action_type' => 'required|in:เงินสด,โอนเงิน,เช็ค',
+                        'reason' => 'nullable|string|max:500',
                     ],
                     [
-                        'paid_amount.required' => 'จำนวนเงินที่ชำระเป็นบังคับ',
-                        'paid_amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
-                        'paid_amount.min' => 'จำนวนเงินต้องมากกว่า 0',
-                        'payment_date.required' => 'วันที่ชำระเป็นบังคับ',
-                        'payment_date.date' => 'วันที่ชำระไม่ถูกต้อง',
-                        'payment_method.required' => 'กรุณาเลือกวิธีชำระเงิน',
-                        'payment_method.in' => 'วิธีชำระเงินไม่ถูกต้อง',
-                        'receipt_file.required' => 'กรุณาอัปโหลดหลักฐานการชำระเงิน',
-                        'receipt_file.file' => 'หลักฐานการชำระเงินต้องเป็นไฟล์',
-                        'receipt_file.mimes' => 'ประเภทไฟล์ต้องเป็น jpg, jpeg, png หรือ pdf',
-                        'receipt_file.max' => 'ขนาดไฟล์ต้องไม่เกิน 5 MB',
+                        'cost_type.required' => 'ประเภทค่าใช้จ่ายเป็นบังคับ',
+                        'amount.required' => 'จำนวนเงินที่ชำระเป็นบังคับ',
+                        'amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลข',
+                        'amount.min' => 'จำนวนเงินต้องมากกว่า 0',
+                        'action_type.required' => 'กรุณาเลือกวิธีชำระเงิน',
+                        'action_type.in' => 'วิธีชำระเงินไม่ถูกต้อง',
                     ]
                 );
+
+                // 🔄 Map action_type (payment method) to reason field
+                // reason column จะเก็บ: "วิธีการ: เงินสด | หมายเหตุ: ..."
+                $paymentMethod = $validated['action_type'];
+                $additionalNote = $validated['reason'] ?? '';
+                $validated['reason'] = "วิธีการ: {$paymentMethod}" . ($additionalNote ? " | หมายเหตุ: {$additionalNote}" : '');
+
+                // 🔄 Set action_type to 'created' (enum: created, updated, approved, rejected)
+                // เพราะ action_type column ใช้ enum สำหรับ audit trail ไม่ใช่ payment method
+                $validated['action_type_audit'] = 'created';
             } catch (\Illuminate\Validation\ValidationException $ve) {
                 // Convert errors array to string
                 $errorMessages = [];
@@ -594,6 +616,12 @@ class PigEntryController extends Controller
                     $errorMessages = array_merge($errorMessages, $messages);
                 }
                 $errorText = implode("\n", $errorMessages);
+
+                // 🔍 DEBUG: Log validation errors
+                Log::error('Payment Validation Error:', [
+                    'errors' => $ve->errors(),
+                    'error_text' => $errorText,
+                ]);
 
                 // Return validation errors as JSON
                 return response()->json([
@@ -612,8 +640,27 @@ class PigEntryController extends Controller
                         $request->file('receipt_file')->getRealPath(),
                         ['folder' => 'receipt_files']
                     );
-                    // CloudinaryEngine::upload() returns the engine instance
-                    $uploadedFileUrl = $uploadResult->getSecurePath();
+                    // ✅ ลองใช้ public_id หลายวิธี
+                    if (method_exists($uploadResult, 'getSecurePath')) {
+                        $uploadedFileUrl = $uploadResult->getSecurePath();
+                    } elseif (method_exists($uploadResult, 'secure_url')) {
+                        $uploadedFileUrl = $uploadResult->secure_url();
+                    } elseif (isset($uploadResult['secure_url'])) {
+                        $uploadedFileUrl = $uploadResult['secure_url'];
+                    } else {
+                        // Fallback: สร้าง URL เอง
+                        $cloudName = env('CLOUDINARY_CLOUD_NAME');
+                        $publicId = $uploadResult['public_id'] ?? $uploadResult->public_id ?? null;
+                        if ($publicId) {
+                            $uploadedFileUrl = "https://res.cloudinary.com/{$cloudName}/image/upload/{$publicId}";
+                        }
+                    }
+
+                    Log::info('Cloudinary upload result:', [
+                        'type' => gettype($uploadResult),
+                        'url' => $uploadedFileUrl,
+                        'result' => is_array($uploadResult) ? $uploadResult : (method_exists($uploadResult, 'toArray') ? $uploadResult->toArray() : 'object'),
+                    ]);
                 } catch (\Exception $e) {
                     DB::rollBack();
                     Log::error('Cloudinary upload error in PigEntry: ' . $e->getMessage());
@@ -633,19 +680,20 @@ class PigEntryController extends Controller
                 ], 500);
             }
 
-            // ✅ สร้าง Cost record เพื่อบันทึกการชำระเงิน
-            // ดึง transport_cost และ excess_weight_cost จาก batch costs
+            // ✅ สร้าง Cost record และ CostPayment record
+            // ดึง transport_cost และ excess_weight_cost จาก batch
             $batchCosts = $record->batch->costs ?? collect();
             $transportCostSum = $batchCosts->sum('transport_cost') ?? 0;
             $excessWeightCostSum = $batchCosts->sum('excess_weight_cost') ?? 0;
 
             $totalAmount = $record->total_pig_price + $transportCostSum + $excessWeightCostSum;
 
+            // สร้าง Cost record พร้อม receipt_file
             $cost = Cost::create([
                 'farm_id' => $record->batch->farm_id,
                 'batch_id' => $record->batch_id,
                 'pig_entry_record_id' => $record->id,
-                'cost_type' => 'piglet',
+                'cost_type' => $validated['cost_type'],
                 'item_code' => 'PIGLET-' . $record->batch->batch_code,
                 'item_name' => 'ลูกหมู - ' . $record->batch->batch_code,
                 'quantity' => $record->total_pig_amount,
@@ -654,22 +702,38 @@ class PigEntryController extends Controller
                 'total_price' => $record->total_pig_price,
                 'transport_cost' => $transportCostSum,
                 'excess_weight_cost' => $excessWeightCostSum,
-                'receipt_file' => $uploadedFileUrl,
-                'date' => $validated['payment_date'] ?? $record->pig_entry_date,
-                'note' => $validated['note'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
+                'receipt_file' => $uploadedFileUrl,  // ✅ บันทึก receipt file
+                'date' => now()->toDateString(),
+                'note' => $validated['reason'] ?? 'บันทึกการชำระเงิน - ' . $record->batch->batch_code,
             ]);
 
             // ✅ สร้าง CostPayment record (pending approval)
-            $costPayment = \App\Models\CostPayment::create([
+            Log::info('Creating CostPayment with data:', [
                 'cost_id' => $cost->id,
-                'cost_type' => 'piglet',
-                'amount' => $totalAmount,
+                'cost_type' => $validated['cost_type'],
+                'amount' => $validated['amount'],
                 'status' => 'pending',
-                'action_type' => $validated['payment_method'],
+                'reason' => $validated['reason'],
+                'action_type' => $validated['action_type_audit'],
             ]);
 
-            // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน (ใช้ CostPayment notification)
-            NotificationHelper::notifyAdminsPigEntryPaymentRecorded($costPayment, auth()->user());
+            $costPayment = \App\Models\CostPayment::create([
+                'cost_id' => $cost->id,  // ✅ เชื่อมกับ Cost record
+                'cost_type' => $validated['cost_type'],
+                'amount' => $validated['amount'],
+                'status' => 'pending',
+                'reason' => $validated['reason'],  // ✅ Contains: "วิธีการ: เงินสด | หมายเหตุ: ..."
+                'action_type' => $validated['action_type_audit'],  // ✅ Set to 'created' (enum for audit trail)
+            ]);
+
+            Log::info('CostPayment created successfully:', [
+                'id' => $costPayment->id,
+                'cost_id' => $costPayment->cost_id,
+                'action_type' => $costPayment->action_type,
+            ]);
+
+            // ส่งแจ้งเตือนให้ Admin อนุมัติการชำระเงิน
+            // NotificationHelper::notifyAdminsPigEntryPaymentRecorded($costPayment, auth()->user());
 
             DB::commit();
 

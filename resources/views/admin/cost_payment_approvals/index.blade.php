@@ -38,26 +38,32 @@
         </div>
 
         {{-- Tabs Navigation --}}
-        <ul class="nav nav-tabs mb-4" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending" role="tab">
-                    <i class="bi bi-hourglass-split"></i> รอการอนุมัติ
-                    <span class="badge bg-warning ms-2">{{ $pendingPayments->total() ?? 0 }}</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="approved-tab" data-bs-toggle="tab" href="#approved" role="tab">
-                    <i class="bi bi-check-circle"></i> อนุมัติแล้ว
-                    <span class="badge bg-success ms-2">{{ $approvedPayments->count() ?? 0 }}</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" id="rejected-tab" data-bs-toggle="tab" href="#rejected" role="tab">
-                    <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
-                    <span class="badge bg-danger ms-2">{{ $rejectedPayments->count() ?? 0 }}</span>
-                </a>
-            </li>
-        </ul>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <ul class="nav nav-tabs mb-0 flex-grow-1" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" id="pending-tab" data-bs-toggle="tab" href="#pending" role="tab">
+                        <i class="bi bi-hourglass-split"></i> รอการอนุมัติ
+                        <span class="badge bg-warning ms-2">{{ $pendingPayments->total() ?? 0 }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="approved-tab" data-bs-toggle="tab" href="#approved" role="tab">
+                        <i class="bi bi-check-circle"></i> อนุมัติแล้ว
+                        <span class="badge bg-success ms-2">{{ $approvedPayments->count() ?? 0 }}</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="rejected-tab" data-bs-toggle="tab" href="#rejected" role="tab">
+                        <i class="bi bi-x-circle"></i> ปฏิเสธแล้ว
+                        <span class="badge bg-danger ms-2">{{ $rejectedPayments->count() ?? 0 }}</span>
+                    </a>
+                </li>
+            </ul>
+            <!-- Export Button -->
+            <button class="btn btn-sm btn-success ms-2" onclick="exportTableToCSV('.table-responsive', 'อนุมัติการชำระเงิน')" title="ส่งออก CSV">
+                <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+            </button>
+        </div>
 
         {{-- Tab Content --}}
         <div class="tab-content">
