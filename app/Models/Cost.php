@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cost extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'farm_id',
@@ -31,6 +32,7 @@ class Cost extends Model
     // Cast receipt_file to ensure it's always a string
     protected $casts = [
         'receipt_file' => 'string',
+        'amount' => 'decimal:2',
     ];
 
     // Accessor to ensure receipt_file is always a string

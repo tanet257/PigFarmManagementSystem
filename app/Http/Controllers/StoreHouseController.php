@@ -157,7 +157,8 @@ class StoreHouseController extends Controller
                     if ($request->hasFile("$section.$i.receipt_file")) {
                         $file = $request->file("$section.$i.receipt_file");
                         if ($file->isValid()) {
-                            $uploadedFileUrl = Cloudinary::upload($file->getRealPath(), ['folder' => 'receipt_files'])->getSecurePath();
+                            $uploadResult = Cloudinary::upload($file->getRealPath(), ['folder' => 'receipt_files']);
+                            $uploadedFileUrl = $uploadResult['secure_url'];
                         }
                     }
 
@@ -473,10 +474,11 @@ class StoreHouseController extends Controller
             }
 
             if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
-                $uploadedFileUrl = Cloudinary::upload(
+                $uploadResult = Cloudinary::upload(
                     $request->file('receipt_file')->getRealPath(),
                     ['folder' => 'receipt_files']
-                )->getSecurePath();
+                );
+                $uploadedFileUrl = $uploadResult['secure_url'];
             }
 
             // อัปเดต cost

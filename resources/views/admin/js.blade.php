@@ -6,6 +6,8 @@
  <script src="vendor/jquery-validation/jquery.validate.min.js"></script>
  <script src="admin/js/charts-home.js"></script>
  <script src="admin/js/front.js"></script>
+ <!-- Global Modal Handler -->
+ <script src="js/modal-handler.js"></script>
  <!-- Choices.js JS -->
  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
  <!-- flatpickr.js JS -->

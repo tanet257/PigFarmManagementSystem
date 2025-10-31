@@ -229,16 +229,26 @@
                                 <td class="text-center">{{ $record->display_barn }}</td>
                                 <td class="text-center">
                                     @php
-                                        $typeBadge = '-';
-                                        if ($record->dairy_storehouse_uses->count()) {
-                                            $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-                                        } elseif ($record->batch_treatments->count()) {
-                                            $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-                                        } elseif ($record->pig_deaths->count()) {
-                                            $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
+                                        $badges = [];
+
+                                        // ใช้ typesByRecord array จาก controller
+                                        if (!empty($typesByRecord[$record->id])) {
+                                            foreach ($typesByRecord[$record->id] as $type) {
+                                                if ($type === 'feed') {
+                                                    $badges[] = '<span class="badge bg-success">อาหาร</span>';
+                                                } elseif ($type === 'medicine') {
+                                                    $badges[] = '<span class="badge bg-warning">ยา</span>';
+                                                } elseif ($type === 'death') {
+                                                    $badges[] = '<span class="badge bg-danger">หมูตาย</span>';
+                                                }
+                                            }
+                                        }
+
+                                        if (empty($badges)) {
+                                            $badges[] = '-';
                                         }
                                     @endphp
-                                    {!! $typeBadge !!}
+                                    {!! implode(' ', $badges) !!}
                                 </td>
                                 <td class="text-center">{{ Str::limit($record->display_details ?? '-', 30) }}</td>
                                 <td class="text-center">{{ $record->display_quantity }}</td>
@@ -256,7 +266,7 @@
                         @endif
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-danger">❌ ไม่มีข้อมูลบันทึกประจำวัน</td>
+                            <td colspan="9" class="text-center text-danger">ไม่มีข้อมูลบันทึกประจำวัน</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -276,26 +286,33 @@
     </div>
 
     {{-- Modals --}}
-    @foreach ($dairyRecords as $record)
+        @foreach ($dairyRecords as $record)
         @php
-            $isFeed = $record->dairy_storehouse_uses->count();
-            $isMedicine = $record->batch_treatments->count();
-            $isDeath = $record->pig_deaths->count();
+            // ใช้ typesByRecord array จาก controller
+            $recordTypes = $typesByRecord[$record->id] ?? [];
+            $isFeed = in_array('feed', $recordTypes);
+            $isMedicine = in_array('medicine', $recordTypes);
+            $isDeath = in_array('death', $recordTypes);
             $formAction = '#';
             $methodField = '';
 
-            // ✅ Calculate typeBadge for this record
-            $typeBadge = '-';
+            // Calculate typeBadges for this record
+            $typeBadges = [];
             if ($isFeed) {
-                $typeBadge = '<span class="badge bg-success">อาหาร</span>';
-            } elseif ($isMedicine) {
-                $typeBadge = '<span class="badge bg-warning">การรักษา</span>';
-            } elseif ($isDeath) {
-                $typeBadge = '<span class="badge bg-danger">หมูตาย</span>';
+                $typeBadges[] = '<span class="badge bg-success">อาหาร</span>';
             }
+            if ($isMedicine) {
+                $typeBadges[] = '<span class="badge bg-warning">ยา</span>';
+            }
+            if ($isDeath) {
+                $typeBadges[] = '<span class="badge bg-danger">หมูตาย</span>';
+            }
+            $typeBadge = empty($typeBadges) ? '-' : implode(' ', $typeBadges);
 
+            // ตั้ง formAction สำหรับการแก้ไข (ใช้ประเภทแรก)
             if ($isFeed) {
-                $useId = $record->dairy_storehouse_uses->first()->id ?? 0;
+                $feedUses = $record->dairy_storehouse_uses->filter(fn($use) => optional($use->storehouse)->item_type === 'food');
+                $useId = $feedUses->first()->id ?? 0;
                 $formAction = route('dairy_records.update_feed', [
                     'dairyId' => $record->id,
                     'useId' => $useId,

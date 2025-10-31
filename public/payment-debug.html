@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Modal Debug Tester</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .debug-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            border-left: 4px solid #00ff00;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
+        .test-pass {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+        .test-fail {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+        .test-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-left: 4px solid #17a2b8;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-lg">
+        <h1 class="mb-4">🐛 Payment Modal Debug Tester</h1>
+
+        <!-- Form Testing Section -->
+        <div class="debug-section">
+            <h3>📝 Step 1: Check Forms on Page</h3>
+            <button class="btn btn-primary" onclick="checkForms()">Check All Forms</button>
+            <button class="btn btn-secondary ms-2" onclick="checkSpecificForm()">Check Batch #1 Form</button>
+            <div class="test-result test-info mt-3" id="formCheckResult" style="display:none;"></div>
+        </div>
+
+        <!-- CSRF Token Check -->
+        <div class="debug-section">
+            <h3>🔐 Step 2: Check CSRF Token</h3>
+            <button class="btn btn-primary" onclick="checkCsrfToken()">Check CSRF Token</button>
+            <div class="test-result test-info mt-3" id="csrfCheckResult" style="display:none;"></div>
+        </div>
+
+        <!-- Form Fields Check -->
+        <div class="debug-section">
+            <h3>📋 Step 3: Check Form Fields</h3>
+            <div>
+                <label>Batch ID:</label>
+                <input type="number" id="batchIdInput" class="form-control" value="1" style="max-width: 150px;">
+            </div>
+            <button class="btn btn-primary mt-2" onclick="checkFormFields()">Check Fields</button>
+            <div class="test-result test-info mt-3" id="fieldsCheckResult" style="display:none;"></div>
+        </div>
+
+        <!-- Validation Simulation -->
+        <div class="debug-section">
+            <h3>✅ Step 4: Simulate Validation</h3>
+            <div class="mb-3">
+                <label>Test Data:</label>
+                <div class="form-check">
+                    <input type="checkbox" id="validPaymentMethod" class="form-check-input" checked>
+                    <label class="form-check-label">Payment Method Selected</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" id="validAmount" class="form-check-input" checked>
+                    <label class="form-check-label">Amount > 0</label>
+                </div>
+                <div class="form-check">
+                    <input type="checkbox" id="validReceipt" class="form-check-input" checked>
+                    <label class="form-check-label">Receipt File Uploaded</label>
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="simulateValidation()">Run Validation</button>
+            <div class="test-result test-info mt-3" id="validationResult" style="display:none;"></div>
+        </div>
+
+        <!-- Console Output -->
+        <div class="debug-section">
+            <h3>🖥️ Console Output (Real-time)</h3>
+            <button class="btn btn-warning" onclick="clearConsole()">Clear Console</button>
+            <div class="console-output mt-3" id="consoleOutput"></div>
+        </div>
+
+        <!-- Manual Endpoint Test -->
+        <div class="debug-section">
+            <h3>🧪 Step 5: Test Endpoint</h3>
+            <p class="text-muted">Before testing, make sure server is running: <code>php artisan serve</code></p>
+            <div class="mb-3">
+                <label>Batch ID:</label>
+                <input type="number" id="endpointBatchId" class="form-control" value="1" style="max-width: 150px;">
+            </div>
+            <button class="btn btn-success" onclick="testEndpoint()">Test /batch/X/payment Endpoint</button>
+            <div class="test-result test-info mt-3" id="endpointResult" style="display:none;"></div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="debug-section" style="background: #fff3cd; border-left: 4px solid #ff9800;">
+            <h3>📖 How to Use This Page</h3>
+            <ol>
+                <li>Open this page in your browser</li>
+                <li>Press F12 to open Developer Tools Console</li>
+                <li>Run each test step in order</li>
+                <li>Watch the output below</li>
+                <li>Check the Console tab for detailed logs</li>
+                <li>If error, check the error message and fix</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Console logging to page
+        let logs = [];
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addLog('log', args);
+        };
+
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addLog('error', args);
+        };
+
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addLog('warn', args);
+        };
+
+        function addLog(type, args) {
+            const message = args.map(arg =>
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+
+            logs.push({ type, message, time: new Date().toLocaleTimeString() });
+            updateConsoleOutput();
+        }
+
+        function updateConsoleOutput() {
+            const output = document.getElementById('consoleOutput');
+            output.innerHTML = logs.map(log => {
+                const color = log.type === 'error' ? '#ff4444' : log.type === 'warn' ? '#ffaa00' : '#00ff00';
+                return `<div style="color: ${color};">[${log.time}] ${log.message}</div>`;
+            }).join('');
+            output.scrollTop = output.scrollHeight;
+        }
+
+        function clearConsole() {
+            logs = [];
+            updateConsoleOutput();
+        }
+
+        function showResult(elementId, message, isSuccess = true) {
+            const el = document.getElementById(elementId);
+            el.innerHTML = message;
+            el.className = 'test-result ' + (isSuccess ? 'test-pass' : 'test-fail');
+            el.style.display = 'block';
+        }
+
+        // Test Functions
+        function checkForms() {
+            console.log('🔍 Checking all payment forms on page...');
+            const forms = document.querySelectorAll('form[id^="paymentForm"]');
+            console.log(`Found ${forms.length} payment forms`);
+
+            let html = `<strong>Forms found: ${forms.length}</strong><br>`;
+            if (forms.length > 0) {
+                forms.forEach((form, i) => {
+                    html += `<div style="margin-top: 10px;">Form ${i+1}: <code>${form.id}</code></div>`;
+                });
+            } else {
+                html += '<p style="color: red;">❌ No payment forms found on page</p>';
+            }
+            showResult('formCheckResult', html, forms.length > 0);
+        }
+
+        function checkSpecificForm() {
+            console.log('🔍 Checking Batch #1 form...');
+            const form = document.getElementById('paymentForm1');
+            const exists = !!form;
+            console.log('Form paymentForm1 exists:', exists);
+
+            showResult('formCheckResult',
+                exists ? '<strong>✅ Form paymentForm1 exists</strong>' : '<strong>❌ Form paymentForm1 NOT FOUND</strong>',
+                exists
+            );
+        }
+
+        function checkCsrfToken() {
+            console.log('🔍 Checking CSRF token...');
+            const token = document.querySelector('input[name="_token"]');
+            const exists = !!token;
+            const value = token?.value || '';
+            console.log('CSRF Token exists:', exists);
+            console.log('Token value preview:', value.substring(0, 20) + '...');
+
+            showResult('csrfCheckResult',
+                exists ? `<strong>✅ CSRF Token found</strong><br><code>${value}</code>` : '<strong>❌ CSRF Token NOT FOUND</strong>',
+                exists
+            );
+        }
+
+        function checkFormFields() {
+            const batchId = document.getElementById('batchIdInput').value;
+            console.log(`🔍 Checking fields for Batch #${batchId}...`);
+
+            const form = document.getElementById('paymentForm' + batchId);
+            if (!form) {
+                showResult('fieldsCheckResult', `<strong>❌ Form not found: paymentForm${batchId}</strong>`, false);
+                return;
+            }
+
+            const fields = {
+                'Amount': form.querySelector('input[name="amount"]'),
+                'Payment Method': document.getElementById('paymentMethod' + batchId),
+                'Receipt File': form.querySelector('input[name="receipt_file"]'),
+                'Cost Type': form.querySelector('input[name="cost_type"]'),
+                'Batch ID': form.querySelector('input[name="batch_id"]'),
+                'Reason': form.querySelector('textarea[name="reason"]')
+            };
+
+            let html = '<strong>Form Fields:</strong><br>';
+            let allFound = true;
+
+            for (let [name, field] of Object.entries(fields)) {
+                const found = !!field;
+                allFound = allFound && found;
+                html += `<div>${found ? '✅' : '❌'} ${name}: <code>${found ? field.name : 'NOT FOUND'}</code></div>`;
+                console.log(`Field "${name}":`, found ? 'OK' : 'MISSING');
+            }
+
+            showResult('fieldsCheckResult', html, allFound);
+        }
+
+        function simulateValidation() {
+            console.log('🔍 Simulating validation...');
+            const paymentOk = document.getElementById('validPaymentMethod').checked;
+            const amountOk = document.getElementById('validAmount').checked;
+            const receiptOk = document.getElementById('validReceipt').checked;
+
+            let errors = [];
+            if (!paymentOk) errors.push('Payment method not selected');
+            if (!amountOk) errors.push('Amount is invalid');
+            if (!receiptOk) errors.push('Receipt file not uploaded');
+
+            const passed = errors.length === 0;
+            let html = passed ? '<strong>✅ Validation PASSED</strong>' : '<strong>❌ Validation FAILED</strong><br>';
+
+            if (errors.length > 0) {
+                html += '<ul>';
+                errors.forEach(err => {
+                    html += `<li>${err}</li>`;
+                    console.warn('Validation error:', err);
+                });
+                html += '</ul>';
+            }
+
+            showResult('validationResult', html, passed);
+        }
+
+        function testEndpoint() {
+            const batchId = document.getElementById('endpointBatchId').value;
+            console.log(`🚀 Testing endpoint: /batch/${batchId}/payment`);
+            showResult('endpointResult', '<strong>Testing endpoint...</strong> Please check server console and browser Network tab', true);
+        }
+
+        // Initial check
+        window.addEventListener('load', function() {
+            console.log('📄 Page loaded');
+            console.log('📝 Payment Modal Debug Tester ready');
+            console.log('Run tests using buttons above ↑');
+        });
+    </script>
+</body>
+</html>

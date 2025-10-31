@@ -19,123 +19,27 @@ class PaymentController extends Controller
      */
     public function store(Request $request)
     {
-        DB::beginTransaction();
-        try {
-            $validated = $request->validate([
-                'pig_sale_id' => 'required|exists:pig_sales,id',
-                'amount' => 'required|numeric|min:0.01',
-                'payment_method' => 'required|in:เงินสด,โอนเงิน,เช็ค',
-                'payment_date' => 'required|date',
-                'reference_number' => 'nullable|string|max:100',
-                'bank_name' => 'nullable|string|max:100',
-                'receipt_file' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
-                'note' => 'nullable|string',
-            ]);
+        $result = \App\Services\PaymentService::recordSalePayment($request);
 
-            $pigSale = PigSale::findOrFail($validated['pig_sale_id']);
-
-            // ตรวจสอบจำนวนเงิน
-            $totalPaid = Payment::where('pig_sale_id', $pigSale->id)
-                ->where('status', 'approved')
-                ->sum('amount');
-
-
-            $remainingAmount = $pigSale->net_total - $totalPaid;
-
-            if ($validated['amount'] > $remainingAmount) {
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'message' => "จำนวนเงินเกินกว่ายอดคงค้างที่เหลือ ($remainingAmount บาท)"
-                    ], 422);
-                }
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', "จำนวนเงินเกินกว่ายอดคงค้างที่เหลือ ($remainingAmount บาท)");
-            }
-
-
-            // อัปโหลดไฟล์ (ต้องมี)
-            $uploadedFileUrl = null;
-            if ($request->hasFile('receipt_file') && $request->file('receipt_file')->isValid()) {
-                try {
-                    $uploadResult = Cloudinary::upload(
-                        $request->file('receipt_file')->getRealPath(),
-                        ['folder' => 'receipt_files']
-                    );
-                    // CloudinaryEngine::upload() returns the engine instance
-                    $uploadedFileUrl = $uploadResult->getSecurePath();
-                } catch (\Exception $e) {
-                    Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
-                    if ($request->expectsJson()) {
-                        return response()->json([
-                            'message' => 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')'
-                        ], 422);
-                    }
-                    return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');
-                }
-            }
-
-            // ตรวจสอบว่าอัปโหลดสำเร็จ
-            if (!$uploadedFileUrl) {
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'message' => 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่'
-                    ], 422);
-                }
-                return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ กรุณาลองใหม่');
-            }
-
-            // สร้าง Payment record
-            $payment = Payment::create([
-                'pig_sale_id' => $validated['pig_sale_id'],
-                'payment_number' => Payment::generatePaymentNumber(),
-                'payment_date' => $validated['payment_date'],
-                'amount' => $validated['amount'],
-                'payment_method' => $validated['payment_method'],
-                'reference_number' => $validated['reference_number'],
-                'bank_name' => $validated['bank_name'],
-                'receipt_file' => $uploadedFileUrl,
-                'note' => $validated['note'],
-                'status' => 'pending',
-                'recorded_by' => auth()->id(),
-            ]);
-
-            // ✅ NEW: สร้าง notification ให้ admin อนุมัติ
-            \App\Models\Notification::create([
-                'user_id' => null, // ส่งให้ admin ทั้งหมด
-                'title' => ' บันทึกการชำระเงิน - รอการอนุมัติ',
-                'message' => "การชำระเงิน " . $payment->payment_number . "\nจำนวน ฿" . number_format((float)$payment->amount, 2) . "\nผู้บันทึก: " . auth()->user()->name,
-                'type' => 'payment_recorded',
-                'related_model' => 'Payment',
-                'related_model_id' => $payment->id,
-                'is_read' => false,
-            ]);
-
-            DB::commit();
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'บันทึกการชำระเงินสำเร็จ',
-                    'data' => $payment
-                ]);
-            }
-
-            return redirect()->back()
-                ->with('success', 'บันทึกการชำระเงินสำเร็จ');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('PaymentController - store Error: ' . $e->getMessage());
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
-                ], 422);
-            }
-
-            return redirect()->back()
-                ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $result['message'],
+                'data' => $result['data'] ?? null
+            ], $result['success'] ? 200 : 422);
         }
+
+        if (!$result['success']) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $result['message']);
+        }
+
+        // Show success toast notification
+        return redirect()
+            ->back()
+            ->with('success', $result['message'])
+            ->with('showToast', true);
     }
 
     /**

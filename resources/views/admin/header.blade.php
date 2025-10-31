@@ -1,19 +1,10 @@
 <header class="header">
     <nav class="navbar navbar-expand-lg">
-        <div class="search-panel">
-            <div class="search-inner d-flex align-items-center justify-content-center">
-                <div class="close-btn">Close <i class="fa fa-close"></i></div>
-                <form id="searchForm" action="#">
-                    <div class="form-group">
-                        <input type="search" name="search" placeholder="What are you searching for...">
-                        <button type="submit" class="submit">Search</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+
         <div class="container-fluid d-flex align-items-center justify-content-between">
             <div class="navbar-header">
-                <!-- Navbar Header--><a href={{ url('admin_index') }} class="navbar-brand">
+                <!-- Navbar Header -->
+                <a href="{{ route('dashboard') }}" class="navbar-brand">
                     <div class="brand-text brand-big visible text-uppercase"><strong
                             class="text-primary">Pig</strong><strong>Farm</strong></div>
                     <div class="brand-text brand-sm"><strong class="text-primary">P</strong><strong>F</strong></div>
@@ -26,7 +17,7 @@
                 <!-- Notifications -->
                 <div class="list-inline-item">
                     <div class="dropdown">
-                        <a id="navbarDropdownNotifications" href="#" data-toggle="dropdown" aria-haspopup="true"
+                        <a id="navbarDropdownNotifications" href="#" data-bs-toggle="dropdown" aria-haspopup="true"
                             aria-expanded="false" class="nav-link notifications-toggle">
                             <i class="bi bi-bell"></i>
                             @auth

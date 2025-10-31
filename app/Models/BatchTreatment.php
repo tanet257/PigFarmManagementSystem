@@ -12,18 +12,22 @@ class BatchTreatment extends Model
     protected $table = 'batch_treatments'; // ชื่อตาราง
 
     protected $fillable = [
-
         'pen_id',
         'batch_id',
         'dairy_record_id',
-
         'medicine_name',
         'medicine_code',
-        'quantity',
-        'unit',
+        'disease_name',
         'status',
+        'treatment_status',
+        'treatment_start_date',
         'note',
         'date',
+    ];
+
+    protected $casts = [
+        'treatment_start_date' => 'date',
+        'duration_days' => 'integer',
     ];
 
     //---------------relation ship------------------------//
@@ -47,5 +51,89 @@ class BatchTreatment extends Model
     public function storehouse()
     {
         return $this->belongsTo(Storehouse::class, 'medicine_code', 'item_code');
+    }
+
+    /**
+     * Get all daily treatment logs for this treatment
+     */
+    public function dailyLogs()
+    {
+        return $this->hasMany(DailyTreatmentLog::class, 'batch_treatment_id');
+    }
+
+    //---------------Accessors & Methods------------------------//
+
+    /**
+     * คำนวณจำนวนวันรักษาจากวันที่เริ่มและสิ้นสุด
+     */
+    public function calculateDurationDays()
+    {
+        if ($this->treatment_start_date && $this->treatment_end_date) {
+            return \Carbon\Carbon::parse($this->treatment_start_date)
+                ->diffInDays(\Carbon\Carbon::parse($this->treatment_end_date)) + 1;
+        }
+        return 0;
+    }
+
+    /**
+     * คำนวณจำนวนวันรักษาจากจำนวน daily logs
+     */
+    public function calculateDurationFromDailyLogs()
+    {
+        return $this->dailyLogs()->count();
+    }
+
+    /**
+     * อัพเดตสถานะเป็น ongoing
+     */
+    public function markAsOngoing()
+    {
+        $this->update(['treatment_status' => 'ongoing']);
+        return $this;
+    }
+
+    /**
+     * อัพเดตสถานะเป็น completed
+     */
+    public function markAsCompleted()
+    {
+        $this->update([
+            'treatment_status' => 'completed',
+            'treatment_end_date' => now()->toDateString(),
+        ]);
+        return $this;
+    }
+
+    /**
+     * อัพเดตสถานะเป็น stopped (หยุดการรักษา)
+     */
+    public function markAsStopped()
+    {
+        $this->update(['treatment_status' => 'stopped']);
+        return $this;
+    }
+
+    /**
+     * เช็คว่าการรักษายังไม่เริ่มหรือ
+     */
+    public function isPending()
+    {
+        return $this->treatment_status === 'pending';
+    }
+
+    /**
+     * เช็คว่าการรักษากำลังดำเนินการหรือ
+     */
+    public function isOngoing()
+    {
+        return $this->treatment_status === 'ongoing';
+    }
+
+    /**
+     * เช็คว่าการรักษาเสร็จแล้วหรือ
+     */
+    public function isCompleted()
+    {
+        return $this->treatment_status === 'completed';
     }
 }

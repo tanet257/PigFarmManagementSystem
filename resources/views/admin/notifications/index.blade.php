@@ -1,7 +1,10 @@
 @extends('layouts.admin')
 
+@section('title', 'อนุมัติการชำระเงินค่าใช้จ่าย')
+
 @section('content')
-    <div class="container-fluid py-4">
+    <div class="container-fluid py-4 notifications-page">
+
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="fa fa-bell mr-2 me-2"></i>การแจ้งเตือน</h2>
@@ -61,100 +64,118 @@
         </div>
 
         <!-- รายการแจ้งเตือน -->
-        <div class="card">
-            <div class="card-body">
-                @if ($notifications->count() > 0)
-                    <div class="list-group">
-                        @foreach ($notifications as $notification)
-                            <div class="list-group-item {{ $notification->is_read ? 'bg-E8DFCA' : 'bg-F5EFE6' }}">
-                                <div class="d-flex w-100 justify-content-between align-items-start">
-                                    <div class="flex-grow-1">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <span class="mr-2">
-                                                @if ($notification->type == 'user_registered')
-                                                    <i class="fa fa-user-plus text-primary fa-2x"></i>
-                                                @elseif($notification->type == 'user_approved')
-                                                    <i class="fa fa-check-circle text-success fa-2x"></i>
-                                                @elseif($notification->type == 'user_rejected')
-                                                    <i class="fa fa-times-circle text-danger fa-2x"></i>
-                                                @elseif($notification->type == 'cancel_pig_sale')
-                                                    <i class="fa fa-exclamation-circle text-warning fa-2x"></i>
-                                                @else
-                                                    <i class=" text-info fa-2x"></i>
-                                                @endif
-                                            </span>
-                                            <div>
-                                                <h5 class="mb-1">{{ $notification->title }}</h5>
-                                                <p class="mb-1 text-muted">{{ $notification->message }}</p>
-                                                <small class="text-muted">
-                                                    <i class="fa fa-clock"></i>
-                                                    {{ $notification->created_at->diffForHumans() }}
-                                                    @if ($notification->is_read)
-                                                        <span class="badge badge-success ml-2">อ่านแล้ว</span>
-                                                    @else
-                                                        <span class="badge badge-danger ml-2">ใหม่</span>
-                                                    @endif
-                                                </small>
-                                            </div>
-                                        </div>
+
+        <div class="">
+            @if ($notifications->count() > 0)
+                <div class="list-group notification-list">
+                    @foreach ($notifications as $notification)
+                        <div
+                            class="list-group-item notification-item {{ $notification->is_read ? 'notification-read' : 'notification-unread' }}">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex align-items-start w-100">
+                                    @php
+                                        $rawType = $notification->type ?? ($notification->data['type'] ?? null ?? '');
+                                        $typeMap = [
+                                            'payment' => ['การชำระเงิน', '<i class="bi bi-credit-card-2-front"></i>'],
+                                            'approval' => ['รออนุมัติ', '<i class="bi bi-check2-square"></i>'],
+                                            'stock' => ['คลังสินค้า', '<i class="bi bi-box-seam"></i>'],
+                                            'pig' => ['ข้อมูลสุกร', '<i class="bi bi-piggy-bank"></i>'],
+                                            'user' => ['ผู้ใช้งาน', '<i class="bi bi-person"></i>'],
+                                            'system' => ['ระบบ', '<i class="bi bi-gear"></i>'],
+                                        ];
+
+                                        $matchedType = null;
+                                        if (isset($typeMap[$rawType])) {
+                                            $matchedType = $rawType;
+                                        } else {
+                                            $rt = strtolower($rawType);
+                                            if (
+                                                str_contains($rt, 'approve') ||
+                                                str_contains($rt, 'approval') ||
+                                                str_contains($rt, 'auth')
+                                            ) {
+                                                $matchedType = 'approval';
+                                            } elseif (str_contains($rt, 'pay') || str_contains($rt, 'payment')) {
+                                                $matchedType = 'payment';
+                                            } elseif (str_contains($rt, 'stock') || str_contains($rt, 'inventory')) {
+                                                $matchedType = 'stock';
+                                            } elseif (str_contains($rt, 'pig') || str_contains($rt, 'sow')) {
+                                                $matchedType = 'pig';
+                                            } elseif (str_contains($rt, 'user')) {
+                                                $matchedType = 'user';
+                                            } elseif (str_contains($rt, 'system')) {
+                                                $matchedType = 'system';
+                                            }
+                                        }
+
+                                        $displayType = $matchedType ? $typeMap[$matchedType][0] : 'ทั่วไป';
+                                        $icon = $matchedType ? $typeMap[$matchedType][1] : '<i class="bi bi-bell"></i>';
+                                        $typeClass = $matchedType ? 'type-' . $matchedType : 'type-default';
+                                    @endphp
+
+                                    {{-- Icon ด้านซ้าย --}}
+                                    <div class="notification-icon me-3">
+                                        {!! $icon !!}
                                     </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        @if ($notification->url || $notification->type === 'cancel_pig_sale' || $notification->type === 'user_registration_cancelled')
-                                            <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
-                                                class="btn btn-sm {{ $notification->is_read ? 'btn-info' : 'btn-warning' }}"
-                                                title="ไปที่หน้า">
-                                                <i class="fa {{
-                                                    $notification->type === 'cancel_pig_sale' ? 'fa-times-circle' :
-                                                    ($notification->type === 'user_registered' ? 'fa-user-plus' :
-                                                    ($notification->type === 'user_approved' ? 'fa-check-circle' :
-                                                    ($notification->type === 'user_rejected' ? 'fa-times-circle' :
-                                                    ($notification->type === 'user_registration_cancelled' ? 'fa-ban' :
-                                                    ($notification->type === 'payment_recorded_pig_entry' ? 'bi bi-cash-stack' :
-                                                    ($notification->type === 'pig_sale' ? 'fa-shopping-cart' :
-                                                    ($notification->type === 'pig_entry' ? 'fa-inbox' :
-                                                    'fa-arrow-right')))))))
-                                                }}"></i>
-                                                {{
-                                                    $notification->type === 'cancel_pig_sale' ? 'อนุมัติการยกเลิก' :
-                                                    ($notification->type === 'user_registered' ? 'ดูการลงทะเบียน' :
-                                                    ($notification->type === 'user_approved' ? 'ตรวจสอบการอนุมัติ' :
-                                                    ($notification->type === 'user_rejected' ? 'ตรวจสอบการปฏิเสธ' :
-                                                    ($notification->type === 'user_registration_cancelled' ? 'อนุมัติการยกเลิก' :
-                                                    ($notification->type === 'payment_recorded_pig_entry' ? 'ตรวจสอบชำระเงิน' :
-                                                    ($notification->type === 'pig_sale' ? 'ดูการขาย' :
-                                                    ($notification->type === 'pig_entry' ? 'ดูการรับหมูเข้า' :
-                                                    'ไปยังหน้า')))))))
-                                                }}
-                                            </a>
-                                        @endif
-                                        <form method="POST"
-                                            action="{{ route('notifications.destroy', $notification->id) }}"
-                                            class="d-inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-danger" title="ลบ"
-                                                onclick="return confirm('ต้องการลบแจ้งเตือนนี้ใช่หรือไม่?')">
-                                                <i class="fa fa-trash"></i>
-                                            </button>
-                                        </form>
+
+                                    {{-- Content ส่วนหลัก --}}
+                                    <div class="notification-content me-3">
+                                        {{-- บรรทัดที่ 1: หัวข้อและป้าย "ใหม่" --}}
+                                        <div class="d-flex align-items-center mb-2">
+                                            <h6 class="mb-0 me-2">{{ $notification->title }}</h6>
+                                            @if (!$notification->is_read)
+                                                <span class="badge bg-danger rounded-pill">ใหม่</span>
+                                            @endif
+                                        </div>
+
+                                        {{-- บรรทัดที่ 2: เนื้อหาข้อความ --}}
+                                        <p class="mb-2 text-muted small message-clamp">{!! \Illuminate\Support\Str::limit(strip_tags($notification->message), 120) !!}</p>
+
+                                        {{-- บรรทัดที่ 3: เวลาและประเภท --}}
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <span class="time-badge">
+                                                <i class="bi bi-clock"></i>
+                                                {{ $notification->created_at->diffForHumans() }}
+                                            </span>
+
+                                        </div>
+
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
+                                <div class="notification-actions d-flex gap-2">
+                                    <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
+                                        class="btn btn-sm btn-primary px-3" title="ไปที่หน้าแจ้งเตือน">
+                                        <i class="fa fa-arrow-right"></i>
+                                        ดูรายละเอียด
+                                    </a>
 
-                    <!-- Pagination -->
-                    <div class="mt-4 d-flex justify-content-center">
-                        {{ $notifications->links() }}
-                    </div>
-                @else
-                    <div class="text-center py-5">
-                        <i class="fa fa-bell-slash fa-5x text-muted mb-3"></i>
-                        <h4 class="text-muted">ไม่มีการแจ้งเตือน</h4>
-                    </div>
-                @endif
-            </div>
+                                    <form method="POST" action="{{ route('notifications.destroy', $notification->id) }}"
+                                        class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="ลบแจ้งเตือน"
+                                            onclick="return confirm('ต้องการลบแจ้งเตือนนี้ใช่หรือไม่?')">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+
+                <!-- Pagination -->
+                <div class="mt-4 d-flex justify-content-center">
+                    {{ $notifications->links() }}
+                </div>
+            @else
+                <div class="text-center py-5">
+                    <i class="fa fa-bell-slash fa-5x text-muted mb-3"></i>
+                    <h4 class="text-muted">ไม่มีการแจ้งเตือน</h4>
+                </div>
+            @endif
         </div>
+
     </div>
 
 @endsection

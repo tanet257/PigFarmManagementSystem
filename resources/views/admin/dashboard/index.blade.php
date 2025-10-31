@@ -237,7 +237,7 @@
             </div>
         </div>
 
-        <!-- ✅ NEW Charts Row -->
+        <!-- NEW Charts Row -->
         <div class="row mb-4">
             <div class="col-md-6">
                 <div class="card">
@@ -586,7 +586,7 @@
             const utilityCost = {{ $utilityCost }};
             const otherCost = {{ $otherCost }};
 
-            // ✅ Chart 1: Cost Breakdown (Left side - Pie Chart)
+            // Chart 1: Cost Breakdown (Left side - Pie Chart)
             const ctx1 = document.getElementById('costBreakdownChart').getContext('2d');
             const costData = [feedCost, medicineCost, transportCost, laborCost, utilityCost, otherCost];
             const totalCostBreakdown = costData.reduce((a, b) => a + b, 0);
@@ -662,7 +662,7 @@
                 }
                 });
 
-            // ✅ Chart 2: Revenue - Cost - Profit (Right side - Bar Chart)
+            // Chart 2: Revenue - Cost - Profit (Right side - Bar Chart)
             const ctx2 = document.getElementById('revenueChart').getContext('2d');
             const revenueData = [totalRevenue, totalCost, totalProfit];
             const totalAmount = totalRevenue + totalCost + totalProfit;
@@ -742,13 +742,13 @@
                 }
                 });
 
-            // ✅ Chart 3: Monthly Cost-Profit (Line Chart)
+            // Chart 3: Monthly Cost-Profit (Line Chart)
             loadMonthlyCostProfitChart();
 
-            // ✅ Chart 4: FCG Performance (Line Chart)
+            // Chart 4: FCG Performance (Line Chart)
             loadFcgPerformanceChart();
 
-            // ✅ AUTO-REFRESH: Update charts every 30 seconds
+            // AUTO-REFRESH: Update charts every 30 seconds
             // When new cost type (wage, electric_bill, water_bill) is recorded,
             // dashboard automatically updates to show latest KPIs
             setInterval(function() {
@@ -774,7 +774,7 @@
                     .catch(error => console.error('Auto-refresh error:', error));
             }, 30000); // 30 seconds
 
-            // ✅ Helper function: Load Monthly Cost-Profit Chart
+            // Helper function: Load Monthly Cost-Profit Chart
             function loadMonthlyCostProfitChart() {
                 const params = new URLSearchParams({
                     farm_id: '{{ request("farm_id") }}',
@@ -855,7 +855,7 @@
                     .catch(error => console.error('Error loading monthly chart:', error));
             }
 
-            // ✅ Helper function: Load FCG Performance Chart
+            // Helper function: Load FCG Performance Chart
             function loadFcgPerformanceChart() {
                 const params = new URLSearchParams({
                     farm_id: '{{ request("farm_id") }}',

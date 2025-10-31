@@ -58,6 +58,14 @@
                         </div>
                     </div>
 
+                    <!-- Treatment Recording Section (Modal Button) -->
+                    <div class="card card-custom-secondary mb-4">
+                            <button type="button" class="btn btn-primary btn-lg w-100" id="openTreatmentFormBtn">
+                                <i class="fa fa-plus-circle"></i> บันทึกการรักษาใหม่
+                            </button>
+
+                    </div>
+
                     <!--Feed Section-->
                     <div card class="card card-custom-secondary">
                         <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
@@ -173,16 +181,11 @@
                                             </div>
                                         </div>
                                         <div class="col-md-2">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกคอก</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                <input type="hidden" class="barn-pen-json"
-                                                    name="medicine_use[0][barn_pen]" value="">
-                                            </div>
+                                            <button type="button" class="pen-select btn btn-primary shadow-sm border w-100" data-bs-toggle="modal" data-bs-target="#penSelectorModal">
+                                                <span>เลือกคอก</span>
+                                            </button>
+                                            <input type="hidden" class="barn-pen-json" name="medicine_use[0][barn_pen]" value="">
+                                            <input type="hidden" class="selected-pens-display" value="">
                                         </div>
                                         <div class="col-md-5">
                                             <div class="dropdown">
@@ -290,16 +293,11 @@
                                             </div>
                                         </div>
                                         <div class="col-md-3">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="pen-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกคอก</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 pen-dropdown"></ul>
-                                                <input type="hidden" class="barn-pen-json" name="dead_pig[0][barn_pen]"
-                                                    value="">
-                                            </div>
+                                            <button type="button" class="pen-select btn btn-primary shadow-sm border w-100" data-bs-toggle="modal" data-bs-target="#penSelectorModal">
+                                                <span>เลือกคอก</span>
+                                            </button>
+                                            <input type="hidden" class="barn-pen-json" name="dead_pig[0][barn_pen]" value="">
+                                            <input type="hidden" class="selected-pens-display" value="">
                                         </div>
                                         <div class="col-md-3">
                                             <input type="number" name="dead_pig[0][quantity]" class="form-control"
@@ -335,6 +333,40 @@
 
 
 
+            </div>
+        </div>
+
+        <!-- Pen Selector Modal -->
+        <div class="modal fade" id="penSelectorModal" tabindex="-1" aria-labelledby="penSelectorModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="penSelectorModalLabel">เลือกคอก</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="pen-selector-container">
+                            <!-- Table will be populated here -->
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>เลือก</th>
+                                        <th>เล้า</th>
+                                        <th>คอก</th>
+                                        <th>จำนวนหมู</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="penSelectorTableBody">
+                                    <!-- Rows will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                        <button type="button" class="btn btn-primary" id="confirmPenSelection">ยืนยัน</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -609,7 +641,7 @@
                                 return;
                             }
 
-                            // ✅ NEW: ดึง unique barns ที่มีใน penAllocations สำหรับ batch นี้
+                            // NEW: ดึง unique barns ที่มีใน penAllocations สำหรับ batch นี้
                             const allocationsForBatch = penAllocations[selectedBatchId] || [];
                             const barnIdsFromAllocations = new Set(allocationsForBatch.map(a => a.barn_id));
 
@@ -639,31 +671,69 @@
                                         penBtn.textContent = 'เลือกคอก';
                                         hiddenPen.value = JSON.stringify([]);
 
-                                        // ✅ NEW: ดึง pen จาก penAllocations ที่ตรงกับ barn นี้
+                                        // NEW: ดึง pen จาก penAllocations ที่ตรงกับ barn นี้
                                         // แสดงเฉพาะ pen ที่มี current_quantity > 0
                                         const pensInBarn = allocationsForBatch.filter(a => a.barn_id === b.id);
 
-                                        pensInBarn.forEach(allocation => {
-                                            const liPen = document.createElement('li');
-                                            liPen.innerHTML = `<a class="dropdown-item" href="#" data-pen="${allocation.pen_id}">${allocation.display_text}</a>`;
-                                            penMenu.appendChild(liPen);
-
-                                            liPen.querySelector('a').addEventListener('click', function(e) {
+                                        // Attach click handler to pen select button
+                                        const penSelectBtn = rowContainer.querySelector('.pen-select');
+                                        if (penSelectBtn) {
+                                            penSelectBtn.addEventListener('click', function(e) {
                                                 e.preventDefault();
-                                                penBtn.textContent = allocation.display_text;
 
-                                                if (isFeed) {
-                                                    // feed_use ยังใช้ JSON array (เหมือนเดิม)
-                                                    hiddenPen.value = JSON.stringify([{
-                                                        barn_id: b.id,
-                                                        pen_id: allocation.pen_id
-                                                    }]);
-                                                } else {
-                                                    // medicine_use / dead_pig ใช้ scalar เลย
-                                                    hiddenPen.value = allocation.pen_id;
+                                                // Store current row context in modal
+                                                const modal = document.getElementById('penSelectorModal');
+                                                modal._currentRow = rowContainer;
+                                                modal._isFeed = isFeed;
+
+                                                // Populate table
+                                                const tableBody = document.getElementById('penSelectorTableBody');
+                                                tableBody.innerHTML = '';
+
+                                                pensInBarn.forEach(allocation => {
+                                                    const tr = document.createElement('tr');
+                                                    tr.innerHTML = `
+                                                        <td>
+                                                            <input type="checkbox"
+                                                                class="pen-checkbox"
+                                                                data-pen-id="${allocation.pen_id}"
+                                                                data-barn-id="${b.id}"
+                                                                data-display-text="${allocation.display_text}">
+                                                        </td>
+                                                        <td>${allocation.barn_code}</td>
+                                                        <td>${allocation.pen_code}</td>
+                                                        <td>${allocation.current_quantity}</td>
+                                                    `;
+                                                    tableBody.appendChild(tr);
+                                                });
+
+                                                // Clear existing selections
+                                                document.querySelectorAll('.pen-checkbox').forEach(cb => cb.checked = false);
+
+                                                // Update checkboxes based on current selection
+                                                const hiddenPen = rowContainer.querySelector('.barn-pen-json');
+                                                const displayInput = rowContainer.querySelector('.selected-pens-display');
+
+                                                if (hiddenPen.value) {
+                                                    try {
+                                                        const currentValue = isFeed ?
+                                                            JSON.parse(hiddenPen.value) :
+                                                            [{pen_id: hiddenPen.value}];
+
+                                                        currentValue.forEach(val => {
+                                                            const cb = document.querySelector(`.pen-checkbox[data-pen-id="${val.pen_id}"]`);
+                                                            if (cb) cb.checked = true;
+                                                        });
+                                                    } catch (e) {
+                                                        console.error('Error parsing pen value:', e);
+                                                    }
                                                 }
+
+                                                // Show modal
+                                                const bsModal = new bootstrap.Modal(modal);
+                                                bsModal.show();
                                             });
-                                        });
+                                        }
                                     }
                                 });
                             });
@@ -868,6 +938,392 @@
                             batchIdInput.value = parseInt(batchSelect.value) || '';
                         }
                     }
+                }
+            });
+        </script>
+
+        <!-- Treatment Form Modal -->
+        <div class="modal fade" id="treatmentFormModal" tabindex="-1" aria-labelledby="treatmentFormLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-info text-white">
+                        <h5 class="modal-title" id="treatmentFormLabel">บันทึกการรักษาอย่างละเอียด</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="treatmentFormInModal">
+                            @csrf
+                            <input type="hidden" id="treatmentFormBatchId" name="batch_id">
+                            <input type="hidden" id="treatmentFormDairyRecordId" name="dairy_record_id">
+
+                            <div class="mb-3">
+                                <label for="treatmentDiseaseName" class="form-label">ชื่อโรค/อาการ <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="treatmentDiseaseName" name="disease_name" placeholder="เช่น ไข้หวัดสุกร" required>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="treatmentMedicineDropdown" class="form-label">ยา/วัคซีนที่ใช้</label>
+                                    <div class="dropdown">
+                                        <button
+                                            class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center treatment-medicine-dropdown-btn"
+                                            type="button" id="treatmentMedicineDropdown"
+                                            data-bs-toggle="dropdown" aria-expanded="false">
+                                            <span>เลือกยา/วัคซีน</span>
+                                        </button>
+                                        <ul class="dropdown-menu w-100 treatment-medicine-dropdown-menu"
+                                            aria-labelledby="treatmentMedicineDropdown">
+                                            <!-- ตัวเลือก populate หลังเลือก batch -->
+                                        </ul>
+                                        <input type="hidden" name="medicine_name" class="treatment-medicine-name" value="">
+                                        <input type="hidden" name="medicine_code" class="treatment-medicine-code" value="">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="treatmentStartDate" class="form-label">วันที่เริ่มการรักษา <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control" id="treatmentStartDate" name="treatment_start_date" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="treatmentDurationDays" class="form-label">ระยะเวลา (วัน) <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control" id="treatmentDurationDays" name="duration_days" placeholder="กรุณากรอก" min="1" required>
+                                    <small class="form-text text-muted">ระยะเวลาการรักษาทั้งหมด (วัน)</small>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label">เลือกเล้า/คอก</label>
+                                    <div class="table-responsive" style="max-height:300px;overflow:auto;">
+                                        <table class="table table-bordered align-middle mb-0">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:40px">เลือก</th>
+                                                    <th>เล้า</th>
+                                                    <th>คอก</th>
+                                                    <th>จำนวนหมู</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @php $allocs = $penAllocations[$batchSelect ?? 0] ?? collect(); @endphp
+                                                @foreach ($pens as $pen)
+                                                    @php
+                                                        $alloc = null;
+                                                        foreach (($penAllocations[$batchSelect ?? 0] ?? []) as $a) {
+                                                            if ($a['pen_id'] == $pen->id) { $alloc = $a; break; }
+                                                        }
+                                                    @endphp
+                                                    <tr>
+                                                        <td>
+                                                            <input type="checkbox" name="treatment_pens[]" value="{{ $pen->id }}"
+                                                                data-barn="{{ $pen->barn->barn_code ?? '' }}" data-pen="{{ $pen->pen_code }}">
+                                                        </td>
+                                                        <td>{{ $pen->barn->barn_code ?? '-' }}</td>
+                                                        <td>{{ $pen->pen_code }}</td>
+                                                        <td>{{ $alloc['current_quantity'] ?? '-' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="treatmentNote" class="form-label">หมายเหตุ</label>
+                                <textarea class="form-control" id="treatmentNote" name="note" rows="3" placeholder="บันทึกเพิ่มเติม"></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="treatmentStatus" class="form-label">สถานะการรักษา</label>
+                                <select class="form-control" id="treatmentStatus" name="treatment_status">
+                                    <option value="pending">รอดำเนิน</option>
+                                    <option value="ongoing">กำลังดำเนิน</option>
+                                    <option value="completed">เสร็จสิ้น</option>
+                                    <option value="stopped">หยุดการรักษา</option>
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <button type="button" class="btn btn-primary" id="saveTreatmentBtn">บันทึก</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ===== Snackbar Helper Function =====
+            function showSnackbar(message, type = 'error') {
+                // Create snackbar container if not exists
+                let snackbarContainer = document.getElementById('snackbarContainer');
+                if (!snackbarContainer) {
+                    snackbarContainer = document.createElement('div');
+                    snackbarContainer.id = 'snackbarContainer';
+                    snackbarContainer.style.cssText = `
+                        position: fixed;
+                        bottom: 20px;
+                        right: 20px;
+                        z-index: 9999;
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                    `;
+                    document.body.appendChild(snackbarContainer);
+                }
+
+                // Create snackbar element
+                const snackbar = document.createElement('div');
+                const bgColor = type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#28a745';
+                const textColor = type === 'warning' ? '#000' : '#fff';
+
+                snackbar.style.cssText = `
+                    background-color: ${bgColor};
+                    color: ${textColor};
+                    padding: 16px 24px;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+                    animation: slideIn 0.3s ease-in-out;
+                    font-weight: 500;
+                    min-width: 300px;
+                `;
+                snackbar.textContent = message;
+                snackbarContainer.appendChild(snackbar);
+
+                // Auto remove after 4 seconds
+                setTimeout(() => {
+                    snackbar.style.animation = 'slideOut 0.3s ease-in-out';
+                    setTimeout(() => snackbar.remove(), 300);
+                }, 4000);
+            }
+
+            // Add CSS animations for snackbar
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+                @keyframes slideOut {
+                    from {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                    to {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+
+            // Handle pen selection confirmation
+            document.getElementById('confirmPenSelection')?.addEventListener('click', function() {
+                const modal = document.getElementById('penSelectorModal');
+                const currentRow = modal._currentRow;
+                const isFeed = modal._isFeed;
+
+                if (!currentRow) return;
+
+                const selectedCheckboxes = document.querySelectorAll('.pen-checkbox:checked');
+                const selectedPens = Array.from(selectedCheckboxes).map(cb => ({
+                    pen_id: cb.dataset.penId,
+                    barn_id: cb.dataset.barnId,
+                    display_text: cb.dataset.displayText
+                }));
+
+                const hiddenPen = currentRow.querySelector('.barn-pen-json');
+                const penBtn = currentRow.querySelector('.pen-select');
+                const displayInput = currentRow.querySelector('.selected-pens-display');
+
+                if (selectedPens.length > 0) {
+                    if (isFeed) {
+                        // For feed, store as array
+                        hiddenPen.value = JSON.stringify(selectedPens.map(p => ({
+                            barn_id: p.barn_id,
+                            pen_id: p.pen_id
+                        })));
+                    } else {
+                        // For medicine/death, store only first selected pen
+                        hiddenPen.value = selectedPens[0].pen_id;
+                    }
+
+                    // Update button text and store display text
+                    const displayTexts = selectedPens.map(p => p.display_text);
+                    const btnText = displayTexts.length > 1 ?
+                        `เลือก ${displayTexts.length} คอก` :
+                        displayTexts[0];
+
+                    penBtn.querySelector('span').textContent = btnText;
+                    if (displayInput) {
+                        displayInput.value = displayTexts.join(', ');
+                    }
+                } else {
+                    // No selections
+                    hiddenPen.value = '';
+                    penBtn.querySelector('span').textContent = 'เลือกคอก';
+                    if (displayInput) {
+                        displayInput.value = '';
+                    }
+                }
+
+                bootstrap.Modal.getInstance(modal).hide();
+            });
+
+            // ===== Treatment Modal Handling =====
+            const treatmentFormModal = document.getElementById('treatmentFormModal');
+            const treatmentFormInModal = document.getElementById('treatmentFormInModal');
+            const saveTreatmentBtn = document.getElementById('saveTreatmentBtn');
+            const openTreatmentFormBtn = document.getElementById('openTreatmentFormBtn');
+
+            // Open modal button - validate before opening
+            openTreatmentFormBtn?.addEventListener('click', function(e) {
+                e.preventDefault();
+                const farmId = document.getElementById('farmSelect')?.value;
+                const batchId = document.getElementById('batchSelect')?.value;
+
+                if (!farmId || !batchId) {
+                    showSnackbar('⚠️ กรุณาเลือกฟาร์มและรุ่นก่อน', 'warning');
+                    return;
+                }
+
+                // Update hidden input and open modal
+                document.getElementById('treatmentFormBatchId').value = batchId;
+
+                // Populate treatment medicine dropdown
+                populateTreatmentMedicineDropdown(batchId);
+
+                const modal = new bootstrap.Modal(treatmentFormModal);
+                modal.show();
+            });
+
+
+            // Populate treatment medicine dropdown (no duplicate)
+            function populateTreatmentMedicineDropdown(batchId) {
+                const medicineMenu = document.querySelector('.treatment-medicine-dropdown-menu');
+                medicineMenu.innerHTML = '';
+                const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
+                if (storehousesByTypeAndBatch['medicine'] && storehousesByTypeAndBatch['medicine'][batchId]) {
+                    Object.values(storehousesByTypeAndBatch['medicine'][batchId]).forEach(item => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.className = 'dropdown-item';
+                        a.href = '#';
+                        a.setAttribute('data-item-code', item.item_code);
+                        a.setAttribute('data-item-name', item.item_name);
+                        a.textContent = item.item_name;
+                        li.appendChild(a);
+                        medicineMenu.appendChild(li);
+                        a.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            document.querySelector('.treatment-medicine-name').value = item.item_name;
+                            document.querySelector('.treatment-medicine-code').value = item.item_code;
+                            document.querySelector('.treatment-medicine-dropdown-btn span').textContent = item.item_name;
+                        });
+                    });
+                }
+            }
+
+            // Treatment pen selection (single, beautiful, no duplicate)
+            document.getElementById('treatmentPenSelectBtn')?.addEventListener('click', function(e) {
+                e.preventDefault();
+                const farmId = document.getElementById('farmSelect')?.value;
+                const batchId = document.getElementById('batchSelect')?.value;
+                if (!farmId || !batchId) {
+                    showSnackbar('⚠️ กรุณาเลือกฟาร์มและรุ่นก่อน', 'warning');
+                    return;
+                }
+                const tableBody = document.getElementById('treatmentPenTableBody');
+                tableBody.innerHTML = '';
+                const allocationsForBatch = penAllocations[batchId] || [];
+                if (allocationsForBatch.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">ไม่พบคอกในรุ่นนี้</td></tr>';
+                    return;
+                }
+                allocationsForBatch.forEach(allocation => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="text-center"><input type="checkbox" class="treatment-pen-checkbox" data-pen-id="${allocation.pen_id}" data-barn-code="${allocation.barn_code}" data-pen-code="${allocation.pen_code}" data-current-qty="${allocation.current_quantity}"></td>
+                        <td>${allocation.barn_code}</td>
+                        <td>${allocation.pen_code}</td>
+                        <td class="text-end">${allocation.current_quantity}</td>
+                    `;
+                    tableBody.appendChild(tr);
+                });
+                // Clear existing selections
+                document.querySelectorAll('.treatment-pen-checkbox').forEach(cb => cb.checked = false);
+                // Update checkboxes based on current selection
+                const penId = document.getElementById('treatmentPenId')?.value;
+                if (penId) {
+                    const cb = document.querySelector(`.treatment-pen-checkbox[data-pen-id="${penId}"]`);
+                    if (cb) cb.checked = true;
+                }
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('treatmentPenSelectorModal'));
+                modal.show();
+            });
+
+            // Confirm treatment pen selection (single, no duplicate)
+            document.getElementById('confirmTreatmentPenSelection')?.addEventListener('click', function() {
+                const selectedCheckbox = document.querySelector('.treatment-pen-checkbox:checked');
+                const penIdInput = document.getElementById('treatmentPenId');
+                const displayInput = document.getElementById('selectedPensDisplay');
+                const penBtn = document.getElementById('treatmentPenSelectBtn');
+                if (selectedCheckbox) {
+                    penIdInput.value = selectedCheckbox.dataset.penId;
+                    const barn = selectedCheckbox.dataset.barnCode;
+                    const pen = selectedCheckbox.dataset.penCode;
+                    const qty = selectedCheckbox.dataset.currentQty;
+                    penBtn.querySelector('span').textContent = `เล้า ${barn} - คอก ${pen} (${qty} ตัว)`;
+                    displayInput.value = `เล้า ${barn} - คอก ${pen} (${qty} ตัว)`;
+                } else {
+                    penIdInput.value = '';
+                    penBtn.querySelector('span').textContent = 'เลือกคอก';
+                    displayInput.value = '';
+                }
+                bootstrap.Modal.getInstance(document.getElementById('treatmentPenSelectorModal')).hide();
+            });
+
+            // Save treatment (no duplicate)
+            document.getElementById('saveTreatmentBtn')?.addEventListener('click', async function() {
+                const formData = new FormData(document.getElementById('treatmentFormInModal'));
+                const batchId = formData.get('batch_id');
+                if (!batchId) {
+                    showSnackbar('⚠️ กรุณาเลือกรุ่น', 'warning');
+                    return;
+                }
+                try {
+                    const response = await fetch(`/batch-treatments/dairy-records/${batchId}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        },
+                        body: formData
+                    });
+                    if (response.ok) {
+                        showSnackbar('✅ บันทึกการรักษาเรียบร้อยแล้ว', 'success');
+                        document.getElementById('treatmentFormInModal').reset();
+                        bootstrap.Modal.getInstance(document.getElementById('treatmentFormModal'))?.hide();
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        const error = await response.json();
+                        showSnackbar('❌ เกิดข้อผิดพลาด: ' + (error.message || 'ไม่สามารถบันทึกได้'), 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showSnackbar('❌ เกิดข้อผิดพลาด: ' + error.message, 'error');
                 }
             });
         </script>

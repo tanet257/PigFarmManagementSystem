@@ -280,7 +280,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center text-danger">❌ ไม่มีข้อมูลสินค้าในคลัง</td>
+                            <td colspan="9" class="text-center text-danger">ไม่มีข้อมูลสินค้าในคลัง</td>
                         </tr>
                     @endforelse
                 </tbody>

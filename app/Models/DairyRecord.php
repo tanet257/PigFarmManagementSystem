@@ -18,6 +18,9 @@ class DairyRecord extends Model
         'note',
     ];
 
+    protected $casts = [
+        'date' => 'date',
+    ];
 
     public function batch()
     {
@@ -54,5 +57,27 @@ class DairyRecord extends Model
     {
         return $this->hasMany(InventoryMovement::class, 'batch_id', 'batch_id')
             ->where('change_type', 'out');
+    }
+
+    // ==================== New Unified Relationships ====================
+
+    public function items()
+    {
+        return $this->hasMany(DairyRecordItem::class, 'dairy_record_id');
+    }
+
+    public function feedItems()
+    {
+        return $this->items()->feed();
+    }
+
+    public function medicineItems()
+    {
+        return $this->items()->medicine();
+    }
+
+    public function deathItems()
+    {
+        return $this->items()->death();
     }
 }

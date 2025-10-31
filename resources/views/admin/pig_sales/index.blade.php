@@ -369,7 +369,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="12" class="text-center text-danger">❌ ไม่มีข้อมูลการขาย
+                            <td colspan="12" class="text-center text-danger">ไม่มีข้อมูลการขาย
                             </td>
                         </tr>
                     @endforelse
@@ -1016,7 +1016,7 @@
                         sellTypeDropdownBtn.querySelector('span').textContent = sellTypeText;
                         sellTypeSelect.value = sellType;
 
-                        // ✅ NEW: Reload pen selection table when sell_type changes
+                        // NEW: Reload pen selection table when sell_type changes
                         if (batchSelectInput.value) {
                             loadPenSelectionTable();
                         }
@@ -1091,7 +1091,7 @@
                             const li = document.createElement('li');
                             const span = document.createElement('span');
                             span.className = 'dropdown-item disabled';
-                            span.textContent = '❌ ไม่พบรุ่นในฟาร์มนี้';
+                            span.textContent = 'ไม่พบรุ่นในฟาร์มนี้';
                             li.appendChild(span);
                             batchDropdownMenu.appendChild(li);
                         }
@@ -1099,7 +1099,7 @@
                     .catch(error => {
                         console.error('Error fetching batches:', error);
                         batchDropdownMenu.innerHTML =
-                            '<li><span class="dropdown-item disabled">❌ เกิดข้อผิดพลาด</span></li>';
+                            '<li><span class="dropdown-item disabled">เกิดข้อผิดพลาด</span></li>';
                     });
             }
 
@@ -1107,7 +1107,7 @@
             function loadPenSelectionTable() {
                 const farmId = farmSelectInput.value;
                 const batchId = batchSelectInput.value;
-                const sellType = sellTypeSelect.value; // ✅ NEW: ได้ sell_type จาก select
+                const sellType = sellTypeSelect.value; // NEW: ได้ sell_type จาก select
                 const container = document.getElementById('pen_selection_container');
 
                 // Reset if no farm or batch selected
@@ -1120,7 +1120,7 @@
                 container.innerHTML =
                     '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">กำลังโหลด...</p></div>';
 
-                // ✅ NEW: ส่ง sell_type ไปกับ request
+                // NEW: ส่ง sell_type ไปกับ request
                 fetch(`/pig_sales/pens-by-batch/${batchId}?sell_type=${encodeURIComponent(sellType)}`)
                     .then(response => response.json())
                     .then(data => {
@@ -1146,14 +1146,14 @@
                             data.data.forEach((pen, index) => {
                                 const penId = pen.pen_id;
                                 const maxQty = pen.current_quantity || pen.available || 0;
-                                const isDead = pen.is_dead || false; // ✅ NEW: FLAG หมูตาย
+                                const isDead = pen.is_dead || false; // NEW: FLAG หมูตาย
                                 const displayStyle = isDead ? 'color: #dc3545; font-weight: bold;' : ''; // สีแดงถ้าหมูตาย
 
                                 html += `
                                     <tr class="pen-row" data-pen-id="${penId}">
                                         <td class="text-center">
                                             <input type="checkbox" class="form-check-input form-check-input-sm pen-checkbox" name="selected_pens[]" value="${penId}" data-pen-id="${penId}" data-max-qty="${maxQty}">
-                                            <!-- ✅ NEW: Hidden flag ระบุว่าเป็นหมูตายหรือไม่ -->
+                                            <!-- NEW: Hidden flag ระบุว่าเป็นหมูตายหรือไม่ -->
                                             <input type="hidden" name="is_dead_${penId}" value="${isDead ? '1' : '0'}">
                                         </td>
                                         <td>${pen.barn_name || 'ไม่ระบุ'}</td>
@@ -1346,7 +1346,7 @@
                 document.getElementById('paymentMethod' + sellId).value = paymentMethod;
             }
 
-            // ✅ Auto-refresh status columns every 5 seconds
+            // Auto-refresh status columns every 5 seconds
             function autoRefreshPigSaleStatus() {
                 const pigSaleRows = document.querySelectorAll('tbody tr[data-row-id]');
                 if (pigSaleRows.length === 0) return;
@@ -1449,7 +1449,7 @@
                 setTimeout(autoRefreshPigSaleStatus, 2000);
             });
 
-            // ✅ NEW: Cancel PigSale using AJAX with confirmation
+            // NEW: Cancel PigSale using AJAX with confirmation
             function cancelPigSale(pigSaleId, csrfToken) {
                 if (confirm('ต้องการยกเลิกการขายนี้หรือไม่?')) {
                     fetch(`/pig_sales/${pigSaleId}`, {
@@ -1470,7 +1470,7 @@
                         const sbMsg = document.getElementById('snackbarMessage');
 
                         if (result.ok) {
-                            // ✅ Success
+                            // Success
                             sbMsg.innerText = result.data.message || 'ขอยกเลิกการขายสำเร็จ (รอ Admin อนุมัติ)';
                             sb.style.backgroundColor = '#28a745'; // สีเขียว
                         } else {
@@ -1486,7 +1486,7 @@
                             sb.style.display = 'none';
                         }, 5000);
 
-                        // ✅ Reload page after 2 seconds if success
+                        // Reload page after 2 seconds if success
                         if (result.ok) {
                             setTimeout(() => {
                                 location.reload();
@@ -1509,7 +1509,7 @@
                 }
             }
 
-            // ✅ NEW: Submit Payment Form using AJAX
+            // NEW: Submit Payment Form using AJAX
             function submitPaymentForm(pigSaleId) {
                 const form = document.getElementById(`paymentForm${pigSaleId}`);
                 if (!form) return;
@@ -1535,7 +1535,7 @@
                     const sbMsg = document.getElementById('snackbarMessage');
 
                     if (result.ok) {
-                        // ✅ Success
+                        // Success
                         sbMsg.innerText = result.data.message || 'บันทึกการชำระเงินสำเร็จ';
                         sb.style.backgroundColor = '#28a745'; // สีเขียว
 
@@ -1555,7 +1555,7 @@
                         sb.style.display = 'none';
                     }, 5000);
 
-                    // ✅ Update row UI after success (don't reload, keep row visible)
+                    // Update row UI after success (don't reload, keep row visible)
                     if (result.ok) {
                         // Hide the payment button (no longer needed)
                         const paymentBtn = document.querySelector(`#paymentBtn${pigSaleId}`);
@@ -1567,7 +1567,7 @@
                             paymentStatusBadge.innerHTML = '<span class="badge bg-success">ชำระแล้ว</span>';
                         }
 
-                        // ✅ Don't reload - keep row visible!
+                        // Don't reload - keep row visible!
                         // setTimeout(() => {
                         //     location.reload();
                         // }, 2000);

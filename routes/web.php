@@ -18,6 +18,10 @@ use App\Http\Controllers\PaymentApprovalController;
 use App\Http\Controllers\CostPaymentApprovalController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfitController;
+use App\Http\Controllers\BatchEntryController;
+use App\Http\Controllers\DairyTreatmentController;
+use App\Http\Controllers\BatchTreatmentController;
+use App\Http\Controllers\DailyTreatmentLogController;
 
 //------------------- route home/admin -------------------------//
 // Dashboard is now the main home page
@@ -37,6 +41,20 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
     Route::get('/add_batch', [AdminController::class, 'add_batch'])->name('batch.add');
     Route::post('/upload_batch', [AdminController::class, 'upload_batch'])->name('batch.upload');
     Route::get('/view_batch', [AdminController::class, 'view_batch'])->name('batch.view');
+
+    //------------------- NEW: route batch entry (combined) --------//
+    Route::prefix('batch')->group(function () {
+        Route::get('/create_entry', [BatchEntryController::class, 'createWithEntry'])->name('batch_entry.create');
+        Route::post('/store_entry', [BatchEntryController::class, 'storeWithEntry'])->name('batch_entry.store');
+        Route::get('/', [BatchEntryController::class, 'index'])->name('batch.index');
+        Route::get('/archived', [BatchEntryController::class, 'archived'])->name('batch.archived');
+        Route::get('/{batch}', [BatchEntryController::class, 'show'])->name('batch.show');
+        Route::get('/{batch}/edit_entry', [BatchEntryController::class, 'editWithEntry'])->name('batch_entry.edit');
+        Route::post('/{id}/payment', [BatchEntryController::class, 'update_payment'])->name('batch.update_payment');
+        Route::post('/{id}/update-status', [BatchEntryController::class, 'updateStatus'])->name('batch.update_status');
+        Route::delete('/{id}', [BatchEntryController::class, 'destroy'])->name('batch.destroy');
+        Route::patch('/{id}/restore', [BatchEntryController::class, 'restore'])->name('batch.restore');
+    });
 
     //------------------- route farm ------------------------------//
     Route::get('/add_farm', [AdminController::class, 'add_farm'])->name('farm.add');
@@ -116,16 +134,38 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
         Route::get('/{id}/edit', [DairyController::class, 'editDairy'])->name('dairy_records.edit');
         Route::put('/{id}', [DairyController::class, 'updateDairy'])->name('dairy_records.update');
         Route::delete('/{id}', [DairyController::class, 'deleteDairy'])->name('dairy_records.delete');
-
-        //------------------- route export batch ---------------------//
-        Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
-        Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
-
-        //------------------- เพิ่ม route สำหรับ update feed/medicine/pigDeath ----------------//
-        Route::put('/{dairyId}/{useId}/update-feed/{type}', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
-        Route::put('/{dairyId}/{btId}/update-medicine/{type}', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
-        Route::put('/pig-death/{id}', [DairyController::class, 'updatePigDeath'])->name('dairy_records.update_pigdeath');
     });
+
+    //------------------- route batch treatment (ยา/วัคซีนในการบันทึกประจำวัน) ------//
+    Route::prefix('batch-treatments')->group(function () {
+        Route::post('/dairy-records/{dairy_record}', [BatchTreatmentController::class, 'store'])->name('batch_treatment.store');
+        Route::patch('/{batch_treatment}', [BatchTreatmentController::class, 'update'])->name('batch_treatment.update');
+        Route::patch('/{batch_treatment}/status', [BatchTreatmentController::class, 'updateStatus'])->name('batch_treatment.updateStatus');
+        Route::post('/{batch_treatment}/start', [BatchTreatmentController::class, 'start'])->name('batch_treatment.start');
+        Route::post('/{batch_treatment}/complete', [BatchTreatmentController::class, 'complete'])->name('batch_treatment.complete');
+        Route::post('/{batch_treatment}/stop', [BatchTreatmentController::class, 'stop'])->name('batch_treatment.stop');
+        Route::delete('/{batch_treatment}', [BatchTreatmentController::class, 'destroy'])->name('batch_treatment.destroy');
+        Route::get('/summary/{batch}', [BatchTreatmentController::class, 'summary'])->name('batch_treatment.summary');
+        // Daily logs endpoints
+        Route::get('/{batchTreatment}/daily-logs', [DailyTreatmentLogController::class, 'getByTreatment'])->name('batch_treatment.daily_logs');
+        Route::get('/{batchTreatment}/daily-logs/summary', [DailyTreatmentLogController::class, 'getSummary'])->name('batch_treatment.daily_logs.summary');
+    });
+
+    //------------------- route daily treatment logs -------------------------//
+    Route::prefix('daily-treatment-logs')->group(function () {
+        Route::post('/', [DailyTreatmentLogController::class, 'store'])->name('daily_treatment_logs.store');
+        Route::patch('/{dailyTreatmentLog}', [DailyTreatmentLogController::class, 'update'])->name('daily_treatment_logs.update');
+        Route::delete('/{dailyTreatmentLog}', [DailyTreatmentLogController::class, 'destroy'])->name('daily_treatment_logs.destroy');
+    });
+
+    //------------------- route export batch ---------------------//
+    Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
+    Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
+
+    //------------------- เพิ่ม route สำหรับ update feed/medicine/pigDeath ----------------//
+    Route::put('/{dairyId}/{useId}/update-feed/{type}', [DairyController::class, 'updateFeed'])->name('dairy_records.update_feed');
+    Route::put('/{dairyId}/{btId}/update-medicine/{type}', [DairyController::class, 'updateMedicine'])->name('dairy_records.update_medicine');
+    Route::put('/pig-death/{id}', [DairyController::class, 'updatePigDeath'])->name('dairy_records.update_pigdeath');
 
 
     //------------------- route storehouse -----------------------//
@@ -163,7 +203,6 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
         Route::get('/export/pdf', [BatchController::class, 'exportPdf'])->name('batches.export.pdf');
     });
 
-    Route::get('/dash', [DashboardController::class, 'dashboard'])->name('dashboard.dashboard');
 }); // End of auth middleware group
 
 //------------------- route registration pending ---------------//
@@ -192,6 +231,7 @@ Route::prefix('pig_sales')->middleware(['auth', 'prevent.cache'])->group(functio
     Route::get('/pens-by-batch/{batchId}', [PigSaleController::class, 'getPensByBatch'])->name('pig_sales.pens_by_batch');
     Route::get('/batches-by-farm/{farmId}', [PigSaleController::class, 'getBatchesByFarm'])->name('pig_sales.batches_by_farm');
     Route::get('/barns-by-farm/{farmId}', [PigSaleController::class, 'getBarnsByFarm'])->name('pig_sales.barns_by_farm');
+    Route::get('/barns-by-farm-for-allocation/{farmId}', [PigSaleController::class, 'getBarnsByFarmForAllocation'])->name('pig_sales.barns_by_farm_for_allocation');
     Route::get('/pens-by-barn/{barnId}', [PigSaleController::class, 'getPensByBarn'])->name('pig_sales.pens_by_barn');
     Route::post('/get-status-batch', [PigSaleController::class, 'getStatusBatch'])->name('pig_sales.get_status_batch'); // ✅ Auto-refresh status
 

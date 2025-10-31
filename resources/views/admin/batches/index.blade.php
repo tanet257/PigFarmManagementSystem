@@ -272,7 +272,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="13" class="text-danger">❌ ไม่มีข้อมูล Batch</td>
+                            <td colspan="13" class="text-danger">ไม่มีข้อมูล Batch</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -377,7 +377,7 @@
                             </div>
                         </div>
 
-                        {{-- ✅ KPI Metrics Cards --}}
+                        {{-- KPI Metrics Cards --}}
                         @php
                             $profit = $batch->profit;
                         @endphp

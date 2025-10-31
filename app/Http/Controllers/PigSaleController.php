@@ -193,7 +193,7 @@ class PigSaleController extends Controller
     }
 
     /**
-     * ดึงรายการเล้า (Barns) ของฟาร์มที่มีหมู
+     * ดึงรายการเล้า (Barns) ของฟาร์มที่มีหมู (สำหรับ PigSale)
      */
     public function getBarnsByFarm($farmId)
     {
@@ -241,6 +241,66 @@ class PigSaleController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงรายการเล้า (Barns) ของฟาร์ม - สำหรับการสำรองจัดสรร (แสดงทุกเล้า)
+     * ใช้สำหรับหน้า batch create เพื่อให้เลือกเล้าจัดสรรหมู
+     */
+    public function getBarnsByFarmForAllocation($farmId)
+    {
+        try {
+            // ดึงทุกเล้าของฟาร์ม
+            $barns = DB::table('barns')
+                ->where('farm_id', $farmId)
+                ->orderBy('barn_code')
+                ->get();
+
+            if ($barns->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบเล้าในฟาร์มนี้',
+                    'data' => []
+                ]);
+            }
+
+            // สำรวจข้อมูลแต่ละเล้า
+            $barnOptions = $barns->map(function ($barn) {
+                // นับจำนวนหมูในเล้า
+                $totalPigs = DB::table('batch_pen_allocations')
+                    ->join('batches', 'batch_pen_allocations.batch_id', '=', 'batches.id')
+                    ->where('batch_pen_allocations.barn_id', $barn->id)
+                    ->where('batches.status', '!=', 'เสร็จสิ้น')
+                    ->sum('batch_pen_allocations.current_quantity');
+
+                // นับความจุของเล้า (pig_capacity ไม่ capacity)
+                $totalCapacity = DB::table('pens')
+                    ->where('barn_id', $barn->id)
+                    ->sum('pig_capacity');
+
+                $availableCapacity = $totalCapacity - $totalPigs;
+
+                return [
+                    'barn_id' => $barn->id,
+                    'barn_code' => $barn->barn_code,
+                    'total_pigs' => $totalPigs ?? 0,
+                    'total_capacity' => $totalCapacity ?? 0,
+                    'available_capacity' => max(0, $availableCapacity ?? 0)
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $barnOptions
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error in getBarnsByFarmForAllocation: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
                 'data' => []
             ], 500);
         }
@@ -708,8 +768,8 @@ class PigSaleController extends Controller
                         $request->file('receipt_file')->getRealPath(),
                         ['folder' => 'receipt_files']
                     );
-                    // CloudinaryEngine::upload() returns the engine instance
-                    $uploadedFileUrl = $uploadResult->getSecurePath();
+                    // Cloudinary returns array with secure_url
+                    $uploadedFileUrl = $uploadResult['secure_url'];
                 } catch (\Exception $e) {
                     Log::error('Cloudinary upload error in PigSale: ' . $e->getMessage());
                     return redirect()->back()->with('error', 'ไม่สามารถอัปโหลดไฟล์สลิปได้ (' . $e->getMessage() . ')');

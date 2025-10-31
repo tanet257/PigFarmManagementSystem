@@ -24,7 +24,7 @@ class NotificationHelper
                 'related_user_id' => $newUser->id,
                 'title' => 'ผู้ใช้ใหม่ลงทะเบียน',
                 'message' => "ผู้ใช้ {$newUser->name} ({$newUser->email}) ลงทะเบียนเข้าระบบและรอการอนุมัติ",
-                'url' => route('user_management.index'),
+                'url' => route('notifications.index'),
                 'is_read' => false,
             ]);
         }
@@ -41,7 +41,7 @@ class NotificationHelper
             'related_user_id' => $approvedBy->id,
             'title' => 'บัญชีของคุณได้รับการอนุมัติแล้ว',
             'message' => "บัญชีของคุณได้รับการอนุมัติโดย {$approvedBy->name} คุณสามารถเข้าสู่ระบบได้แล้ว",
-            'url' => route('dashboard'),
+            'url' => route('notifications.index'),
             'is_read' => false,
         ]);
     }
@@ -86,7 +86,7 @@ class NotificationHelper
                 'related_user_id' => $reportedBy->id,
                 'title' => 'รายงานหมูตาย',
                 'message' => "มีหมูตาย {$pigDeath->quantity} ตัว\nรุ่น: {$batch->batch_code}\nคอก: {$pen->pen_code}\nสาเหตุ: " . ($pigDeath->cause ?? 'ไม่ระบุ'),
-                'url' => url('view_pig_death'),
+                'url' => route('notifications.index'),
                 'is_read' => false,
                 'related_model' => 'PigDeath',
                 'related_model_id' => $pigDeath->id,
@@ -119,7 +119,7 @@ class NotificationHelper
                 'related_user_id' => $reportedBy->id,
                 'title' => 'บันทึกการรักษาหมูป่วย',
                 'message' => "มีการบันทึกการรักษา\nรุ่น: {$batch->batch_code}\nเล้า: {$barn->barn_code}\nคอก: {$pen->pen_code}\nยา: {$batchTreatment->medicine_name}\nจำนวน: {$batchTreatment->dosage} {$batchTreatment->unit}",
-                'url' => url('view_batch_treatment'),
+                'url' => route('notifications.index'),
                 'is_read' => false,
             ]);
         }
@@ -149,7 +149,7 @@ class NotificationHelper
                 'related_user_id' => $reportedBy->id,
                 'title' => "บันทึกการขายหมู ({$sellTypeText}) - รอการอนุมัติ",  // ✅ เพิ่มประเภทหมู + สถานะ
                 'message' => "มีการขายหมู {$pigSale->quantity} ตัว ({$sellTypeText})\nรุ่น: {$batch->batch_code}\nราคารวม: " . number_format($pigSale->total_price, 2) . " บาท\nวันที่ขาย: {$pigSale->date}\n\n⏳ รอการอนุมัติ",
-                'url' => route('pig_sales.index'),
+                'url' => route('notifications.index'),
                 'is_read' => false,
                 'related_model' => 'PigSale',  // ✅ NEW
                 'related_model_id' => $pigSale->id,  // ✅ NEW
@@ -189,7 +189,7 @@ class NotificationHelper
                 'related_user_id' => $reportedBy->id,
                 'title' => "{$typeText}คลัง",
                 'message' => "รหัสสินค้า: {$storehouse->item_code}\nประเภท: {$storehouse->item_type}\nจำนวน: {$inventoryMovement->quantity} {$storehouse->unit}\nคงเหลือ: {$storehouse->stock} {$storehouse->unit}",
-                'url' => route('inventory_movements.index'),
+                'url' => route('notifications.index'),
                 'is_read' => false,
             ]);
         }
@@ -256,8 +256,8 @@ class NotificationHelper
                 'user_id' => $admin->id,
                 'related_user_id' => $recordedBy->id,
                 'title' => 'บันทึกการรับเข้าหมูใหม่',
-                'message' => "มีการบันทึกการรับเข้าหมูใหม่\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigEntryRecord->total_pig_amount} ตัว\nวันที่รับเข้า: {$pigEntryRecord->pig_entry_date}\nรอการบันทึกการชำระเงิน",
-                'url' => route('pig_entry_records.index'),
+            'message' => "มีการบันทึกการรับเข้าหมูใหม่\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigEntryRecord->total_pig_amount} ตัว\nวันที่รับเข้า: {$pigEntryRecord->pig_entry_date}\nรอการบันทึกการชำระเงิน",
+            'url' => route('notifications.index'),
                 'is_read' => false,
                 'related_model' => 'PigEntryRecord',
                 'related_model_id' => $pigEntryRecord->id,
@@ -290,7 +290,7 @@ class NotificationHelper
                 'related_user_id' => $recordedBy->id,
                 'title' => 'บันทึกการชำระเงินการขายหมู',
                 'message' => "บันทึกการชำระเงิน\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nผู้ซื้อ: {$pigSale->buyer_name}\nวันที่ขาย: {$pigSale->date}\nรอการอนุมัติ",
-                'url' => route('payment_approvals.index'),
+                'url' => route('notifications.index'),
                 'is_read' => false,
                 'related_model' => 'PigSale',
                 'related_model_id' => $pigSale->id,
@@ -345,11 +345,11 @@ class NotificationHelper
         }
 
         Notification::create([
-            'type' => 'pig_sale_status_changed',
+                'type' => 'pig_sale_status_changed',
             'user_id' => $creator->id,
             'title' => 'สถานะการขายหมูของคุณเปลี่ยนแปลง',
             'message' => "{$statusMessage}\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigSale->quantity} ตัว\nราคารวม: " . number_format($pigSale->net_total, 2) . " บาท\nสถานะ: {$statusBadge}",
-            'url' => route('pig_sales.index'),
+            'url' => route('notifications.index'),
             'is_read' => false,
             'related_model' => 'PigSale',
             'related_model_id' => $pigSale->id,
@@ -380,7 +380,7 @@ class NotificationHelper
             'user_id' => $creator->id,
             'title' => 'การขายหมูของคุณถูกยกเลิก',
             'message' => "❌ การขายของคุณถูกยกเลิกแล้ว\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigSale->quantity} ตัว\nราคารวม: " . number_format($pigSale->net_total, 2) . " บาท",
-            'url' => route('pig_sales.index'),
+            'url' => route('notifications.index'),
             'is_read' => false,
             'related_model' => 'PigSale',
             'related_model_id' => $pigSale->id,
@@ -412,7 +412,7 @@ class NotificationHelper
             'related_user_id' => $approvedBy->id ?? null,
             'title' => 'การขายหมูของคุณได้รับการอนุมัติ ✅',
             'message' => "✅ การขายของคุณได้รับการอนุมัติแล้ว\n\nอนุมัติโดย: {$approvedBy->name}\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nจำนวน: {$pigSale->quantity} ตัว\nราคารวม: " . number_format($pigSale->net_total, 2) . " บาท",
-            'url' => route('pig_sales.index'),
+            'url' => route('notifications.index'),
             'is_read' => false,
             'related_model' => 'PigSale',
             'related_model_id' => $pigSale->id,
@@ -509,8 +509,8 @@ class NotificationHelper
                 'type' => 'pig_entry_payment_approved',
                 'user_id' => $creator->id,
                 'title' => '✅ การชำระเงินการรับเข้าได้รับการอนุมัติ',
-                'message' => "✅ การชำระเงินของคุณได้รับการอนุมัติแล้ว\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nวันที่รับเข้า: {$pigEntry->pig_entry_date}",
-                'url' => route('pig_entry_records.index'),
+            'message' => "✅ การชำระเงินของคุณได้รับการอนุมัติแล้ว\n\nรายละเอียด:\nฟาร์ม: {$farm->farm_name}\nรุ่น: {$batch->batch_code}\nวันที่รับเข้า: {$pigEntry->pig_entry_date}",
+            'url' => route('notifications.index'),
                 'is_read' => false,
                 'related_model' => 'PigEntryRecord',
                 'related_model_id' => $pigEntry->id,
@@ -579,20 +579,197 @@ class NotificationHelper
     {
         try {
             // หาแจ้งเตือนทั้งหมดที่เกี่ยวข้องกับ Batch นี้
-            $notifications = Notification::where('related_model', 'Batch')
-                ->where('related_model_id', $batchId)
+            $notifications = Notification::where(function($query) use ($batchId) {
+                    $query->where('related_model', 'Batch')
+                        ->where('related_model_id', $batchId);
+                })
+                ->orWhereExists(function($query) use ($batchId) {
+                    $query->from('cost_payments')
+                        ->join('costs', 'costs.id', '=', 'cost_payments.cost_id')
+                        ->whereColumn('cost_payments.id', '=', 'notifications.related_model_id')
+                        ->where('notifications.related_model', '=', 'CostPayment')
+                        ->where('costs.batch_id', '=', $batchId);
+                })
                 ->get();
 
             foreach ($notifications as $notification) {
-                // เพิ่ม "[ยกเลิกแล้ว]" ในหน้า title
+                // เพิ่ม "[ยกเลิกแล้ว]" ในหน้า title ถ้ายังไม่มี
                 if (!str_contains($notification->title, '[ยกเลิกแล้ว]')) {
                     $notification->update([
                         'title' => '[ยกเลิกแล้ว] ' . $notification->title,
                     ]);
                 }
+
+                // เพิ่มข้อความแจ้งว่าถูกยกเลิกเนื่องจากยกเลิกรุ่น
+                if ($notification->related_model === 'CostPayment') {
+                    $notification->update([
+                        'message' => $notification->message . "\n\n❌ ถูกยกเลิกเนื่องจากยกเลิกรุ่น"
+                    ]);
+                }
             }
+
+            // แจ้งเตือนถึงผู้เกี่ยวข้องทั้งหมดเกี่ยวกับการยกเลิก cost payments
+            $costPayments = \App\Models\CostPayment::whereHas('cost', function($query) use ($batchId) {
+                $query->where('batch_id', $batchId);
+            })->get();
+
+            foreach ($costPayments as $costPayment) {
+                $creator = \App\Models\User::where('name', $costPayment->recorded_by)->first();
+                if (!$creator) continue;
+
+                Notification::create([
+                    'type' => 'cost_payment_cancelled',
+                    'user_id' => $creator->id,
+                    'title' => '❌ การชำระเงินถูกยกเลิก (รุ่นถูกยกเลิก)',
+                    'message' => "❌ การชำระเงินของคุณถูกยกเลิกเนื่องจากรุ่นถูกยกเลิก\n\n" .
+                                "รายละเอียด:\n" .
+                                "ประเภท: {$costPayment->cost->cost_type}\n" .
+                                "จำนวนเงิน: ฿" . number_format($costPayment->amount, 2) . "\n" .
+                                "หมายเหตุ: ยกเลิกอัตโนมัติเนื่องจากรุ่นถูกยกเลิก",
+                    'url' => route('notifications.index'),
+                    'is_read' => false,
+                    'related_model' => 'CostPayment',
+                    'related_model_id' => $costPayment->id,
+                ]);
+            }
+
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Mark Batch Notifications As Cancelled Error: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * แจ้งเตือนผู้บันทึกการชำระเงินเมื่อการชำระได้รับการอนุมัติ
+     */
+    public static function notifyUserCostPaymentApproved($costPayment, $approvedBy)
+    {
+        try {
+            // หาผู้บันทึกการชำระ
+            $creator = User::where('name', $costPayment->recorded_by)->first();
+            if (!$creator) {
+                return;
+            }
+
+            // Load relationships ถ้ายังไม่ได้ load
+            if (!$costPayment->relationLoaded('cost')) {
+                $costPayment->load('cost.batch', 'cost.farm');
+            }
+
+            $cost = $costPayment->cost;
+            $batch = $cost->batch;
+            $farm = $cost->farm;
+
+            Notification::create([
+                'type' => 'cost_payment_approved',
+                'user_id' => $creator->id,
+                'title' => '✅ การชำระเงินค่า' . $cost->cost_type . 'ได้รับการอนุมัติ',
+                'message' => "✅ การชำระเงินของคุณได้รับการอนุมัติแล้ว\n\n" .
+                            "รายละเอียด:\n" .
+                            "ประเภท: {$cost->cost_type}\n" .
+                            "ฟาร์ม: {$farm->farm_name}\n" .
+                            "รุ่น: {$batch->batch_code}\n" .
+                            "จำนวนเงิน: ฿" . number_format($costPayment->amount, 2) . "\n" .
+                            "อนุมัติโดย: {$approvedBy->name}",
+                'url' => route('notifications.index'),
+                'is_read' => false,
+                'related_model' => 'CostPayment',
+                'related_model_id' => $costPayment->id,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Notify User Cost Payment Approved Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * แจ้งเตือนผู้บันทึกการชำระเงินเมื่อการชำระถูกปฏิเสธ
+     */
+    public static function notifyUserCostPaymentRejected($costPayment, $rejectedBy, $reason)
+    {
+        try {
+            // หาผู้บันทึกการชำระ
+            $creator = User::where('name', $costPayment->recorded_by)->first();
+            if (!$creator) {
+                return;
+            }
+
+            // Load relationships ถ้ายังไม่ได้ load
+            if (!$costPayment->relationLoaded('cost')) {
+                $costPayment->load('cost.batch', 'cost.farm');
+            }
+
+            $cost = $costPayment->cost;
+            $batch = $cost->batch;
+            $farm = $cost->farm;
+
+            Notification::create([
+                'type' => 'cost_payment_rejected',
+                'user_id' => $creator->id,
+                'title' => '❌ การชำระเงินค่า' . $cost->cost_type . 'ถูกปฏิเสธ',
+                'message' => "❌ การชำระเงินของคุณถูกปฏิเสธ\n\n" .
+                            "รายละเอียด:\n" .
+                            "ประเภท: {$cost->cost_type}\n" .
+                            "ฟาร์ม: {$farm->farm_name}\n" .
+                            "รุ่น: {$batch->batch_code}\n" .
+                            "จำนวนเงิน: ฿" . number_format($costPayment->amount, 2) . "\n" .
+                            "เหตุผล: {$reason}\n" .
+                            "ปฏิเสธโดย: {$rejectedBy->name}",
+                'url' => route('notifications.index'),
+                'is_read' => false,
+                'related_model' => 'CostPayment',
+                'related_model_id' => $costPayment->id,
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Notify User Cost Payment Rejected Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * แจ้งเตือน Admin เมื่อมีการบันทึกช่องทางการชำระเงิน
+     */
+    public static function notifyAdminsPaymentChannelRecorded($payment, User $recordedBy)
+    {
+        $admins = self::getAdmins();
+
+        // Load cost relationship if not loaded
+        if (!$payment->relationLoaded('cost')) {
+            $payment->load('cost.batch');
+        }
+
+        // ข้อมูลการชำระเงิน
+        $paymentMethod = $payment->payment_method;
+        $amount = number_format($payment->amount, 2);
+        $paymentDate = $payment->payment_date ? $payment->payment_date->format('d/m/Y') : 'ไม่ระบุ';
+        $referenceNo = $payment->reference_number ?? 'ไม่ระบุ';
+        $bankName = $payment->bank_name ?? 'ไม่ระบุ';
+        $note = $payment->note ?? '-';
+
+        // Get batch details if available
+        $batchCode = '';
+        if ($payment->cost && $payment->cost->batch) {
+            $batchCode = "\nรุ่น: {$payment->cost->batch->batch_code}";
+        }
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'type' => 'payment_recorded',
+                'user_id' => $admin->id,
+                'related_user_id' => $recordedBy->id,
+                'title' => 'บันทึกการชำระเงินใหม่ - รอการอนุมัติ',
+                'message' => "มีการบันทึกการชำระเงินใหม่{$batchCode}\n" .
+                            "วิธีชำระ: {$paymentMethod}\n" .
+                            ($bankName !== 'ไม่ระบุ' ? "ธนาคาร: {$bankName}\n" : '') .
+                            "จำนวนเงิน: {$amount} บาท\n" .
+                            "วันที่ชำระ: {$paymentDate}\n" .
+                            "เลขอ้างอิง: {$referenceNo}\n" .
+                            "หมายเหตุ: {$note}\n" .
+                            "บันทึกโดย: {$recordedBy->name}\n" .
+                            "\nรอการตรวจสอบและอนุมัติ ✓",
+                'url' => route('notifications.index'),
+                'is_read' => false,
+                'related_model' => 'CostPayment',
+                'related_model_id' => $payment->id,
+                'approval_status' => 'pending'
+            ]);
+    }
     }
 }

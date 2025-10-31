@@ -273,7 +273,6 @@
                                 @endif
                             </td>
 
-                            {{-- ✅ สถานะการชำระเงิน (Clickable) --}}
                             <td class="text-center" id="paymentStatus{{ $record->id }}">
                                 @php
                                     // ดึง Cost สำหรับรายการ pig entry นี้โดยเฉพาะ
@@ -302,7 +301,6 @@
                                 </a>
                             </td>
 
-                            {{-- ✅ การอนุมัติ (Clickable) --}}
                             <td class="text-center">
                                 @php
                                     // ดึง Cost สำหรับรายการ pig entry นี้โดยเฉพาะ
@@ -1199,7 +1197,7 @@
                 exportTableToCSV('.table-responsive', 'บันทึกหมูเข้า', [7]);
             }
 
-            // ✅ Export to PDF with Thai font support
+            // Export to PDF with Thai font support
             async function exportToPDF(event) {
                 event.preventDefault();
 

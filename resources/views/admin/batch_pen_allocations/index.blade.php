@@ -170,7 +170,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center text-danger">❌ ไม่มีข้อมูล</td>
+                            <td colspan="7" class="text-center text-danger">ไม่มีข้อมูล</td>
                         </tr>
                     @endforelse
                 </tbody>

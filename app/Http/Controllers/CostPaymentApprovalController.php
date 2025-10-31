@@ -91,15 +91,8 @@ class CostPaymentApprovalController extends Controller
             }
 
             // บันทึก notification
-            \App\Models\Notification::create([
-                'user_id' => Auth::id(),
-                'type' => 'payment_approved',
-                'related_type' => Cost::class,
-                'related_id' => $cost->id,
-                'title' => 'อนุมัติการชำระเงินค่า' . $cost->cost_type,
-                'message' => "อนุมัติการชำระเงินจำนวน ฿" . number_format((float)$payment->amount, 2) . " สำหรับ " . $cost->cost_type,
-                'is_read' => false,
-            ]);
+            // แจ้งเตือนผู้ใช้ที่บันทึกการชำระว่าได้รับการอนุมัติ
+            \App\Helpers\NotificationHelper::notifyUserCostPaymentApproved($payment, Auth::user());
 
             return response()->json([
                 'success' => true,
@@ -141,16 +134,12 @@ class CostPaymentApprovalController extends Controller
                 'reason' => $validated['reason'],
             ]);
 
-            // บันทึก notification
-            \App\Models\Notification::create([
-                'user_id' => Auth::id(),
-                'type' => 'payment_rejected',
-                'related_type' => Cost::class,
-                'related_id' => $payment->cost_id,
-                'title' => 'ปฏิเสธการชำระเงินค่า' . $payment->cost->cost_type,
-                'message' => "เหตุผล: " . $validated['reason'],
-                'is_read' => false,
-            ]);
+            // แจ้งเตือนผู้ใช้ที่บันทึกการชำระว่าถูกปฏิเสธ
+            \App\Helpers\NotificationHelper::notifyUserCostPaymentRejected(
+                $payment,
+                Auth::user(),
+                $validated['reason']
+            );
 
             return response()->json([
                 'success' => true,

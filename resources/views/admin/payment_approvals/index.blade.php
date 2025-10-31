@@ -138,7 +138,7 @@
                                 @empty
                                 @endforelse
 
-                                {{-- ✅ Display Pending PigSales --}}
+                                {{-- Display Pending PigSales --}}
                                 @forelse($pendingPigSales as $index => $pigSale)
                                     <tr>
                                         <td class="text-center">{{ $loop->iteration + ($pendingPayments->count() ?? 0) }}</td>
@@ -249,7 +249,7 @@
                 @endif
             </div>
 
-            {{-- ✅ NEW: Tab: Cancel Requests --}}
+            {{-- NEW: Tab: Cancel Requests --}}
             <div class="tab-pane fade" id="cancel-requests" role="tabpanel">
                 <div class="table-responsive">
                     <table class="table table-primary mb-0">
@@ -392,7 +392,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{-- ✅ Display Approved PigSales --}}
+                            {{-- Display Approved PigSales --}}
                             @forelse($approvedPigSales as $index => $pigSale)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>
@@ -435,7 +435,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {{--  Display Rejected PigSales --}}
+                            {{-- Display Rejected PigSales --}}
                             @forelse($rejectedPigSales as $index => $pigSale)
                                 <tr>
                                     <td class="text-center">{{ $loop->iteration }}</td>

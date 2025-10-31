@@ -148,5 +148,19 @@ class PigSale extends Model
         static::deleting(function ($pigSale) {
             Payment::where('pig_sale_id', $pigSale->id)->delete();
         });
+
+        // อัปเดต Batch เมื่อบันทึกการขาย
+        static::saved(function ($pigSale) {
+            if ($pigSale->batch && $pigSale->status !== 'cancelled' && $pigSale->status !== 'rejected') {
+                $pigSale->batch->calculateTotalSaleWeight();
+            }
+        });
+
+        // อัปเดต Batch เมื่อลบการขาย
+        static::deleted(function ($pigSale) {
+            if ($pigSale->batch) {
+                $pigSale->batch->calculateTotalSaleWeight();
+            }
+        });
     }
 }

@@ -4,28 +4,40 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class CostPayment extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'cost_id',
-        'cost_type',  // ✅ NEW: for auto-approval logic (feed/medicine auto-approve)
         'amount',
         'status',
         'approved_date',
         'approved_by',
-        'rejected_at',  // ✅ CHANGED from cancelled_at
-        'rejected_by',  // ✅ CHANGED from cancelled_by
+        'payment_method',
+        'payment_date',
+        'reference_number',
+        'bank_name',
+        'receipt_file',
+        'note',
         'reason',
         'action_type',
+        'rejected_at',
+        'rejected_by',
+        'reject_reason',
+        'recorded_by',
+        'cancelled_at',
+        'cancelled_by',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'approved_date' => 'datetime',
-        'rejected_at' => 'datetime',  // ✅ CHANGED from cancelled_at
+        'payment_date' => 'datetime',
+        'rejected_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     // ------------ Relationships ------------ //
@@ -40,9 +52,19 @@ class CostPayment extends Model
         return $this->belongsTo(User::class, 'approved_by');
     }
 
-    public function rejecter()  // ✅ CHANGED from canceller
+    public function rejecter()
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function recorder()
+    {
+        return $this->belongsTo(User::class, 'recorded_by');
+    }
+
+    public function canceller()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
     }
 
     // ------------ Scopes ------------ //

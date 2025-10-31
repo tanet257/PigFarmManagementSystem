@@ -21,7 +21,7 @@ class BarnSeeder extends Seeder
                 DB::table('barns')->insert([
                     'farm_id' => $farm->id,
                     'barn_code' => 'F' . $farm->id . '-B' . str_pad($i, 2, '0', STR_PAD_LEFT),
-                    'pig_capacity' => 750,
+                    'pig_capacity' => 760, // 20 pens × 38 capacity each
                     'pen_capacity' => 20,
                     'note' => "เล้า {$i} ของฟาร์ม {$farm->name}",
                     'created_at' => now(),

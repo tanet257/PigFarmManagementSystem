@@ -9,6 +9,7 @@ use App\Models\Batch;
 use App\Models\Barn;
 use App\Models\Pen;
 use App\Models\DairyRecord;
+use App\Models\DairyRecordItem;
 use App\Models\StoreHouse;
 use App\Models\PigDeath;
 use App\Models\BatchTreatment;
@@ -148,6 +149,9 @@ class DairyController extends Controller
             'pig_deaths.pen',
             'batch.farm',
             'barn',
+            'items', // Load DairyRecordItem
+            'items.storehouse',
+            'items.pen',
         ]);
 
         // --- Search ---
@@ -221,51 +225,145 @@ class DairyController extends Controller
         $dairyRecords = $query->paginate($perPage);
 
         // Map display fields for blade
+        $typesByRecord = []; // เก็บ display_types ในอาร์เรย์แยก
+
         foreach ($dairyRecords as $record) {
             // Default values
             $record->display_barn = '-';
             $record->display_details = '-';
             $record->display_quantity = '-';
 
-            // Feed
-            if ($request->type === 'food' || (!$request->filled('type') && $record->dairy_storehouse_uses->count())) {
-                $use = $record->dairy_storehouse_uses->first();
-                if ($use) {
+            // ✅ NEW: ใช้ DairyRecordItem แทน (ข้อมูลล่าสุด)
+            $items = $record->items ?? collect();
+            
+            // Feed items
+            $feedItems = $items->filter(fn($item) => $item->item_type === 'feed');
+            
+            // Medicine items
+            $medicineItems = $items->filter(fn($item) => $item->item_type === 'medicine');
+            
+            // Death items
+            $deathItems = $items->filter(fn($item) => $item->item_type === 'death');
+
+            // เก็บประเภททั้งหมด
+            $displayTypes = [];
+            $detailsArray = [];
+            $barnCodes = [];
+            $totalQuantity = 0;
+
+            // ===== FEED ITEMS =====
+            if ($feedItems->count()) {
+                $displayTypes[] = 'feed';
+                foreach ($feedItems as $item) {
+                    $storehouse = $item->storehouse;
+                    $barn = $item->barn;
+                    $detail = 'รหัส: ' . ($storehouse->item_code ?? '-') 
+                            . ', หน่วย: ' . ($item->unit ?? $storehouse->unit ?? '-')
+                            . ($item->note ? ', ' . $item->note : '')
+                            . ' (' . $item->quantity . ')';
+                    $detailsArray[] = $detail;
+                    
+                    if ($barn && !in_array($barn->barn_code, $barnCodes)) {
+                        $barnCodes[] = $barn->barn_code;
+                    }
+                    $totalQuantity += $item->quantity;
+                }
+            }
+
+            // ===== MEDICINE ITEMS =====
+            if ($medicineItems->count()) {
+                $displayTypes[] = 'medicine';
+                foreach ($medicineItems as $item) {
+                    $pen = $item->pen;
+                    $barn = $item->barn;
+                    $detail = 'ยา: ' . ($item->medicine_code ?? '-')
+                            . ', หน่วย: ' . ($item->unit ?? '-')
+                            . ', สถานะ: ' . ($item->treatment_status ?? '-')
+                            . ($item->note ? ', ' . $item->note : '')
+                            . ' (' . $item->quantity . ')';
+                    $detailsArray[] = $detail;
+                    
+                    // เก็บ barn/pen code
+                    if ($barn) {
+                        $barnCode = $barn->barn_code;
+                        if ($pen) {
+                            $barnCode .= '/' . $pen->pen_code;
+                        }
+                        if (!in_array($barnCode, $barnCodes)) {
+                            $barnCodes[] = $barnCode;
+                        }
+                    }
+                    $totalQuantity += $item->quantity;
+                }
+            }
+
+            // ===== DEATH ITEMS =====
+            if ($deathItems->count()) {
+                $displayTypes[] = 'death';
+                foreach ($deathItems as $item) {
+                    $pen = $item->pen;
+                    $barn = $item->barn;
+                    $detail = 'คอก: ' . (optional($pen)->pen_code ?? '-')
+                            . ($item->note ? ', ' . $item->note : '')
+                            . ' (' . $item->quantity . ')';
+                    $detailsArray[] = $detail;
+                    
+                    if ($barn && $pen) {
+                        $barnPenCode = $barn->barn_code . '/' . $pen->pen_code;
+                        if (!in_array($barnPenCode, $barnCodes)) {
+                            $barnCodes[] = $barnPenCode;
+                        }
+                    }
+                    $totalQuantity += $item->quantity;
+                }
+            }
+
+            // เก็บประเภทสำหรับ filter badges
+            $typesByRecord[$record->id] = $displayTypes;
+
+            // Set display values
+            if (empty($displayTypes)) {
+                // ถ้าไม่มี items เลย ใช้ข้อมูลเก่า (dairy_storehouse_uses, batch_treatments, pig_deaths)
+                $feedUses = $record->dairy_storehouse_uses->filter(function($use) {
+                    return $use->storehouse && $use->storehouse->item_type === 'food';
+                });
+                $medicines = $record->batch_treatments;
+                $deaths = $record->pig_deaths;
+
+                if ($feedUses->count()) {
+                    $use = $feedUses->first();
                     $record->display_barn = optional($use->barn)->barn_code ?? optional($record->barn)->barn_code ?? '-';
-                    $record->display_details = 'รหัส: ' . (optional($use->storehouse)->item_code ?? '-') . ', หน่วย: ' . (optional($use->storehouse)->unit ?? '-') . ($use->note ? ', ' . $use->note : '');
-                    $record->display_quantity = $use->quantity ?? '-';
-                }
-            }
-            // Treatment
-            elseif ($request->type === 'treatment' || (!$request->filled('type') && $record->batch_treatments->count())) {
-                $bt = $record->batch_treatments->first();
-                if ($bt) {
+                    $record->display_quantity = $feedUses->sum('quantity');
+                    $record->display_details = $feedUses->map(fn($u) => 'รหัส: ' . (optional($u->storehouse)->item_code ?? '-') . ' (' . $u->quantity . ')')->implode(' | ');
+                } elseif ($medicines->count()) {
+                    $bt = $medicines->first();
                     $record->display_barn = (optional($record->barn)->barn_code ?? '-') . '/' . (optional($bt->pen)->pen_code ?? '-');
-                    $record->display_details = 'ยา: ' . ($bt->medicine_code ?? '-') . ', หน่วย: ' . ($bt->unit ?? '-') . ', สถานะ: ' . ($bt->status ?? '-') . ($bt->note ? ', ' . $bt->note : '');
-                    $record->display_quantity = $bt->quantity ?? '-';
-                }
-            }
-            // Death
-            elseif ($request->type === 'death' || (!$request->filled('type') && $record->pig_deaths->count())) {
-                $pd = $record->pig_deaths->first();
-                if ($pd) {
+                    $record->display_quantity = $medicines->sum('quantity');
+                    $record->display_details = $medicines->map(fn($m) => 'ยา: ' . ($m->medicine_code ?? '-') . ' (' . $m->quantity . ')')->implode(' | ');
+                } elseif ($deaths->count()) {
+                    $pd = $deaths->first();
                     $record->display_barn = (optional($record->barn)->barn_code ?? '-') . '/' . (optional($pd->pen)->pen_code ?? '-');
-                    $record->display_details = 'คอก: ' . (optional($pd->pen)->pen_code ?? '-') . ($pd->note ? ', ' . $pd->note : '');
-                    $record->display_quantity = $pd->quantity ?? '-';
+                    $record->display_quantity = $deaths->sum('quantity');
+                    $record->display_details = $deaths->map(fn($d) => 'คอก: ' . (optional($d->pen)->pen_code ?? '-') . ' (' . $d->quantity . ')')->implode(' | ');
+                } else {
+                    $record->display_barn = optional($record->barn)->barn_code ?? '-';
+                    $record->display_details = $record->note ?? '-';
+                    $record->display_quantity = '-';
                 }
-            }
-            // Fallback
-            else {
-                $record->display_barn = optional($record->barn)->barn_code ?? '-';
-                $record->display_details = $record->note ?? '-';
-                $record->display_quantity = '-';
+            } else {
+                // มี items จาก DairyRecordItem
+                $record->display_barn = !empty($barnCodes) ? implode(' | ', $barnCodes) : optional($record->barn)->barn_code ?? '-';
+                $record->display_details = !empty($detailsArray) ? implode(' | ', $detailsArray) : '-';
+                $record->display_quantity = $totalQuantity > 0 ? $totalQuantity : '-';
             }
         }
 
-        // Map feed quantity จาก dairy_storehouse_uses
+        // Map feed quantity จาก dairy_storehouse_uses (ใช้ logic เดียวกับ loop แรก: item_type = 'food')
         foreach ($dairyRecords as $record) {
             $record->feed_uses = $record->dairy_storehouse_uses
-                ->filter(fn($dsu) => $dsu->storehouse && preg_match('/f93[1-3]/i', $dsu->storehouse->item_code))
+                ->filter(function($dsu) {
+                    return $dsu->storehouse && $dsu->storehouse->item_type === 'food';
+                })
                 ->map(function ($dsu) {
                     // ใช้ quantity ที่บันทึกตรง ๆ ใน dairy_storehouse_uses
                     $dsu->quantity_from_dsu = $dsu->quantity ?? 0;
@@ -274,7 +372,7 @@ class DairyController extends Controller
                 ->values();
         }
 
-        return view('admin.dairy_records.index', compact('farms', 'batches', 'barns', 'dairyRecords'));
+        return view('admin.dairy_records.index', compact('farms', 'batches', 'barns', 'dairyRecords', 'typesByRecord'));
     }
     //--------------------------------------- UPLOAD / CREATE ------------------------------------------//
 
@@ -462,16 +560,36 @@ class DairyController extends Controller
                                 'note'            => $validated['note'] ?? null,
                             ]);
 
+                            // ✅ NEW: สร้าง DairyRecordItem เพื่อ unified display
+                            DairyRecordItem::create([
+                                'dairy_record_id' => $dairyId,
+                                'item_type'       => 'feed',
+                                'storehouse_id'   => $storehouse->id,
+                                'barn_id'         => $barnId,
+                                'quantity'        => $usedQuantity,
+                                'unit'            => $storehouse->unit ?? $validated['unit'] ?? null,
+                                'note'            => $validated['note'] ?? null,
+                            ]);
+
                             // ✅ ทำให้ InventoryMovement ถูกสร้างทุกครั้ง (ไม่ว่า quantity เป็นเท่าไหร่)
                             // เพราะ Observer ต้องใช้ change_type='out' เพื่อ trigger KPI calculation
-                            InventoryMovement::create([
+                            $invMovement = InventoryMovement::create([
                                 'storehouse_id' => $storehouse->id,
                                 'batch_id'      => $validated['batch_id'],
                                 'change_type'   => 'out',
                                 'quantity'      => max($usedQuantity, 1), // ✅ Minimum 1 เพื่อ trigger Observer
                                 'note'          => 'ใช้สินค้า (Batch: ' . $validated['batch_id'] . ')',
-                                'date'          => $formattedDate,
+                                'date'          => $dt->format('Y-m-d H:i:s'),
                             ]);
+
+                            // ✅ Link InventoryMovement กับ DairyRecordItem
+                            $lastItem = DairyRecordItem::where('dairy_record_id', $dairyId)
+                                ->where('item_type', 'feed')
+                                ->latest('id')
+                                ->first();
+                            if ($lastItem) {
+                                $invMovement->update(['dairy_record_item_id' => $lastItem->id]);
+                            }
 
                             // ✅ ลดสต็อกเฉพาะเมื่อ usedQuantity > 0
                             if ($usedQuantity > 0) {
@@ -498,6 +616,21 @@ class DairyController extends Controller
                                 'status'          => $validated['status'] ?? 'วางแผนว่าจะให้ยา',
                                 'note'            => $validated['note'] ?? null,
                                 'date'            => $formattedDate,
+                            ]);
+
+                            // ✅ NEW: สร้าง DairyRecordItem เพื่อ unified display
+                            DairyRecordItem::create([
+                                'dairy_record_id'   => $dairyId,
+                                'item_type'         => 'medicine',
+                                'medicine_code'     => $validated['item_code'],
+                                'batch_id'          => $validated['batch_id'],
+                                'pen_id'            => $penId,
+                                'barn_id'           => $barnId,
+                                'quantity'          => $usedQuantity,
+                                'unit'              => $storehouse->unit ?? null,
+                                'treatment_status'  => $validated['status'] ?? 'วางแผนว่าจะให้ยา',
+                                'treatment_date'    => $dt->toDateString(),
+                                'note'              => $validated['note'] ?? null,
                             ]);
 
                             DairyStorehouseUse::create([
@@ -606,6 +739,18 @@ class DairyController extends Controller
                                 Log::info('Creating PigDeath', $pigDeathData);
                                 $createdDeath = PigDeath::create($pigDeathData);
                                 Log::info('PigDeath Created', ['id' => $createdDeath->id, 'batch_id' => $createdDeath->batch_id]);
+
+                                // ✅ NEW: สร้าง DairyRecordItem เพื่อ unified display
+                                DairyRecordItem::create([
+                                    'dairy_record_id' => $dairyId,
+                                    'item_type'       => 'death',
+                                    'batch_id'        => $batch->id,
+                                    'pen_id'          => $penId2,
+                                    'barn_id'         => $barnId2,
+                                    'quantity'        => $reduce,
+                                    'death_date'      => $dt->toDateString(),
+                                    'note'            => $validated['note'] ?? null,
+                                ]);
 
                                 // ✅ NEW: สร้าง notification ให้ admin ทั้งหมด
                                 try {

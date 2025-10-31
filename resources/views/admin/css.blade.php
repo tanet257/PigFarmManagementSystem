@@ -1103,11 +1103,6 @@
         background-color: var(--light-peach);
     }
 
-    .notification-item.unread {
-        background-color: #fff3e0;
-        border-left: 3px solid var(--primary-orange);
-    }
-
     .notification-content strong {
         color: #FF6500;
         font-size: 1rem;
@@ -1331,9 +1326,8 @@
     }
 
     .list-group-item {
-        border: none !important;
-        border-bottom: 1px solid rgba(184, 176, 176, 0.5) !important;
-        border-top: 1px solid rgba(184, 176, 176, 0.5) !important;
+        border-color: #A9A9A9 !important;
+
     }
 
     .btn-info {
@@ -1344,13 +1338,153 @@
     }
 
     /* ================= Modal Overflow Fix ================= */
-    .modal,
+    .modal {
+        overflow: hidden !important;
+    }
     .modal-dialog,
     .modal-content,
     .modal-body,
     .card-body {
-        overflow: visible !important;
+        position: relative;
     }
+
+        /* ========== Notifications Page Styles ========== */
+        .notifications-page .notification-list {
+            max-width: 100%;
+        }
+
+        .notifications-page .notification-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background-color: #fff;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .notifications-page .notification-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #FF6500;
+            margin-right: 15px;
+        }
+
+        .notifications-page .notification-icon .bi {
+            font-size: 1.75rem;
+        }
+
+        .notifications-page .notification-content {
+            flex: 1;
+            max-width: calc(100% - 50px);
+        }
+
+        .notifications-page .notification-content h6 {
+            margin: 0;
+            font-size: 1rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .notifications-page .notification-content p {
+            color: #666;
+            margin: 8px 0;
+            white-space: normal;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+
+        .notifications-page .time-badge {
+            background-color: #f0f0f0;
+            color: #666;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-right: 8px;
+        }
+
+        .notifications-page .type-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            color: #fff;
+        }
+
+        /* Action buttons styling */
+        .notifications-page .notification-actions {
+            margin-left: auto;  /* Push to far right */
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .notifications-page .notification-actions .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.875rem;
+        }
+
+        .notifications-page .notification-actions .btn-outline-danger {
+            padding: 0.4rem 0.6rem;
+        }
+
+        /* Container layout fix */
+        .notifications-page .notification-item > .d-flex {
+            width: 100%;
+            justify-content: space-between;
+        }
+        .notification-unread {
+            background-color: #fff3e0 !important;
+            border-left: 4px solid var(--primary-orange);
+            position: relative;
+        }
+
+        .notification-read {
+            background-color: transparent !important;
+            border-left: 4px solid var(--gray);
+            opacity: 0.8;
+        }
+
+        /* Adding hover effect */
+        .notification-item {
+            transition: all 0.3s ease;
+        }
+
+        .notification-item:hover {
+            transform: translateX(2px);
+            box-shadow: 2px 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Adding unread indicator dot */
+        .notification-unread::after {
+            content: "";
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 8px;
+            height: 8px;
+            background-color: var(--primary-orange);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 91, 34, 0.7);
+            }
+
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(255, 91, 34, 0);
+            }
+
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(255, 91, 34, 0);
+            }
+        }
 
 
     /* ================= Modal + Choices.js Fixes ================= */
@@ -1388,11 +1522,6 @@
         flex: 0 0 auto !important;
     }
 
-    /* Keep dropdowns visible */
-    .modal .card-body {
-        overflow: visible !important;
-        position: relative !important;
-    }
 
     /* Add spacing between cards in modal */
     .modal .card+.card {
