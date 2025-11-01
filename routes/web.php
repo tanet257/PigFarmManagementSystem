@@ -9,19 +9,17 @@ use App\Http\Controllers\BatchController;
 use App\Http\Controllers\PigEntryController;
 use App\Http\Controllers\DairyController;
 use App\Http\Controllers\BatchPenAllocationController;
-use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PigSaleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\UserManagementController;
-use App\Http\Controllers\UserApprovalController;
 use App\Http\Controllers\PaymentApprovalController;
 use App\Http\Controllers\CostPaymentApprovalController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfitController;
 use App\Http\Controllers\BatchEntryController;
-use App\Http\Controllers\DairyTreatmentController;
 use App\Http\Controllers\BatchTreatmentController;
 use App\Http\Controllers\DailyTreatmentLogController;
+use App\Http\Controllers\TreatmentController;
 
 //------------------- route home/admin -------------------------//
 // Dashboard is now the main home page
@@ -158,6 +156,13 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
         Route::delete('/{dailyTreatmentLog}', [DailyTreatmentLogController::class, 'destroy'])->name('daily_treatment_logs.destroy');
     });
 
+    //------------------- route treatments ---------------------//
+    Route::prefix('treatments')->group(function () {
+        Route::get('/', [TreatmentController::class, 'index'])->name('treatments.index');
+        Route::put('/{id}', [TreatmentController::class, 'update'])->name('treatments.update');
+        Route::delete('/{id}', [TreatmentController::class, 'destroy'])->name('treatments.destroy');
+    });
+
     //------------------- route export batch ---------------------//
     Route::get('/export/csv', [DairyController::class, 'exportCsv'])->name('dairy_records.export.csv');
     Route::get('/export/pdf', [DairyController::class, 'exportPdf'])->name('dairy_records.export.pdf');
@@ -251,6 +256,8 @@ Route::prefix('notifications')->middleware(['auth', 'prevent.cache'])->group(fun
     Route::get('/recent', [NotificationController::class, 'getRecent'])->name('notifications.recent');
     Route::get('/unread_count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread_count');
     Route::post('/{id}/mark_as_read', [NotificationController::class, 'markAsRead'])->name('notifications.mark_as_read');
+    Route::post('/{id}/mark_as_read_only', [NotificationController::class, 'markAsReadOnly'])->name('notifications.mark_as_read_only');
+    Route::post('/{id}/mark_as_read_and_navigate_to_notifications', [NotificationController::class, 'markAsReadAndNavigateToNotifications'])->name('notifications.mark_as_read_and_navigate_to_notifications');
     Route::post('/mark_all_read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark_all_as_read');
     Route::post('/clear_read', [NotificationController::class, 'clearRead'])->name('notifications.clear_read');
     Route::get('/{id}/mark_and_navigate', [NotificationController::class, 'markAndNavigate'])->name('notifications.mark_and_navigate');

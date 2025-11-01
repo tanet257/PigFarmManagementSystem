@@ -55,35 +55,38 @@
                                 <div class="notifications-scroll"
                                     style="max-height: 400px; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none;">
                                     @forelse($recentNotifications as $notification)
-                                        <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
-                                            class="dropdown-item px-4 py-3 {{ !$notification->is_read ? 'bg-white' : 'bg-white' }}"
-                                            style="text-decoration: none; transition: all 0.2s ease; border-bottom: 1px solid #e9ecef; display: block;">
-                                            <div class="d-flex gap-3 align-items-start">
-                                                <div class="flex-grow-1">
-                                                    <div class="d-flex align-items-center gap-2 mb-2">
-                                                        <strong class="text-light">{{ $notification->title }}</strong>
-                                                        @if (!$notification->is_read)
-                                                            <span class="badge bg-danger" style="font-size: 0.65rem;">NEW</span>
+                                        <form method="POST" action="{{ route('notifications.mark_as_read_and_navigate_to_notifications', $notification->id) }}" style="display: inline;">
+                                            @csrf
+                                            <button type="submit"
+                                                class="dropdown-item px-4 py-3 {{ !$notification->is_read ? 'bg-white' : 'bg-white' }} w-100 text-start"
+                                                style="text-decoration: none; transition: all 0.2s ease; border-bottom: 1px solid #e9ecef; border: none; background: white; padding: 0.75rem 1rem;">
+                                                <div class="d-flex gap-3 align-items-start">
+                                                    <div class="flex-grow-1">
+                                                        <div class="d-flex align-items-center gap-2 mb-2">
+                                                            <strong class="text-light">{{ $notification->title }}</strong>
+                                                            @if (!$notification->is_read)
+                                                                <span class="badge bg-danger" style="font-size: 0.65rem;">NEW</span>
+                                                            @endif
+                                                        </div>
+                                                        <p class="text-light mb-2 small" style="font-size: 0.85rem;">
+                                                            {{ Str::limit($notification->message, 60) }}</p>
+                                                        <small
+                                                            class="text-light">{{ $notification->created_at->diffForHumans() }}</small>
+                                                    </div>
+                                                    <div>
+                                                        @if ($notification->type == 'user_registered')
+                                                            <span class="badge bg-info" style="font-size: 0.7rem;">ใหม่</span>
+                                                        @elseif($notification->type == 'user_approved')
+                                                            <span class="badge bg-success"
+                                                                style="font-size: 0.7rem;">อนุมัติ</span>
+                                                        @elseif($notification->type == 'user_rejected')
+                                                            <span class="badge bg-danger"
+                                                                style="font-size: 0.7rem;">ปฏิเสธ</span>
                                                         @endif
                                                     </div>
-                                                    <p class="text-light mb-2 small" style="font-size: 0.85rem;">
-                                                        {{ Str::limit($notification->message, 60) }}</p>
-                                                    <small
-                                                        class="text-light">{{ $notification->created_at->diffForHumans() }}</small>
                                                 </div>
-                                                <div>
-                                                    @if ($notification->type == 'user_registered')
-                                                        <span class="badge bg-info" style="font-size: 0.7rem;">ใหม่</span>
-                                                    @elseif($notification->type == 'user_approved')
-                                                        <span class="badge bg-success"
-                                                            style="font-size: 0.7rem;">อนุมัติ</span>
-                                                    @elseif($notification->type == 'user_rejected')
-                                                        <span class="badge bg-danger"
-                                                            style="font-size: 0.7rem;">ปฏิเสธ</span>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </a>
+                                            </button>
+                                        </form>
                                     @empty
                                         <div class="dropdown-item text-center py-5">
                                             <i class="bi bi-inbox text-secondary" style="font-size: 2rem;"></i>

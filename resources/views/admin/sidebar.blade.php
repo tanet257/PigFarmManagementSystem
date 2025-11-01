@@ -34,9 +34,6 @@
                          <i class="bi bi-list-ul"></i> ดูรุ่นทั้งหมด
                      </a></li>
                      <li ></li>
-                     <li><a href="{{ route('pig_entry_records.index') }}">
-                         <i class="bi bi-truck"></i> บันทึกเข้าหมู (เดิม)
-                     </a></li>
                      <li><a href="{{ route('batch_pen_allocations.index') }}">
                          <i class="bi bi-houses"></i> จัดการคอก
                      </a></li>
@@ -44,10 +41,11 @@
              </li>
 
              <li><a href="#dairyDropdown" aria-expanded="false" data-toggle="collapse"> <i
-                         class="bi bi-droplet-half"></i>dairy record </a>
+                         class="bi bi-droplet-half"></i>บันทึกประจำวัน </a>
                  <ul id="dairyDropdown" class="collapse list-unstyled ">
-                     <li><a href="{{ route('dairy_records.record') }}">dairy record</a></li>
-                     <li><a href="{{ route('dairy_records.index') }}">View dairy </a></li>
+                     <li><a href="{{ route('dairy_records.record') }}">บันทึกประจำวัน</a></li>
+                     <li><a href="{{ route('dairy_records.index') }}">ดูบันทึกประจำวัน</a></li>
+                     <li><a href="{{ route('treatments.index') }}">จัดการการรักษา</a></li>
                  </ul>
              </li>
 

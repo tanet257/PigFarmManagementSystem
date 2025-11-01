@@ -210,14 +210,14 @@
                     </script>
                 @else
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <i class="fas fa-check-circle me-2"></i>
+                        <i class="fa fa-check-circle me-2"></i>
                         {{ session('success') }}
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 @endif
             @endif        @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
+                <i class="fa fa-exclamation-circle me-2"></i>
                 {{ session('error') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -233,7 +233,7 @@
                                 <small class="text-muted d-block mb-1">รุ่นทั้งหมด</small>
                                 <h5 class="mb-0">{{ $batches->count() ?? 0 }}</h5>
                             </div>
-                            <i class="fas fa-pigs fa-2x text-primary opacity-25"></i>
+                            <i class="fa fa-pigs fa-2x text-primary opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -248,7 +248,7 @@
                                     {{ $batches->where('status', 'raising')->count() ?? 0 }}
                                 </h5>
                             </div>
-                            <i class="fas fa-heartbeat fa-2x text-success opacity-25"></i>
+                            <i class="fa fa-heartbeat fa-2x text-success opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -263,7 +263,7 @@
                                     {{ $batches->where('status', 'selling')->count() ?? 0 }}
                                 </h5>
                             </div>
-                            <i class="fas fa-store fa-2x text-warning opacity-25"></i>
+                            <i class="fa fa-store fa-2x text-warning opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -278,7 +278,7 @@
                                     {{ $batches->where('status', 'closed')->count() ?? 0 }}
                                 </h5>
                             </div>
-                            <i class="fas fa-check-circle fa-2x text-secondary opacity-25"></i>
+                            <i class="fa fa-check-circle fa-2x text-secondary opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -456,7 +456,7 @@
         <div class="card border-info mt-4">
             <div class="card-header bg-info text-white">
                 <h6 class="mb-0">
-                    <i class="fas fa-lightbulb me-2"></i>
+                    <i class="fa fa-lightbulb me-2"></i>
                     วิธีการใช้งาน
                 </h6>
             </div>
@@ -464,21 +464,21 @@
                 <div class="row">
                     <div class="col-md-4">
                         <h6 class="fw-bold mb-2">
-                            <i class="fas fa-step-forward me-2 text-primary"></i>
+                            <i class="fa fa-step-forward me-2 text-primary"></i>
                             ขั้นตอนที่ 1: สร้างรุ่น
                         </h6>
                         <p class="small mb-0">คลิก "สร้างรุ่นใหม่" ใส่รหัสรุ่นและข้อมูลพื้นฐาน</p>
                     </div>
                     <div class="col-md-4">
                         <h6 class="fw-bold mb-2">
-                            <i class="fas fa-step-forward me-2 text-success"></i>
+                            <i class="fa fa-step-forward me-2 text-success"></i>
                             ขั้นตอนที่ 2: บันทึกเข้าหมู
                         </h6>
                         <p class="small mb-0">ระบุจำนวน น้ำหนัก และราคาของหมูที่เข้ามา</p>
                     </div>
                     <div class="col-md-4">
                         <h6 class="fw-bold mb-2">
-                            <i class="fas fa-step-forward me-2 text-warning"></i>
+                            <i class="fa fa-step-forward me-2 text-warning"></i>
                             ขั้นตอนที่ 3: จัดการ
                         </h6>
                         <p class="small mb-0">ระบบสร้างสถานะ "กำลังเลี้ยง" โดยอัตโนมัติ</p>
@@ -757,6 +757,16 @@
                                     @enderror
                                 </div>
 
+                                <div class="mb-3">
+                                    <label for="transport_cost" class="form-label">ค่าขนส่ง (บาท)</label>
+                                    <input type="number" class="form-control @error('transport_cost') is-invalid @enderror" id="transport_cost"
+                                        name="transport_cost" placeholder="0.00" step="0.00" min="0"
+                                        value="{{ old('transport_cost', '') }}">
+                                    @error('transport_cost')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
                                 <!-- Summary Preview Section -->
                                 <div class="card bg-light border-0">
                                     <div class="card-body p-3">
@@ -824,6 +834,32 @@
                 const averagePricePerPigInput = document.getElementById('average_price_per_pig');
                 const displayAverageWeight = document.getElementById('display_average_weight');
                 const displayAveragePrice = document.getElementById('display_average_price');
+                const createBatchForm = document.getElementById('createBatchForm');
+                const submitButton = createBatchForm?.querySelector('button[type="submit"]');
+
+                // ✅ Function to validate barn selection and update submit button
+                function updateSubmitButtonState() {
+                    const barnCheckboxes = document.querySelectorAll('.barn-checkbox');
+                    const anyChecked = Array.from(barnCheckboxes).some(cb => cb.checked);
+
+                    if (submitButton) {
+                        if (anyChecked) {
+                            submitButton.disabled = false;
+                            submitButton.classList.remove('disabled');
+                            submitButton.title = '';
+                        } else {
+                            submitButton.disabled = true;
+                            submitButton.classList.add('disabled');
+                            submitButton.title = 'กรุณาเลือกเล้า/คอกอย่างน้อยหนึ่งตัว';
+                        }
+                    }
+                }
+
+                // ✅ Initial state: disable submit button
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.title = 'กรุณาเลือกเล้า/คอกอย่างน้อยหนึ่งตัว';
+                }
 
                 // Function to calculate averages
                 function calculateAverages() {
@@ -918,6 +954,61 @@
                 // Form submission ไม่ใช้ AJAX - ให้ browser handle ตามปกติ
                 // Server-side validation จะ return error พร้อมข้อมูล preserved
 
+                createBatchForm?.addEventListener('submit', function(e) {
+                    const barnCheckboxes = document.querySelectorAll('.barn-checkbox');
+                    const anyChecked = Array.from(barnCheckboxes).some(cb => cb.checked);
+
+                    // ✅ Check if at least one barn is selected
+                    if (!anyChecked) {
+                        e.preventDefault();
+
+                        // Show toast error
+                        showToastError('❌ ข้อผิดพลาด', 'กรุณาเลือกเล้า/คอกอย่างน้อยหนึ่งตัว');
+                    }
+                });
+
+                // ✅ Helper function to show toast error
+                function showToastError(title, message) {
+                    // Create toast element
+                    const toastHTML = `
+                        <div class="toast align-items-center border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="min-width: 350px;">
+                            <div class="d-flex bg-danger text-white rounded">
+                                <div class="toast-body">
+                                    <strong>${title}</strong><br>
+                                    <small>${message}</small>
+                                </div>
+                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                            </div>
+                        </div>
+                    `;
+
+                    // Create container if not exists
+                    let toastContainer = document.getElementById('toastContainer');
+                    if (!toastContainer) {
+                        toastContainer = document.createElement('div');
+                        toastContainer.id = 'toastContainer';
+                        toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+                        document.body.appendChild(toastContainer);
+                    }
+
+                    // Add toast to container
+                    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+
+                    // Get the newly added toast and show it
+                    const toastElements = toastContainer.querySelectorAll('.toast');
+                    const lastToast = toastElements[toastElements.length - 1];
+                    const bsToast = new bootstrap.Toast(lastToast, {
+                        autohide: true,
+                        delay: 4000
+                    });
+                    bsToast.show();
+
+                    // Remove toast element after it's hidden
+                    lastToast.addEventListener('hidden.bs.toast', function() {
+                        lastToast.remove();
+                    });
+                }
+
                 // ========== BARN/PEN SELECTION FOR BATCH CREATE ==========
 
                 function loadBarnSelectionTable(farmId) {
@@ -993,6 +1084,9 @@
                                     barnCheckboxes.forEach(checkbox => {
                                         checkbox.checked = this.checked;
                                     });
+
+                                    // ✅ Update submit button state
+                                    updateSubmitButtonState();
                                 });
 
                                 barnCheckboxes.forEach(checkbox => {
@@ -1006,6 +1100,9 @@
                                             selectAllCheckbox.indeterminate = someChecked && !
                                                 allChecked;
                                         }
+
+                                        // ✅ Update submit button state
+                                        updateSubmitButtonState();
                                     });
                                 });
                             } else {

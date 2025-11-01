@@ -1456,34 +1456,17 @@
             box-shadow: 2px 8px 16px rgba(0, 0, 0, 0.15);
         }
 
-        /* Adding unread indicator dot */
+        /* Adding unread indicator dot - DISABLED (using inline span instead) */
         .notification-unread::after {
             content: "";
             position: absolute;
             top: 1rem;
             right: 1rem;
-            width: 8px;
-            height: 8px;
-            background-color: var(--primary-orange);
+            width: 0px;
+            height: 0px;
+            background-color: transparent;
             border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(255, 91, 34, 0.7);
-            }
-
-            70% {
-                transform: scale(1);
-                box-shadow: 0 0 0 10px rgba(255, 91, 34, 0);
-            }
-
-            100% {
-                transform: scale(0.95);
-                box-shadow: 0 0 0 0 rgba(255, 91, 34, 0);
-            }
+            animation: none;
         }
 
 

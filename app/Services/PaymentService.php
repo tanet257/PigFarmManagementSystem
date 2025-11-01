@@ -45,7 +45,8 @@ class PaymentService
 
             DB::beginTransaction();
 
-            // Create Cost record
+            // ✅ สร้าง Cost record ใหม่
+            // CostObserver จะสร้าง CostPayment pending อัตโนมัติ
             $cost = Cost::create([
                 'farm_id' => $batch->farm_id,
                 'batch_id' => $batch->id,
@@ -62,15 +63,26 @@ class PaymentService
                 'date' => now(),
             ]);
 
-            // Create CostPayment record
-            $payment = CostPayment::create([
-                'cost_id' => $cost->id,
-                'amount' => $validated['amount'],
-                'payment_method' => $validated['action_type'],
-                'status' => 'pending',
-                'payment_date' => now(),
-                'recorded_by' => auth()->id(),
-            ]);
+            // ✅ หา CostPayment ที่ CostObserver สร้างไว้ (pending)
+            $payment = $cost->payments()->first();
+
+            if (!$payment) {
+                // ถ้า Observer ไม่สร้าง ให้สร้างเอง
+                $payment = CostPayment::create([
+                    'cost_id' => $cost->id,
+                    'amount' => $validated['amount'],
+                    'payment_method' => $validated['action_type'],
+                    'status' => 'pending',
+                    'payment_date' => now(),
+                    'recorded_by' => auth()->id(),
+                ]);
+            } else {
+                // Update payment method และ recorded_by
+                $payment->update([
+                    'payment_method' => $validated['action_type'],
+                    'recorded_by' => auth()->id(),
+                ]);
+            }
 
             // Create notification using NotificationHelper
             \App\Helpers\NotificationHelper::notifyAdminsPaymentChannelRecorded($payment, auth()->user());

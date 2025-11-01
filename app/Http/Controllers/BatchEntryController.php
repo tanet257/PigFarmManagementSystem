@@ -150,6 +150,7 @@ class BatchEntryController extends Controller
             'total_pig_price' => 'required|numeric|min:0',
             'average_weight_per_pig' => 'required|numeric|min:0.1',
             'average_price_per_pig' => 'required|numeric|min:0',
+            'transport_cost' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -183,6 +184,7 @@ class BatchEntryController extends Controller
                 'average_price_per_pig' => $validated['average_price_per_pig'],
                 'total_pig_price' => $validated['total_pig_price'],
                 'payment_status' => 'pending',
+                'transport_cost' => $validated['transport_cost'] ?? 0,
             ];
 
             // Create Batch + Entry together

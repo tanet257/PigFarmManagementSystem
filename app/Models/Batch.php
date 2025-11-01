@@ -124,7 +124,7 @@ class Batch extends Model
             // 1. สร้าง Batch (status: raising - เลี้ยงได้เลย)
             $batchData['status'] = 'raising'; // ✅ สามารถเลี้ยงได้เลยตอนบันทึก
             $batchData['start_date'] = $entryData['pig_entry_date'] ?? now();
-            
+
             $batch = static::create($batchData);
 
             // 2. สร้าง PigEntryRecord
@@ -160,7 +160,8 @@ class Batch extends Model
                 $entry->total_pig_price,
                 $entry->average_price_per_pig,
                 $batch->batch_code,
-                $entry->id
+                $entry->id,
+                $entryData['transport_cost'] ?? 0
             );
 
             if (!$costResult['success']) {
@@ -214,7 +215,7 @@ class Batch extends Model
         static::deleting(function ($batch) {
             // ใช้ soft delete สำหรับ costs เพื่อเก็บข้อมูล
             // Cost::where('batch_id', $batch->id)->delete();
-            
+
             // เพื่อให้ costs ถูก soft delete เมื่อ batch ถูก soft delete
             // (จัดการในระดับ BatchRestoreHelper แทน)
         });

@@ -70,7 +70,13 @@
                 <div class="list-group notification-list">
                     @foreach ($notifications as $notification)
                         <div
-                            class="list-group-item notification-item {{ $notification->is_read ? 'notification-read' : 'notification-unread' }}">
+                            class="list-group-item notification-item {{ $notification->is_read ? 'notification-read' : 'notification-unread' }}"
+                            style="position: relative; padding-right: 30px;">
+                            {{-- 🔴 Unread Indicator Badge (มุมขวาบน) --}}
+                            @if (!$notification->is_read)
+                                <span style="position: absolute; top: 12px; right: 12px; width: 8px; height: 8px; background-color: #dc3545; border-radius: 50%; display: inline-block;" title="ยังไม่ได้อ่าน"></span>
+                            @endif
+
                             <div class="d-flex justify-content-between align-items-start">
                                 <div class="d-flex align-items-start w-100">
                                     @php
@@ -143,10 +149,79 @@
                                     </div>
                                 </div>
                                 <div class="notification-actions d-flex gap-2">
+                                    {{-- 🔄 Smart Navigation: นำทางตามประเภทแจ้งเตือน --}}
+                                    @php
+                                        $routeMap = [
+                                            // ============ ผู้ใช้งาน ============
+                                            'user_registered' => 'user_management.index',
+                                            'user_approved' => 'user_management.index',
+                                            'user_rejected' => 'user_management.index',
+                                            'user_registration_cancelled' => 'user_management.index',
+                                            'user_role_updated' => 'user_management.index',
+
+                                            // ============ การรับเข้าหมู ============
+                                            'pig_entry_recorded' => 'pig_entry_records.index',
+                                            'pig_entry_payment_approved' => 'pig_entry_records.index',
+                                            'payment_recorded_pig_entry' => 'cost_payment_approvals.index',
+
+                                            // ============ การขายหมู ============
+                                            'pig_sale' => 'payment_approvals.index',
+                                            'pig_sale_approved' => 'pig_entry_records.index',
+                                            'pig_sale_rejected' => 'pig_entry_records.index',
+                                            'pig_sale_cancelled' => 'pig_entry_records.index',
+                                            'pig_sale_cancel_request' => 'payment_approvals.index',
+                                            'pig_sale_cancel_approved' => 'pig_entry_records.index',
+                                            'pig_sale_cancel_rejected' => 'pig_entry_records.index',
+                                            'pig_sale_status_changed' => 'pig_entry_records.index',
+                                            'payment_recorded_pig_sale' => 'payment_approvals.index',
+                                            'payment_approved' => 'payment_approvals.index',
+                                            'payment_rejected' => 'payment_approvals.index',
+
+                                            // ============ ต้นทุน / ค่าใช้จ่าย ============
+                                            'cost_pending_approval' => 'cost_payment_approvals.index',
+                                            'cost_approved' => 'cost_payment_approvals.index',
+                                            'cost_rejected' => 'cost_payment_approvals.index',
+                                            'cost_payment_cancelled' => 'cost_payment_approvals.index',
+                                            'cost_payment_approved' => 'cost_payment_approvals.index',
+                                            'cost_payment_rejected' => 'cost_payment_approvals.index',
+                                            'payment_recorded' => 'cost_payment_approvals.index',
+
+                                            // ============ หมูตาย ============
+                                            'pig_death' => 'pig_entry_records.index',
+
+                                            // ============ การรักษา ============
+                                            'batch_treatment' => 'treatments.index',
+
+                                            // ============ คลังสินค้า ============
+                                            'inventory_movement' => 'inventory_movements.index',
+                                            'stock_low' => 'storehouse_records.index',
+
+                                            // ============ ระบบ ============
+                                            'batch_deleted' => 'batch.index',
+                                            'cancel_pig_sale' => 'payment_approvals.index',
+                                            'system_alert' => 'dashboard',
+                                            'system_maintenance' => 'dashboard',
+                                        ];
+                                        $notificationType = $notification->type ?? null;
+                                        $targetRoute = $routeMap[$notificationType] ?? 'notifications.index';
+                                        $targetTitle = match($targetRoute) {
+                                            'user_management.index' => 'ไปที่จัดการผู้ใช้',
+                                            'pig_entry_records.index' => 'ไปที่บันทึกการเข้าสุกร',
+                                            'cost_payment_approvals.index' => 'ไปที่อนุมัติต้นทุน',
+                                            'payment_approvals.index' => 'ไปที่การอนุมัติชำระเงิน',
+                                            'inventory_movements.index' => 'ไปที่การเคลื่อนไหวสินค้า',
+                                            'storehouse_records.index' => 'ไปที่บันทึกคลังสินค้า',
+                                            'treatments.index' => 'ไปที่บันทึกการรักษา',
+                                            'batch.index' => 'ไปที่รุ่นหมู',
+                                            'dashboard' => 'ไปที่แดชบอร์ด',
+                                            default => 'ดูรายละเอียด'
+                                        };
+                                    @endphp
+
                                     <a href="{{ route('notifications.mark_and_navigate', $notification->id) }}"
-                                        class="btn btn-sm btn-primary px-3" title="ไปที่หน้าแจ้งเตือน">
+                                        class="btn btn-sm btn-primary px-3" title="{{ $targetTitle }}">
                                         <i class="fa fa-arrow-right"></i>
-                                        ดูรายละเอียด
+                                        {{ $targetTitle }}
                                     </a>
 
                                     <form method="POST" action="{{ route('notifications.destroy', $notification->id) }}"

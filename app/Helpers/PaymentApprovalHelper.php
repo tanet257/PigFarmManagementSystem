@@ -21,6 +21,7 @@ class PaymentApprovalHelper
      * @param float $totalPrice ราคารวม
      * @param float $pricePerUnit ราคาต่อหน่วย
      * @param string $batchCode รหัสรุ่น (สำหรับเอกสาร)
+     * @param float $transportCost ค่าขนส่ง (optional)
      * @return array ['success' => bool, 'message' => string, 'cost_id' => int, 'cost_payment_id' => int]
      */
     public static function createPigletCostPaymentPending(
@@ -30,11 +31,10 @@ class PaymentApprovalHelper
         $totalPrice,
         $pricePerUnit,
         $batchCode,
-        $pigEntryRecordId = null
+        $pigEntryRecordId = null,
+        $transportCost = 0
     ) {
         try {
-            DB::beginTransaction();
-
             // 1. สร้าง Cost record
             $cost = Cost::create([
                 'farm_id' => $farmId,
@@ -47,6 +47,7 @@ class PaymentApprovalHelper
                 'unit' => 'ตัว',
                 'price_per_unit' => $pricePerUnit,
                 'total_price' => $totalPrice,
+                'transport_cost' => $transportCost,
                 'date' => now()->toDateString(),
                 'note' => 'ค่าลูกหมู - บันทึกเข้าใหม่',
             ]);
@@ -57,8 +58,6 @@ class PaymentApprovalHelper
                 'amount' => $totalPrice,  // ตั้งเป็นจำนวนเงิน
                 'status' => 'pending',  // รอการอนุมัติ
             ]);
-
-            DB::commit();
 
             Log::info('Piglet cost payment created (pending)', [
                 'cost_id' => $cost->id,
@@ -75,8 +74,6 @@ class PaymentApprovalHelper
                 'cost_payment_id' => $costPayment->id,
             ];
         } catch (Exception $e) {
-            DB::rollBack();
-
             Log::error('Error creating piglet cost payment: ' . $e->getMessage());
 
             return [

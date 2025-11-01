@@ -58,14 +58,6 @@
                         </div>
                     </div>
 
-                    <!-- Treatment Recording Section (Modal Button) -->
-                    <div class="card card-custom-secondary mb-4">
-                            <button type="button" class="btn btn-primary btn-lg w-100" id="openTreatmentFormBtn">
-                                <i class="fa fa-plus-circle"></i> บันทึกการรักษาใหม่
-                            </button>
-
-                    </div>
-
                     <!--Feed Section-->
                     <div card class="card card-custom-secondary">
                         <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
@@ -138,121 +130,6 @@
                         </template>
                     </div>
                     <!-- END FEED -->
-
-                    <!-- MEDICINE SECTION -->
-                    <div card class="card card-custom-secondary">
-                        <div class="text-white pt-2 pb-2 d-flex justify-content-between align-items-center">
-                            <h4 class="mb-0">ยา/วัคซีนที่ใช้</h4>
-                            <div>
-                                <button type="button" class="btn btn-danger btn-sm"
-                                    id="clearMedicineUseBtn">ล้างแถว</button>
-                                <button type="button" class="btn btn-success btn-sm"
-                                    id="addMedicineUseBtn">เพิ่มแถว</button>
-                            </div>
-                        </div>
-
-                        <div id="medicineUseContainer"></div>
-                        <template id="medicineUseTemplate">
-                            <div class="medicine-use-row shadow-lg border-0 rounded-3 mb-3 p3" data-template
-                                style="display:none">
-                                <input type="hidden" name="medicine_use[0][farm_id]" class="farm-id">
-                                <input type="hidden" name="medicine_use[0][batch_id]" class="batch-id">
-                                <input type="hidden" name="medicine_use[0][item_type]" class="item-type"
-                                    value="medicine">
-                                <input type="hidden" name="medicine_use[0][barn_pen]" class="barn-pen-json">
-
-                                <div class="card-custom-tertiary cardTemplateRow">
-                                    <!-- แถว 1: วันที่ + เล้า + คอก + ยา/วัคซีน -->
-                                    <div class="row g-2" data-cloned="1">
-                                        <div class="col-md-3">
-                                            <input type="text" name="medicine_use[0][date]"
-                                                class="form-control date-input" placeholder="ว/ด/ป ชม.นาที" required>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="barn-select btn btn-primary dropdown-toggle shadow-sm border w-100 d-flex justify-content-between align-items-center"
-                                                    type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกเล้า</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 barn-dropdown"></ul>
-                                                <input type="hidden" class="barn-id" name="medicine_use[0][barn_id]"
-                                                    value="">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <button type="button" class="pen-select btn btn-primary shadow-sm border w-100" data-bs-toggle="modal" data-bs-target="#penSelectorModal">
-                                                <span>เลือกคอก</span>
-                                            </button>
-                                            <input type="hidden" class="barn-pen-json" name="medicine_use[0][barn_pen]" value="">
-                                            <input type="hidden" class="selected-pens-display" value="">
-                                        </div>
-                                        <div class="col-md-5">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center item-dropdown-btn"
-                                                    type="button" id="medicineItemDropdownBtn0"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกยา/วัคซีน</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 item-dropdown-menu"
-                                                    aria-labelledby="medicineItemDropdownBtn0"
-                                                    id="medicineItemDropdownMenu0">
-                                                    <!-- ตัวเลือก populate หลังเลือก batch -->
-                                                </ul>
-                                                <input type="hidden" name="medicine_use[0][item_code]" class="item-code"
-                                                    value="">
-                                                <input type="hidden" name="medicine_use[0][item_name]" class="item-name"
-                                                    value="">
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- แถว 2: จำนวน + สถานะ + หมายเหตุ + ปุ่มลบ -->
-                                    <div class="row g-2 mt-2">
-                                        <div class="col-md-2">
-                                            <input type="number" name="medicine_use[0][quantity]" class="form-control"
-                                                placeholder="จำนวน" required>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="dropdown">
-                                                <button
-                                                    class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center
-                                                        medicine-status-dropdown-btn"
-                                                    type="button" id="medicineStatusDropdownBtn0"
-                                                    data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <span>เลือกสถานะ</span>
-                                                </button>
-                                                <ul class="dropdown-menu w-100 medicine-status-dropdown-menu"
-                                                    aria-labelledby="medicineStatusDropdownBtn0">
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="วางแผนว่าจะให้ยา">วางแผนว่าจะให้ยา</a>
-                                                    </li>
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="กำลังดำเนินการ (กำลังฉีด/กำลังให้ยาอยู่)">กำลังดำเนินการ</a>
-                                                    </li>
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="ให้ยาเสร็จแล้ว">ให้ยาเสร็จแล้ว</a></li>
-                                                    <li><a class="dropdown-item" href="#"
-                                                            data-value="ยกเลิก">ยกเลิก</a></li>
-                                                </ul>
-                                                <input type="hidden" name="medicine_use[0][status]" class="status-value"
-                                                    value="">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <textarea name="medicine_use[0][note]" class="form-control" rows="1" placeholder="หมายเหตุ"></textarea>
-                                        </div>
-                                        <div class="col-md-1 d-flex align-items-end">
-                                            <button type="button" class="btn btn-danger remove-row w-100">ลบ</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
-
-                    <!-- END MEDICINE -->
 
                     <!-- PIGDEATH SECTION -->
                     <div card class="card card-custom-secondary">
@@ -566,6 +443,9 @@
                             batchSelect.value = this.dataset.batchId;
                             document.getElementById('batchDropdownBtn').textContent = this.textContent;
 
+                            // Populate treatment pen table
+                            populateTreatmentPenTable();
+
                             document.querySelectorAll('[data-cloned]').forEach(row => {
                                 updateFarmBatchHiddenInputs(row);
 
@@ -675,11 +555,14 @@
                                         // แสดงเฉพาะ pen ที่มี current_quantity > 0
                                         const pensInBarn = allocationsForBatch.filter(a => a.barn_id === b.id);
 
-                                        // Attach click handler to pen select button
+                                                                // Attach click handler to pen select button
                                         const penSelectBtn = rowContainer.querySelector('.pen-select');
                                         if (penSelectBtn) {
                                             penSelectBtn.addEventListener('click', function(e) {
                                                 e.preventDefault();
+
+                                                // Populate treatment pen table
+                                                populateTreatmentPenTable();
 
                                                 // Store current row context in modal
                                                 const modal = document.getElementById('penSelectorModal');
@@ -875,7 +758,7 @@
                 }
 
                 // ---------------------- Event remove row ----------------------
-                ['feedUseContainer', 'medicineUseContainer', 'deadPigContainer'].forEach(containerId => {
+                ['feedUseContainer', 'deadPigContainer'].forEach(containerId => {
                     const container = document.getElementById(containerId);
                     container?.addEventListener('click', function(e) {
                         if (e.target && e.target.classList.contains('remove-row')) {
@@ -890,10 +773,6 @@
                     'feedUseTemplate'));
                 document.getElementById('clearFeedUseBtn')?.addEventListener('click', () => clearRows(
                     'feedUseContainer'));
-                document.getElementById('addMedicineUseBtn')?.addEventListener('click', () => addRow(
-                    'medicineUseContainer', 'medicineUseTemplate'));
-                document.getElementById('clearMedicineUseBtn')?.addEventListener('click', () => clearRows(
-                    'medicineUseContainer'));
                 document.getElementById('addDeadPigBtn')?.addEventListener('click', () => addRow('deadPigContainer',
                     'deadPigTemplate'));
                 document.getElementById('clearDeadPigBtn')?.addEventListener('click', () => clearRows(
@@ -942,390 +821,6 @@
             });
         </script>
 
-        <!-- Treatment Form Modal -->
-        <div class="modal fade" id="treatmentFormModal" tabindex="-1" aria-labelledby="treatmentFormLabel" aria-hidden="true">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-info text-white">
-                        <h5 class="modal-title" id="treatmentFormLabel">บันทึกการรักษาอย่างละเอียด</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <form id="treatmentFormInModal">
-                            @csrf
-                            <input type="hidden" id="treatmentFormBatchId" name="batch_id">
-                            <input type="hidden" id="treatmentFormDairyRecordId" name="dairy_record_id">
 
-                            <div class="mb-3">
-                                <label for="treatmentDiseaseName" class="form-label">ชื่อโรค/อาการ <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="treatmentDiseaseName" name="disease_name" placeholder="เช่น ไข้หวัดสุกร" required>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="treatmentMedicineDropdown" class="form-label">ยา/วัคซีนที่ใช้</label>
-                                    <div class="dropdown">
-                                        <button
-                                            class="btn btn-primary dropdown-toggle w-100 d-flex justify-content-between align-items-center treatment-medicine-dropdown-btn"
-                                            type="button" id="treatmentMedicineDropdown"
-                                            data-bs-toggle="dropdown" aria-expanded="false">
-                                            <span>เลือกยา/วัคซีน</span>
-                                        </button>
-                                        <ul class="dropdown-menu w-100 treatment-medicine-dropdown-menu"
-                                            aria-labelledby="treatmentMedicineDropdown">
-                                            <!-- ตัวเลือก populate หลังเลือก batch -->
-                                        </ul>
-                                        <input type="hidden" name="medicine_name" class="treatment-medicine-name" value="">
-                                        <input type="hidden" name="medicine_code" class="treatment-medicine-code" value="">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="treatmentStartDate" class="form-label">วันที่เริ่มการรักษา <span class="text-danger">*</span></label>
-                                    <input type="date" class="form-control" id="treatmentStartDate" name="treatment_start_date" required>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="treatmentDurationDays" class="form-label">ระยะเวลา (วัน) <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control" id="treatmentDurationDays" name="duration_days" placeholder="กรุณากรอก" min="1" required>
-                                    <small class="form-text text-muted">ระยะเวลาการรักษาทั้งหมด (วัน)</small>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label class="form-label">เลือกเล้า/คอก</label>
-                                    <div class="table-responsive" style="max-height:300px;overflow:auto;">
-                                        <table class="table table-bordered align-middle mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th style="width:40px">เลือก</th>
-                                                    <th>เล้า</th>
-                                                    <th>คอก</th>
-                                                    <th>จำนวนหมู</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                @php $allocs = $penAllocations[$batchSelect ?? 0] ?? collect(); @endphp
-                                                @foreach ($pens as $pen)
-                                                    @php
-                                                        $alloc = null;
-                                                        foreach (($penAllocations[$batchSelect ?? 0] ?? []) as $a) {
-                                                            if ($a['pen_id'] == $pen->id) { $alloc = $a; break; }
-                                                        }
-                                                    @endphp
-                                                    <tr>
-                                                        <td>
-                                                            <input type="checkbox" name="treatment_pens[]" value="{{ $pen->id }}"
-                                                                data-barn="{{ $pen->barn->barn_code ?? '' }}" data-pen="{{ $pen->pen_code }}">
-                                                        </td>
-                                                        <td>{{ $pen->barn->barn_code ?? '-' }}</td>
-                                                        <td>{{ $pen->pen_code }}</td>
-                                                        <td>{{ $alloc['current_quantity'] ?? '-' }}</td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="treatmentNote" class="form-label">หมายเหตุ</label>
-                                <textarea class="form-control" id="treatmentNote" name="note" rows="3" placeholder="บันทึกเพิ่มเติม"></textarea>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="treatmentStatus" class="form-label">สถานะการรักษา</label>
-                                <select class="form-control" id="treatmentStatus" name="treatment_status">
-                                    <option value="pending">รอดำเนิน</option>
-                                    <option value="ongoing">กำลังดำเนิน</option>
-                                    <option value="completed">เสร็จสิ้น</option>
-                                    <option value="stopped">หยุดการรักษา</option>
-                                </select>
-                            </div>
-                        </form>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                        <button type="button" class="btn btn-primary" id="saveTreatmentBtn">บันทึก</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script>
-            // ===== Snackbar Helper Function =====
-            function showSnackbar(message, type = 'error') {
-                // Create snackbar container if not exists
-                let snackbarContainer = document.getElementById('snackbarContainer');
-                if (!snackbarContainer) {
-                    snackbarContainer = document.createElement('div');
-                    snackbarContainer.id = 'snackbarContainer';
-                    snackbarContainer.style.cssText = `
-                        position: fixed;
-                        bottom: 20px;
-                        right: 20px;
-                        z-index: 9999;
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                    `;
-                    document.body.appendChild(snackbarContainer);
-                }
-
-                // Create snackbar element
-                const snackbar = document.createElement('div');
-                const bgColor = type === 'error' ? '#dc3545' : type === 'warning' ? '#ffc107' : '#28a745';
-                const textColor = type === 'warning' ? '#000' : '#fff';
-
-                snackbar.style.cssText = `
-                    background-color: ${bgColor};
-                    color: ${textColor};
-                    padding: 16px 24px;
-                    border-radius: 4px;
-                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-                    animation: slideIn 0.3s ease-in-out;
-                    font-weight: 500;
-                    min-width: 300px;
-                `;
-                snackbar.textContent = message;
-                snackbarContainer.appendChild(snackbar);
-
-                // Auto remove after 4 seconds
-                setTimeout(() => {
-                    snackbar.style.animation = 'slideOut 0.3s ease-in-out';
-                    setTimeout(() => snackbar.remove(), 300);
-                }, 4000);
-            }
-
-            // Add CSS animations for snackbar
-            const style = document.createElement('style');
-            style.textContent = `
-                @keyframes slideIn {
-                    from {
-                        transform: translateX(400px);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-                @keyframes slideOut {
-                    from {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                    to {
-                        transform: translateX(400px);
-                        opacity: 0;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-
-            // Handle pen selection confirmation
-            document.getElementById('confirmPenSelection')?.addEventListener('click', function() {
-                const modal = document.getElementById('penSelectorModal');
-                const currentRow = modal._currentRow;
-                const isFeed = modal._isFeed;
-
-                if (!currentRow) return;
-
-                const selectedCheckboxes = document.querySelectorAll('.pen-checkbox:checked');
-                const selectedPens = Array.from(selectedCheckboxes).map(cb => ({
-                    pen_id: cb.dataset.penId,
-                    barn_id: cb.dataset.barnId,
-                    display_text: cb.dataset.displayText
-                }));
-
-                const hiddenPen = currentRow.querySelector('.barn-pen-json');
-                const penBtn = currentRow.querySelector('.pen-select');
-                const displayInput = currentRow.querySelector('.selected-pens-display');
-
-                if (selectedPens.length > 0) {
-                    if (isFeed) {
-                        // For feed, store as array
-                        hiddenPen.value = JSON.stringify(selectedPens.map(p => ({
-                            barn_id: p.barn_id,
-                            pen_id: p.pen_id
-                        })));
-                    } else {
-                        // For medicine/death, store only first selected pen
-                        hiddenPen.value = selectedPens[0].pen_id;
-                    }
-
-                    // Update button text and store display text
-                    const displayTexts = selectedPens.map(p => p.display_text);
-                    const btnText = displayTexts.length > 1 ?
-                        `เลือก ${displayTexts.length} คอก` :
-                        displayTexts[0];
-
-                    penBtn.querySelector('span').textContent = btnText;
-                    if (displayInput) {
-                        displayInput.value = displayTexts.join(', ');
-                    }
-                } else {
-                    // No selections
-                    hiddenPen.value = '';
-                    penBtn.querySelector('span').textContent = 'เลือกคอก';
-                    if (displayInput) {
-                        displayInput.value = '';
-                    }
-                }
-
-                bootstrap.Modal.getInstance(modal).hide();
-            });
-
-            // ===== Treatment Modal Handling =====
-            const treatmentFormModal = document.getElementById('treatmentFormModal');
-            const treatmentFormInModal = document.getElementById('treatmentFormInModal');
-            const saveTreatmentBtn = document.getElementById('saveTreatmentBtn');
-            const openTreatmentFormBtn = document.getElementById('openTreatmentFormBtn');
-
-            // Open modal button - validate before opening
-            openTreatmentFormBtn?.addEventListener('click', function(e) {
-                e.preventDefault();
-                const farmId = document.getElementById('farmSelect')?.value;
-                const batchId = document.getElementById('batchSelect')?.value;
-
-                if (!farmId || !batchId) {
-                    showSnackbar('⚠️ กรุณาเลือกฟาร์มและรุ่นก่อน', 'warning');
-                    return;
-                }
-
-                // Update hidden input and open modal
-                document.getElementById('treatmentFormBatchId').value = batchId;
-
-                // Populate treatment medicine dropdown
-                populateTreatmentMedicineDropdown(batchId);
-
-                const modal = new bootstrap.Modal(treatmentFormModal);
-                modal.show();
-            });
-
-
-            // Populate treatment medicine dropdown (no duplicate)
-            function populateTreatmentMedicineDropdown(batchId) {
-                const medicineMenu = document.querySelector('.treatment-medicine-dropdown-menu');
-                medicineMenu.innerHTML = '';
-                const storehousesByTypeAndBatch = @json($storehousesByTypeAndBatch);
-                if (storehousesByTypeAndBatch['medicine'] && storehousesByTypeAndBatch['medicine'][batchId]) {
-                    Object.values(storehousesByTypeAndBatch['medicine'][batchId]).forEach(item => {
-                        const li = document.createElement('li');
-                        const a = document.createElement('a');
-                        a.className = 'dropdown-item';
-                        a.href = '#';
-                        a.setAttribute('data-item-code', item.item_code);
-                        a.setAttribute('data-item-name', item.item_name);
-                        a.textContent = item.item_name;
-                        li.appendChild(a);
-                        medicineMenu.appendChild(li);
-                        a.addEventListener('click', function(e) {
-                            e.preventDefault();
-                            document.querySelector('.treatment-medicine-name').value = item.item_name;
-                            document.querySelector('.treatment-medicine-code').value = item.item_code;
-                            document.querySelector('.treatment-medicine-dropdown-btn span').textContent = item.item_name;
-                        });
-                    });
-                }
-            }
-
-            // Treatment pen selection (single, beautiful, no duplicate)
-            document.getElementById('treatmentPenSelectBtn')?.addEventListener('click', function(e) {
-                e.preventDefault();
-                const farmId = document.getElementById('farmSelect')?.value;
-                const batchId = document.getElementById('batchSelect')?.value;
-                if (!farmId || !batchId) {
-                    showSnackbar('⚠️ กรุณาเลือกฟาร์มและรุ่นก่อน', 'warning');
-                    return;
-                }
-                const tableBody = document.getElementById('treatmentPenTableBody');
-                tableBody.innerHTML = '';
-                const allocationsForBatch = penAllocations[batchId] || [];
-                if (allocationsForBatch.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">ไม่พบคอกในรุ่นนี้</td></tr>';
-                    return;
-                }
-                allocationsForBatch.forEach(allocation => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="text-center"><input type="checkbox" class="treatment-pen-checkbox" data-pen-id="${allocation.pen_id}" data-barn-code="${allocation.barn_code}" data-pen-code="${allocation.pen_code}" data-current-qty="${allocation.current_quantity}"></td>
-                        <td>${allocation.barn_code}</td>
-                        <td>${allocation.pen_code}</td>
-                        <td class="text-end">${allocation.current_quantity}</td>
-                    `;
-                    tableBody.appendChild(tr);
-                });
-                // Clear existing selections
-                document.querySelectorAll('.treatment-pen-checkbox').forEach(cb => cb.checked = false);
-                // Update checkboxes based on current selection
-                const penId = document.getElementById('treatmentPenId')?.value;
-                if (penId) {
-                    const cb = document.querySelector(`.treatment-pen-checkbox[data-pen-id="${penId}"]`);
-                    if (cb) cb.checked = true;
-                }
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('treatmentPenSelectorModal'));
-                modal.show();
-            });
-
-            // Confirm treatment pen selection (single, no duplicate)
-            document.getElementById('confirmTreatmentPenSelection')?.addEventListener('click', function() {
-                const selectedCheckbox = document.querySelector('.treatment-pen-checkbox:checked');
-                const penIdInput = document.getElementById('treatmentPenId');
-                const displayInput = document.getElementById('selectedPensDisplay');
-                const penBtn = document.getElementById('treatmentPenSelectBtn');
-                if (selectedCheckbox) {
-                    penIdInput.value = selectedCheckbox.dataset.penId;
-                    const barn = selectedCheckbox.dataset.barnCode;
-                    const pen = selectedCheckbox.dataset.penCode;
-                    const qty = selectedCheckbox.dataset.currentQty;
-                    penBtn.querySelector('span').textContent = `เล้า ${barn} - คอก ${pen} (${qty} ตัว)`;
-                    displayInput.value = `เล้า ${barn} - คอก ${pen} (${qty} ตัว)`;
-                } else {
-                    penIdInput.value = '';
-                    penBtn.querySelector('span').textContent = 'เลือกคอก';
-                    displayInput.value = '';
-                }
-                bootstrap.Modal.getInstance(document.getElementById('treatmentPenSelectorModal')).hide();
-            });
-
-            // Save treatment (no duplicate)
-            document.getElementById('saveTreatmentBtn')?.addEventListener('click', async function() {
-                const formData = new FormData(document.getElementById('treatmentFormInModal'));
-                const batchId = formData.get('batch_id');
-                if (!batchId) {
-                    showSnackbar('⚠️ กรุณาเลือกรุ่น', 'warning');
-                    return;
-                }
-                try {
-                    const response = await fetch(`/batch-treatments/dairy-records/${batchId}`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                        },
-                        body: formData
-                    });
-                    if (response.ok) {
-                        showSnackbar('✅ บันทึกการรักษาเรียบร้อยแล้ว', 'success');
-                        document.getElementById('treatmentFormInModal').reset();
-                        bootstrap.Modal.getInstance(document.getElementById('treatmentFormModal'))?.hide();
-                        setTimeout(() => location.reload(), 1500);
-                    } else {
-                        const error = await response.json();
-                        showSnackbar('❌ เกิดข้อผิดพลาด: ' + (error.message || 'ไม่สามารถบันทึกได้'), 'error');
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    showSnackbar('❌ เกิดข้อผิดพลาด: ' + error.message, 'error');
-                }
-            });
-        </script>
     @endpush
 @endsection

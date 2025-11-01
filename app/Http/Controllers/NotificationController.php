@@ -113,6 +113,32 @@ class NotificationController extends Controller
     }
 
     /**
+     * ทำเครื่องหมายว่าอ่านแล้ว (นำทางไปหน้า notifications.index)
+     */
+    public function markAsReadAndNavigateToNotifications($id)
+    {
+        $notification = Notification::where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        $notification->markAsRead();
+
+        return redirect()->route('notifications.index')->with('success', 'ทำเครื่องหมายว่าอ่านแล้ว');
+    }
+
+    /**
+     * ทำเครื่องหมายว่าอ่านแล้ว (เฉพาะ mark, ไม่ navigate ไปไหน)
+     */
+    public function markAsReadOnly($id)
+    {
+        $notification = Notification::where('user_id', Auth::id())
+            ->findOrFail($id);
+
+        $notification->markAsRead();
+
+        return redirect()->back()->with('success', 'ทำเครื่องหมายว่าอ่านแล้ว');
+    }
+
+    /**
      * ทำเครื่องหมายว่าอ่านแล้ว
      */
     public function markAsRead($id)
@@ -140,26 +166,65 @@ class NotificationController extends Controller
 
         $notification->markAsRead();
 
-        // สำหรับ cancel_pig_sale ให้ไป payment_approvals dashboard
-        if ($notification->type === 'cancel_pig_sale') {
-            return redirect()->route('payment_approvals.index');
+        // ✅ Route Map: ประเภทแจ้งเตือน -> หน้า Route (ตามที่มีจริงใน web.php)
+        $routeMap = [
+            // ============ ผู้ใช้งาน ============
+            'user_registered' => 'user_management.index',
+            'user_approved' => 'user_management.index',
+            'user_rejected' => 'user_management.index',
+            'user_registration_cancelled' => 'user_management.index',
+            'user_role_updated' => 'user_management.index',
+
+            // ============ การรับเข้าหมู ============
+            'pig_entry_recorded' => 'batch.index',          // บันทึกการรับเข้าหมูใหม่
+            'pig_entry_payment_approved' => 'batch.index',  // อนุมัติชำระเงินรับเข้า
+            'payment_recorded_pig_entry' => 'cost_payment_approvals.index',  // บันทึกการชำระเงินรับเข้า (รอ admin อนุมัติ)
+
+            // ============ การขายหมู ============
+            'pig_sale' => 'payment_approvals.index',                    // บันทึกการขายหมู (รออนุมัติ)
+            'payment_recorded_pig_sale' => 'payment_approvals.index',   // บันทึกการชำระเงินขาย (รออนุมัติ)
+            'payment_approved' => 'payment_approvals.index',            // การชำระเงินได้รับอนุมัติ
+            'payment_rejected' => 'payment_approvals.index',            // การชำระเงินถูกปฏิเสธ
+
+            // ============ ต้นทุน / ค่าใช้จ่าย ============
+            'cost_pending_approval' => 'cost_payment_approvals.index',  // ต้นทุนรอการอนุมัติ
+            'cost_approved' => 'cost_payment_approvals.index',          // ต้นทุนได้รับการอนุมัติ
+            'cost_rejected' => 'cost_payment_approvals.index',          // ต้นทุนถูกปฏิเสธ
+            'cost_payment_cancelled' => 'cost_payment_approvals.index', // การชำระเงินต้นทุนถูกยกเลิก
+            'cost_payment_approved' => 'cost_payment_approvals.index',  // การชำระเงินต้นทุนได้รับการอนุมัติ
+            'cost_payment_rejected' => 'cost_payment_approvals.index',  // การชำระเงินต้นทุนถูกปฏิเสธ
+            'payment_recorded' => 'cost_payment_approvals.index',       // บันทึกการชำระเงิน (รอ admin อนุมัติ)
+
+            // ============ หมูตาย ============
+            'pig_death' => 'dairy_records.index',                   // บันทึกหมูตาย
+
+            // ============ การรักษา ============
+            'batch_treatment' => 'treatments.index',                    // บันทึกการรักษา
+
+            // ============ คลังสินค้า ============
+            'inventory_movement' => 'inventory_movements.index',        // การเคลื่อนไหวสินค้า
+            'stock_low' => 'storehouse_records.index',                  // สินค้าใกล้หมด
+
+            // ============ ระบบ ============
+            'batch_deleted' => 'batch.index',                           // ลบรุ่นแล้ว
+            'cancel_pig_sale' => 'payment_approvals.index',             // ยกเลิกการขายหมู
+            'system_alert' => 'dashboard',                              // แจ้งเตือนระบบ
+            'system_maintenance' => 'dashboard',                        // ระบบบำรุงรักษา
+        ];
+
+        // ✅ ตรวจสอบว่ามี route map ตรงกับประเภท
+        if (isset($routeMap[$notification->type])) {
+            return redirect()->route($routeMap[$notification->type]);
         }
 
-        // สำหรับ user_registered, user_approved, user_rejected, user_registration_cancelled
-        // ให้ไป user management dashboard (admin only)
-        if (in_array($notification->type, ['user_registered', 'user_approved', 'user_rejected', 'user_registration_cancelled'])) {
-            return redirect()->route('user_management.index');
-        }
-
-        // ป้องกัน redirect loop
-        if ($notification->url && !str_contains($notification->url, 'notifications/')) {
+        // ✅ ถ้ามี URL โดยตรง ให้ใช้
+        if ($notification->url && !str_contains($notification->url, 'notifications')) {
             return redirect($notification->url);
         }
 
+        // ✅ ป้องกัน redirect loop - ถ้าไม่มี route map และไม่มี url ให้ไปหน้า notifications
         return redirect()->route('notifications.index');
     }
-
-
     /**
      * ทำเครื่องหมายว่าอ่านแล้วทั้งหมด
      */
