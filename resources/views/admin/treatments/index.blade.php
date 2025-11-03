@@ -922,6 +922,18 @@
 
                 document.addEventListener('DOMContentLoaded', function() {
 
+                    /* ================== CSV Export ================== */
+                    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+                        console.log('📥 [Treatments] Exporting CSV');
+
+                        // Build query string from current filters
+                        const params = new URLSearchParams(window.location.search);
+                        const url = `{{ route('treatments.export.csv') }}?${params.toString()}`;
+
+                        // Trigger download
+                        window.location.href = url;
+                    });
+
                     document.querySelectorAll('.dropdown-item[data-farm-id]').forEach(item => {
                         item.addEventListener('click', async function(e) {
                             e.preventDefault();
@@ -1871,19 +1883,6 @@
                         modalDiv.querySelector('.modal').addEventListener('hidden.bs.modal', () => {
                             modalDiv.remove();
                         });
-                    });
-                });
-
-                    /* ================== CSV Export ================== */
-                    document.getElementById('exportCsvBtn').addEventListener('click', function() {
-                        console.log('📥 [Treatments] Exporting CSV');
-
-                        // Build query string from current filters
-                        const params = new URLSearchParams(window.location.search);
-                        const url = `{{ route('treatments.export.csv') }}?${params.toString()}`;
-
-                        // Trigger download
-                        window.location.href = url;
                     });
 
                     /* ================== Clickable Rows ================== */
