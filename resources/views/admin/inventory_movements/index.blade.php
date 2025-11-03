@@ -167,6 +167,7 @@
                         <th class="text-center">ชื่อสินค้า</th>
                         <th class="text-center">ประเภทการเปลี่ยนแปลง</th>
                         <th class="text-center">จำนวน</th>
+                        <th class="text-center">หน่วย</th>
                         <th class="text-center">โน้ต</th>
                         <th class="text-center">ใบเสร็จ</th>
                         <th class="text-center">บันทึกเมื่อ</th>
@@ -191,6 +192,20 @@
                                 @endif
                             </td>
                             <td class="text-center"><strong>{{ $movement->quantity }}</strong></td>
+                            <td class="text-center">
+                                @php
+                                    // ถ้าเป็นยา (medicine) ที่มี base_unit ให้แสดงแบบ ml ด้วย
+                                    $storehouse = $movement->storehouse;
+                                    $displayUnit = $movement->quantity_unit ?? $storehouse->unit ?? '-';
+
+                                    // ถ้ามี base_unit (ยา/วัคซีน) ให้แสดง "100 ml (1 ขวด)"
+                                    if ($storehouse && $storehouse->base_unit && $storehouse->quantity_per_unit) {
+                                        $baseQuantity = $movement->quantity * $storehouse->quantity_per_unit * ($storehouse->conversion_rate ?? 1);
+                                        $displayUnit = "{$baseQuantity} {$storehouse->base_unit} ({$movement->quantity} {$storehouse->unit})";
+                                    }
+                                @endphp
+                                {{ $displayUnit }}
+                            </td>
                             <td class="text-center">{{ $movement->note ?? '-' }}</td>
                             <td class="text-center">
                                 @if ($movement->cost && !empty($movement->cost->receipt_file))
@@ -219,7 +234,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="11" class="text-center text-danger">ไม่มีข้อมูลความเคลื่อนไหว</td>
+                            <td colspan="12" class="text-center text-danger">ไม่มีข้อมูลความเคลื่อนไหว</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -320,7 +335,7 @@
                                         <td>
                                             <strong class="text-success">
                                                 {{ number_format($movement->quantity, 2) }}
-                                                {{ $movement->storehouse->unit ?? 'หน่วย' }}
+                                                {{ $movement->quantity_unit ?? $movement->storehouse->unit ?? 'หน่วย' }}
                                             </strong>
                                         </td>
                                     </tr>

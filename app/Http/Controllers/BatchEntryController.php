@@ -161,10 +161,17 @@ class BatchEntryController extends Controller
             $totalPigs = $validated['total_pig_amount'];
 
             if ($totalPigs > $totalBarnCapacity) {
+                $errorMsg = "จำนวนหมู ({$totalPigs} ตัว) เกินความจุของเล้า ({$totalBarnCapacity} ตัว) โปรดเลือกเล้าเพิ่มเติม";
+
+                // Return JSON if AJAX request
+                if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                    return response()->json(['success' => false, 'message' => $errorMsg], 400);
+                }
+
                 return redirect()
                     ->back()
                     ->withInput()
-                    ->with('error', "จำนวนหมู ({$totalPigs} ตัว) เกินความจุของเล้า ({$totalBarnCapacity} ตัว) โปรดเลือกเล้าเพิ่มเติม");
+                    ->with('error', $errorMsg);
             }
 
             // Prepare batch data
@@ -238,9 +245,16 @@ class BatchEntryController extends Controller
                 }
             }
 
+            $successMsg = "สร้างรุ่น {$batch->batch_code} พร้อมบันทึกเข้าหมูสำเร็จ! สถานะ: {$batch->status}";
+
+            // Return JSON if AJAX request
+            if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json(['success' => true, 'message' => $successMsg, 'data' => $batch], 201);
+            }
+
             return redirect()
                 ->route('batch.index')
-                ->with('success', "สร้างรุ่น {$batch->batch_code} พร้อมบันทึกเข้าหมูสำเร็จ! สถานะ: {$batch->status}");
+                ->with('success', $successMsg);
 
         } catch (\Exception $e) {
             Log::error('Error creating batch with entry: ' . $e->getMessage(), [
@@ -248,10 +262,17 @@ class BatchEntryController extends Controller
                 'request' => $request->all(),
             ]);
 
+            $errorMsg = 'เกิดข้อผิดพลาด: ' . $e->getMessage();
+
+            // Return JSON if AJAX request
+            if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json(['success' => false, 'message' => $errorMsg], 500);
+            }
+
             return redirect()
                 ->back()
                 ->withInput()
-                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+                ->with('error', $errorMsg);
         }
     }
 
@@ -263,10 +284,20 @@ class BatchEntryController extends Controller
         $result = \App\Services\PaymentService::recordCostPayment($request, $id);
 
         if (!$result['success']) {
+            // Return JSON if AJAX request
+            if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+                return response()->json(['success' => false, 'message' => $result['message']], 400);
+            }
+
             return redirect()
                 ->back()
                 ->withInput()
                 ->with('error', $result['message']);
+        }
+
+        // Return JSON if AJAX request
+        if ($request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json(['success' => true, 'message' => $result['message'], 'data' => $result['data'] ?? null], 200);
         }
 
         // Show success toast notification

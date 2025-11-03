@@ -50,6 +50,7 @@
                 <th>ชื่อสินค้า</th>
                 <th>ประเภทการเปลี่ยนแปลง</th>
                 <th>จำนวน</th>
+                <th>หน่วย</th>
                 <th>โน้ต</th>
                 <th>บันทึกเมื่อ</th>
             </tr>
@@ -63,8 +64,9 @@
                     <td>{{ $movement->storehouse->item_type ?? '- ' }}</td>
                     <td>{{ $movement->storehouse->item_code ?? '-' }}</td>
                     <td>{{ $movement->storehouse->item_name ?? '-' }}</td>
-                    <td>{{ $movement->status }}</td>
+                    <td>{{ $movement->change_type === 'in' ? 'เข้า' : ($movement->change_type === 'out' ? 'ออก' : '-') }}</td>
                     <td>{{ number_format($movement->quantity, 2) }}</td>
+                    <td>{{ $movement->quantity_unit ?? $movement->storehouse->unit ?? '-' }}</td>
                     <td>{{ $movement->note ?? '-' }}</td>
                     <td>{{ $movement->created_at->format('d/m/Y H:i') }}</td>
                 </tr>

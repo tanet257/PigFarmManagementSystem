@@ -156,6 +156,7 @@ class InventoryMovementController extends Controller
                 'บันทึกประจำวัน',
                 'ประเภทการเปลี่ยนแปลง',
                 'จำนวน',
+                'หน่วย',
                 'หมายเหตุ',
                 'วันที่',
                 'สร้างเมื่อ'
@@ -172,6 +173,7 @@ class InventoryMovementController extends Controller
                     $m->dairy_record->id ?? '-',
                     $m->change_type,
                     $m->quantity,
+                    $m->quantity_unit ?? $m->storehouse->unit ?? '-',
                     $m->note,
                     $m->date,
                     $m->created_at,

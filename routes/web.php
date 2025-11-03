@@ -159,6 +159,8 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
     //------------------- route treatments ---------------------//
     Route::prefix('treatments')->group(function () {
         Route::get('/', [TreatmentController::class, 'index'])->name('treatments.index');
+        Route::get('/export/csv', [TreatmentController::class, 'exportCsv'])->name('treatments.export.csv');
+        Route::get('/{id}', [TreatmentController::class, 'show'])->name('treatments.show');
         Route::put('/{id}', [TreatmentController::class, 'update'])->name('treatments.update');
         Route::delete('/{id}', [TreatmentController::class, 'destroy'])->name('treatments.destroy');
     });

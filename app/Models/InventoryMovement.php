@@ -13,8 +13,10 @@ class InventoryMovement extends Model
         'batch_id',
         'barn_id',
         'cost_id',
+        'batch_treatment_id',
         'change_type', // in หรือ out
         'quantity',
+        'quantity_unit',
         'note',
         'date',
     ];
@@ -38,5 +40,10 @@ class InventoryMovement extends Model
     public function cost()
     {
         return $this->belongsTo(Cost::class);
+    }
+
+    public function batchTreatment()
+    {
+        return $this->belongsTo(BatchTreatment::class, 'batch_treatment_id');
     }
 }

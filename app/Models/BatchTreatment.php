@@ -20,6 +20,9 @@ class BatchTreatment extends Model
         'medicine_code',
         'disease_name',
         'quantity',
+        'unit',
+        'dosage',
+        'frequency',
         'status',
         'treatment_status',
         'treatment_level',
@@ -30,8 +33,6 @@ class BatchTreatment extends Model
         'treatment_end_date',
         'actual_end_date',
         'effective_date',
-        'dosage',
-        'frequency',
         'attachment_url',
         'note',
         'date',
@@ -71,6 +72,30 @@ class BatchTreatment extends Model
     public function dailyLogs()
     {
         return $this->hasMany(DailyTreatmentLog::class, 'batch_treatment_id');
+    }
+
+    /**
+     * Get inventory movements for this treatment
+     */
+    public function inventoryMovements()
+    {
+        return $this->hasMany(InventoryMovement::class, 'batch_treatment_id');
+    }
+
+    /**
+     * Get treatment details (pen/barn specific info)
+     */
+    public function treatmentDetails()
+    {
+        return $this->hasMany(BatchTreatmentDetail::class, 'batch_treatment_id');
+    }
+
+    /**
+     * Alias for treatmentDetails (for API)
+     */
+    public function details()
+    {
+        return $this->treatmentDetails();
     }
 
     //---------------Accessors & Methods------------------------//
@@ -147,5 +172,78 @@ class BatchTreatment extends Model
     public function isCompleted()
     {
         return $this->treatment_status === 'completed';
+    }
+
+    // ------------ Inventory Management Methods ------------ //
+
+    /**
+     * คำนวณจำนวนยาทั้งหมดที่ใช้ (ml หรือหน่วยอื่น)
+     *
+     * @return float
+     */
+    public function calculateTotalQuantityUsed()
+    {
+        if (!$this->actual_start_date || !$this->actual_end_date) {
+            return 0;
+        }
+
+        $durationDays = \Carbon\Carbon::parse($this->actual_start_date)
+            ->diffInDays(\Carbon\Carbon::parse($this->actual_end_date)) + 1;
+
+        $frequencyPerDay = $this->getFrequencyPerDay();
+
+        return ($this->quantity ?? 0) * $frequencyPerDay * $durationDays;
+    }
+
+    /**
+     * ดึงค่าความถี่ต่อวัน
+     *
+     * @return int
+     */
+    public function getFrequencyPerDay()
+    {
+        $frequencies = [
+            'once' => 1,
+            'daily' => 1,
+            'twice_daily' => 2,
+            'every_other_day' => 0.5,
+            'weekly' => 0.14,
+        ];
+
+        return $frequencies[$this->frequency] ?? 1;
+    }
+
+    /**
+     * สร้าง inventory movement record เมื่อการรักษาเสร็จ
+     *
+     * @return void
+     */
+    public function createInventoryMovement()
+    {
+        $storehouse = $this->storehouse;
+        if (!$storehouse) {
+            return; // ถ้าไม่เจอ medicine ที่ใช้ให้ข้าม
+        }
+
+        $totalQuantityUsed = $this->calculateTotalQuantityUsed();
+
+        // แปลงจาก ml เป็นหน่วยสต็อก
+        $quantityToReduce = $storehouse->convertMlToStockUnit($totalQuantityUsed);
+
+        // สร้าง inventory movement record
+        InventoryMovement::create([
+            'storehouse_id' => $storehouse->id,
+            'batch_id' => $this->batch_id,
+            'barn_id' => $this->pen->barn_id ?? null,
+            'batch_treatment_id' => $this->id,
+            'change_type' => 'out',
+            'quantity' => $quantityToReduce,
+            'quantity_unit' => $storehouse->unit,
+            'note' => "ใช้ยา {$this->medicine_name} สำหรับการรักษา {$this->disease_name}",
+            'date' => now(),
+        ]);
+
+        // ลดจำนวนสต็อก
+        $storehouse->decrement('stock', (int)$quantityToReduce);
     }
 }

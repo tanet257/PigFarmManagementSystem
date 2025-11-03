@@ -28,6 +28,7 @@ class InventoryMovementSeeder extends Seeder
                 // change_type field exists on the table (use 'in' for seeded incoming stock)
                 'change_type' => 'in',
                 'quantity' => $sh->stock ?? 0,
+                'quantity_unit' => $sh->unit ?? 'หน่วย',
                 'note' => 'seed initial balance',
                 'date' => $sh->date ?? now(),
             ]);

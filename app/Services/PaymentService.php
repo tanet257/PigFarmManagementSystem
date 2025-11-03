@@ -45,29 +45,44 @@ class PaymentService
 
             DB::beginTransaction();
 
-            // ✅ สร้าง Cost record ใหม่
-            // CostObserver จะสร้าง CostPayment pending อัตโนมัติ
-            $cost = Cost::create([
-                'farm_id' => $batch->farm_id,
-                'batch_id' => $batch->id,
-                'pig_entry_record_id' => $pigEntryRecord->id,
-                'cost_type' => 'piglet',
-                'item_code' => 'PIGLET-' . $batch->batch_code,
-                'quantity' => $pigEntryRecord->total_pig_amount,
-                'unit' => 'ตัว',
-                'price_per_unit' => $pigEntryRecord->average_price_per_pig,
-                'amount' => $validated['amount'],
-                'total_price' => $pigEntryRecord->total_pig_price,
-                'receipt_file' => $uploadResult['url'],
-                'note' => $validated['reason'] ?? null,
-                'date' => now(),
-            ]);
+            // ✅ หา Cost ที่มีอยู่เดิมสำหรับ batch นี้ - ต้องไม่ duplicate!
+            $cost = Cost::where('batch_id', $batch->id)
+                ->where('cost_type', 'piglet')
+                ->first();
 
-            // ✅ หา CostPayment ที่ CostObserver สร้างไว้ (pending)
+            if (!$cost) {
+                // สร้าง Cost record ใหม่ถ้ายังไม่มี
+                // CostObserver จะสร้าง CostPayment pending อัตโนมัติ
+                $cost = Cost::create([
+                    'farm_id' => $batch->farm_id,
+                    'batch_id' => $batch->id,
+                    'pig_entry_record_id' => $pigEntryRecord->id,
+                    'cost_type' => 'piglet',
+                    'item_code' => 'PIGLET-' . $batch->batch_code,
+                    'quantity' => $pigEntryRecord->total_pig_amount,
+                    'unit' => 'ตัว',
+                    'price_per_unit' => $pigEntryRecord->average_price_per_pig,
+                    'amount' => $validated['amount'],
+                    'total_price' => $pigEntryRecord->total_pig_price,
+                    'receipt_file' => $uploadResult['url'],
+                    'note' => $validated['reason'] ?? null,
+                    'date' => now(),
+                ]);
+            } else {
+                // Update Cost ที่มีอยู่เดิม
+                $cost->update([
+                    'amount' => $validated['amount'],
+                    'receipt_file' => $uploadResult['url'],
+                    'note' => $validated['reason'] ?? null,
+                    'date' => now(),
+                ]);
+            }
+
+            // ✅ หา CostPayment ที่มีอยู่เดิม
             $payment = $cost->payments()->first();
 
             if (!$payment) {
-                // ถ้า Observer ไม่สร้าง ให้สร้างเอง
+                // ถ้าไม่มี ให้สร้างใหม่
                 $payment = CostPayment::create([
                     'cost_id' => $cost->id,
                     'amount' => $validated['amount'],
@@ -77,10 +92,12 @@ class PaymentService
                     'recorded_by' => auth()->id(),
                 ]);
             } else {
-                // Update payment method และ recorded_by
+                // Update payment method และ recorded_by (แต่ไม่เปลี่ยน amount เพราะอยู่ใน cost แล้ว)
                 $payment->update([
+                    'amount' => $validated['amount'],
                     'payment_method' => $validated['action_type'],
                     'recorded_by' => auth()->id(),
+                    'payment_date' => now(),
                 ]);
             }
 

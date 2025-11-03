@@ -222,6 +222,10 @@
                         <th class="text-center">ฟาร์ม</th>
                         <th class="text-center">จำนวน</th>
                         <th class="text-center">หน่วย</th>
+                        @if ($storehouses->some(function($s) { return $s->base_unit; }))
+                            <th class="text-center">ปริมาณ/หน่วย</th>
+                            <th class="text-center">หน่วยพื้นฐาน</th>
+                        @endif
                         <th class="text-center">สถานะ</th>
                         <th class="text-center">จัดการ</th>
                     </tr>
@@ -248,6 +252,25 @@
                             <td class="text-center">{{ $item->farm->farm_name ?? '-' }}</td>
                             <td class="text-center"><strong>{{ $item->stock ?? 0 }}</strong></td>
                             <td class="text-center">{{ $item->unit }}</td>
+                            @if ($storehouses->some(function($s) { return $s->base_unit; }))
+                                <td class="text-center">
+                                    @if ($item->quantity_per_unit)
+                                        <small>{{ $item->quantity_per_unit }} {{ $item->base_unit ?? '-' }}/{{ $item->unit }}</small>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td class="text-center">
+                                    @if ($item->base_unit)
+                                        <small>{{ $item->base_unit }}</small>
+                                        @if ($item->conversion_rate)
+                                            <br><small class="text-muted">(× {{ $item->conversion_rate }})</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                            @endif
                             <td class="text-center">
                                 @if (($item->stock ?? 0) <= 0)
                                     <span class="badge bg-danger">หมด</span>
@@ -364,6 +387,24 @@
                                         </td>
                                     </tr>
                                 </table>
+                                @if ($item->base_unit && $item->quantity_per_unit)
+                                    <hr>
+                                    <h6 class="text-info mb-3">
+                                        <i class="bi bi-arrow-left-right"></i> การแปลงหน่วย
+                                    </h6>
+                                    <table class="table table-light table-sm table-hover">
+                                        <tr class="bg-light">
+                                            <td width="40%"><strong>1 {{ $item->unit }}:</strong></td>
+                                            <td>{{ $item->quantity_per_unit }} {{ $item->base_unit }}</td>
+                                        </tr>
+                                        @if ($item->conversion_rate)
+                                            <tr class="bg-light">
+                                                <td><strong>อัตราแปลง:</strong></td>
+                                                <td>{{ $item->conversion_rate }} ×</td>
+                                            </tr>
+                                        @endif
+                                    </table>
+                                @endif
                             </div>
                         </div>
                         @if ($item->note)

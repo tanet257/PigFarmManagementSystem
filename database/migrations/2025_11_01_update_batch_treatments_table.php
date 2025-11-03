@@ -29,52 +29,50 @@ return new class extends Migration
             // ======================== เพิ่ม Fields ใหม่ ========================
 
             // ✅ ระดับการรักษา: herd (เล้า) หรือ pen (คอก)
-            $table->string('treatment_level')->after('id')->nullable()->comment('herd=ระดับเล้า, pen=ระดับคอก');
+            if (!Schema::hasColumn('batch_treatments', 'treatment_level')) {
+                $table->string('treatment_level')->after('id')->nullable()->comment('herd=ระดับเล้า, pen=ระดับคอก');
+            }
 
             // ✅ Farm ID สำหรับ query ได้ง่าย
-            $table->unsignedBigInteger('farm_id')->after('batch_id')->nullable();
-            $table->foreign('farm_id')->references('id')->on('farms')->onDelete('set null');
-
-            // ✅ โรค/อาการ (ใช้ disease_name ที่มีอยู่แล้ว แต่เพิ่ม index)
-            // $table->string('disease_name')->change(); // ไม่ต้องเปลี่ยน เพราะมีอยู่แล้ว
-
-            // ✅ ยา/วัคซีน (ใช้ medicine_name และ medicine_code ที่มี)
-            // ไม่ต้องเพิ่ม เพราะมีอยู่แล้ว
+            if (!Schema::hasColumn('batch_treatments', 'farm_id')) {
+                $table->unsignedBigInteger('farm_id')->after('batch_id')->nullable();
+                $table->foreign('farm_id')->references('id')->on('farms')->onDelete('set null');
+            }
 
             // ✅ ขนาดยา
-            $table->decimal('dosage', 8, 2)->after('quantity')->nullable()->comment('ขนาดยา/ตัว (มล.)');
+            if (!Schema::hasColumn('batch_treatments', 'dosage')) {
+                $table->decimal('dosage', 8, 2)->after('quantity')->nullable()->comment('ขนาดยา/ตัว (มล.)');
+            }
 
-            // ✅ ความถี่ในการให้ยา
-            $table->string('frequency')->after('dosage')->nullable()
-                ->comment('once, daily, twice_daily, every_other_day, weekly, custom');
-
-            // ✅ ระยะงดเว้น
-            $table->integer('withdrawal_period')->after('frequency')->nullable()
-                ->comment('ระยะเวลางดเว้นก่อนจำหน่าย (วัน)');
+            // ✅ ความถี่ในการให้ยา (เฉพาะเพิ่ม เพราะมีในมิเกรชั่นอื่นแล้ว)
+            if (!Schema::hasColumn('batch_treatments', 'withdrawal_period')) {
+                $table->integer('withdrawal_period')->after('frequency')->nullable()
+                    ->comment('ระยะเวลางดเว้นก่อนจำหน่าย (วัน)');
+            }
 
             // ✅ วันที่เริ่มตามแผน
-            $table->date('planned_start_date')->after('date')->nullable()
-                ->comment('วันที่เริ่มตามแผน');
-
-            // ✅ วันที่เริ่มจริง
-            $table->date('actual_start_date')->after('planned_start_date')->nullable()
-                ->comment('วันที่เริ่มจริง');
+            if (!Schema::hasColumn('batch_treatments', 'planned_start_date')) {
+                $table->date('planned_start_date')->after('date')->nullable()
+                    ->comment('วันที่เริ่มตามแผน');
+            }
 
             // ✅ ระยะเวลาตามแผน (วัน)
-            $table->integer('planned_duration')->after('actual_start_date')->nullable()
-                ->comment('ระยะเวลาตามแผน (วัน)');
-
-            // ✅ วันที่สิ้นสุดจริง (จะ auto-update จาก status เมื่อเปลี่ยนเป็น completed/stopped)
-            $table->date('actual_end_date')->after('planned_duration')->nullable()
-                ->comment('วันที่สิ้นสุดจริง (auto-update จาก status)');
+            if (!Schema::hasColumn('batch_treatments', 'planned_duration')) {
+                $table->integer('planned_duration')->after('actual_start_date')->nullable()
+                    ->comment('ระยะเวลาตามแผน (วัน)');
+            }
 
             // ✅ วันที่บันทึก (เมื่อใดก็ตามที่บันทึก)
-            $table->timestamp('effective_date')->after('actual_end_date')->nullable()
-                ->comment('วันเวลาที่บันทึกจริง');
+            if (!Schema::hasColumn('batch_treatments', 'effective_date')) {
+                $table->timestamp('effective_date')->after('actual_end_date')->nullable()
+                    ->comment('วันเวลาที่บันทึกจริง');
+            }
 
             // ✅ เอกสารแนบ (URL หรือ path)
-            $table->text('attachment_url')->after('effective_date')->nullable()
-                ->comment('URL หรือ path ของเอกสารแนบ');
+            if (!Schema::hasColumn('batch_treatments', 'attachment_url')) {
+                $table->text('attachment_url')->after('effective_date')->nullable()
+                    ->comment('URL หรือ path ของเอกสารแนบ');
+            }
         });
     }
 

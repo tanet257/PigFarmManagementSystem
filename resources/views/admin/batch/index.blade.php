@@ -1246,7 +1246,7 @@
                         <h5 class="modal-title">บันทึกการชำระเงิน - {{ $batch->batch_code }}</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
-                    <form id="paymentForm{{ $batch->id }}" action="{{ route('batch.update_payment', $batch->id) }}" method="POST" enctype="multipart/form-data">
+                    <form id="paymentForm{{ $batch->id }}" class="paymentForm" data-batch-id="{{ $batch->id }}" action="{{ route('batch.update_payment', $batch->id) }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <input type="hidden" name="cost_type" value="batch">
                         <input type="hidden" name="batch_id" value="{{ $batch->id }}">
@@ -1342,6 +1342,75 @@
                         dropdown.hide();
                     }
                 }
+            }
+
+            // ===== HANDLE PAYMENT FORM SUBMIT (AJAX) =====
+            document.querySelectorAll('.paymentForm').forEach(form => {
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(form);
+                    const batchId = form.getAttribute('data-batch-id');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById(`paymentModal${batchId}`));
+                    
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showNotification('✅ บันทึกการชำระเงินสำเร็จ', 'success');
+                            if (modal) modal.hide();
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showNotification('❌ ' + (data.message || 'เกิดข้อผิดพลาด'), 'error');
+                        }
+                    } catch (error) {
+                        console.error('Payment error:', error);
+                        showNotification('❌ เกิดข้อผิดพลาด: ' + error.message, 'error');
+                    }
+                });
+            });
+
+            // ===== HANDLE CREATE BATCH FORM SUBMIT (AJAX) =====
+            const createBatchForm = document.getElementById('createBatchForm');
+            if (createBatchForm) {
+                createBatchForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    
+                    const formData = new FormData(createBatchForm);
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('createBatchModal'));
+                    
+                    try {
+                        const response = await fetch(createBatchForm.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            showNotification('✅ ' + (data.message || 'สร้างรุ่นและบันทึกเข้าหมูสำเร็จ'), 'success');
+                            if (modal) modal.hide();
+                            createBatchForm.reset();
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showNotification('❌ ' + (data.message || 'เกิดข้อผิดพลาด'), 'error');
+                        }
+                    } catch (error) {
+                        console.error('Create batch error:', error);
+                        showNotification('❌ เกิดข้อผิดพลาด: ' + error.message, 'error');
+                    }
+                });
             }
 
             function showSnackbar(message, bgColor = "#dc3545") {

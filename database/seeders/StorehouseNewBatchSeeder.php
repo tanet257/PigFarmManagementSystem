@@ -58,17 +58,20 @@ class StoreHouseNewBatchSeeder extends Seeder
         // รวม: 280 + 280 + 140 = 700 กระสอบ ✓
 
         // Medicine Items - รวมประมาณ 500 (สมจริง)
+        // base_unit: หน่วยพื้นฐาน (ml หรือ kg)
+        // quantity_per_unit: ปริมาณสินค้าที่มีอยู่ในหน่วยเดียว
+        // conversion_rate: อัตราการแปลงจาก quantity_per_unit ไปเป็น base_unit
         $medicineItems = [
-            ['item_code' => 'MED001', 'item_name' => 'อะกริเพน (Agripene)', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 350, 'volume' => '100 ml', 'transport_cost' => 100],
-            ['item_code' => 'MED002', 'item_name' => 'โนวาม็อกซีน 15%', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 220, 'volume' => '100 ml', 'transport_cost' => 100],
-            ['item_code' => 'MED003', 'item_name' => 'ทิวแม็ก 20% (Tivamec)', 'unit' => 'ถุง', 'min_quantity' => 10, 'stock' => 25, 'price' => 480, 'volume' => '10 kg', 'transport_cost' => 100],
-            ['item_code' => 'MED004', 'item_name' => 'เซอร์โคการ์ด (Surcocard)', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 1600, 'volume' => '50 ml', 'transport_cost' => 100],
-            ['item_code' => 'MED005', 'item_name' => 'เพ็นไดเสต็บ LA', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 360, 'volume' => '100ml', 'transport_cost' => 100],
-            ['item_code' => 'MED006', 'item_name' => 'คูเบอร์วิต (Cubervit)', 'unit' => 'ลัง', 'min_quantity' => 10, 'stock' => 25, 'price' => 3600, 'volume' => '25 kg', 'transport_cost' => 100],
-            ['item_code' => 'MED007', 'item_name' => 'แอมโคซิลีน (Amoxicillin)', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 290, 'volume' => '100 ml', 'transport_cost' => 100],
-            ['item_code' => 'MED008', 'item_name' => 'ยาฆ่าเชื้อ (Tornado)', 'unit' => 'ถัง', 'min_quantity' => 10, 'stock' => 25, 'price' => 2200, 'volume' => '20 l', 'transport_cost' => 100],
-            ['item_code' => 'MED009', 'item_name' => 'แคลเซียมพลัส (Calcium Plus)', 'unit' => 'ถัง', 'min_quantity' => 10, 'stock' => 25, 'price' => 15000, 'volume' => '10kg', 'transport_cost' => 100],
-            ['item_code' => 'MED010', 'item_name' => 'คลอเตตร้าไกรคลิน 20%', 'unit' => 'ถุง', 'min_quantity' => 10, 'stock' => 25, 'price' => 3300, 'volume' => '20kg', 'transport_cost' => 100],
+            ['item_code' => 'MED001', 'item_name' => 'อะกริเพน (Agripene)', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 350, 'base_unit' => 'ml', 'quantity_per_unit' => 100, 'conversion_rate' => 1.0, 'volume_display' => '100 ml', 'transport_cost' => 100],
+            ['item_code' => 'MED002', 'item_name' => 'โนวาม็อกซีน 15%', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 220, 'base_unit' => 'ml', 'quantity_per_unit' => 100, 'conversion_rate' => 1.0, 'volume_display' => '100 ml', 'transport_cost' => 100],
+            ['item_code' => 'MED003', 'item_name' => 'ทิวแม็ก 20% (Tivamec)', 'unit' => 'ถุง', 'min_quantity' => 10, 'stock' => 25, 'price' => 480, 'base_unit' => 'kg', 'quantity_per_unit' => 10, 'conversion_rate' => 1.0, 'volume_display' => '10 kg', 'transport_cost' => 100],
+            ['item_code' => 'MED004', 'item_name' => 'เซอร์โคการ์ด (Surcocard)', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 1600, 'base_unit' => 'ml', 'quantity_per_unit' => 50, 'conversion_rate' => 1.0, 'volume_display' => '50 ml', 'transport_cost' => 100],
+            ['item_code' => 'MED005', 'item_name' => 'เพ็นไดเสต็บ LA', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 360, 'base_unit' => 'ml', 'quantity_per_unit' => 100, 'conversion_rate' => 1.0, 'volume_display' => '100 ml', 'transport_cost' => 100],
+            ['item_code' => 'MED006', 'item_name' => 'คูเบอร์วิต (Cubervit)', 'unit' => 'ลัง', 'min_quantity' => 10, 'stock' => 25, 'price' => 3600, 'base_unit' => 'kg', 'quantity_per_unit' => 25, 'conversion_rate' => 1.0, 'volume_display' => '25 kg', 'transport_cost' => 100],
+            ['item_code' => 'MED007', 'item_name' => 'แอมโคซิลีน (Amoxicillin)', 'unit' => 'ขวด', 'min_quantity' => 10, 'stock' => 25, 'price' => 290, 'base_unit' => 'ml', 'quantity_per_unit' => 100, 'conversion_rate' => 1.0, 'volume_display' => '100 ml', 'transport_cost' => 100],
+            ['item_code' => 'MED008', 'item_name' => 'ยาฆ่าเชื้อ (Tornado)', 'unit' => 'ถัง', 'min_quantity' => 10, 'stock' => 25, 'price' => 2200, 'base_unit' => 'l', 'quantity_per_unit' => 20, 'conversion_rate' => 1000, 'volume_display' => '20 l (20,000 ml)', 'transport_cost' => 100],
+            ['item_code' => 'MED009', 'item_name' => 'แคลเซียมพลัส (Calcium Plus)', 'unit' => 'ถัง', 'min_quantity' => 10, 'stock' => 25, 'price' => 15000, 'base_unit' => 'kg', 'quantity_per_unit' => 10, 'conversion_rate' => 1.0, 'volume_display' => '10 kg', 'transport_cost' => 100],
+            ['item_code' => 'MED010', 'item_name' => 'คลอเตตร้าไกรคลิน 20%', 'unit' => 'ถุง', 'min_quantity' => 10, 'stock' => 25, 'price' => 3300, 'base_unit' => 'kg', 'quantity_per_unit' => 20, 'conversion_rate' => 1.0, 'volume_display' => '20 kg', 'transport_cost' => 100],
         ];
         // รวม: 60+50+40+35+50+25+50+20+15+25 = 470 (ปัดเป็น ~500) ✓
 
@@ -115,6 +118,7 @@ class StoreHouseNewBatchSeeder extends Seeder
                             'batch_id' => $batch->id,
                             'change_type' => 'in',  // change_type = in
                             'quantity' => $item['stock'],
+                            'quantity_unit' => $item['unit'],
                             'note' => 'สต็อกเริ่มต้น (seeder)',
                             'date' => now(),
                         ]);
@@ -155,15 +159,18 @@ class StoreHouseNewBatchSeeder extends Seeder
                 $storehouse = StoreHouse::firstOrCreate(
                     ['item_code' => $itemCode],
                     [
-                        'farm_id'       => $farm->id,
-                        'item_type'     => 'medicine',
-                        'item_name'     => $item['item_name'],
-                        'stock'         => $item['stock'],
-                        'min_quantity'  => $item['min_quantity'],
-                        'unit'          => $item['unit'],
-                        'status'        => 'available',
-                        'note'          => '฿' . $item['price'] . ' | ' . $item['volume'] . ' + ค่าส่ง ฿' . $item['transport_cost'],
-                        'date'          => now(),
+                        'farm_id'           => $farm->id,
+                        'item_type'         => 'medicine',
+                        'item_name'         => $item['item_name'],
+                        'stock'             => $item['stock'],
+                        'min_quantity'      => $item['min_quantity'],
+                        'unit'              => $item['unit'],
+                        'base_unit'         => $item['base_unit'],
+                        'quantity_per_unit' => $item['quantity_per_unit'],
+                        'conversion_rate'   => $item['conversion_rate'],
+                        'status'            => 'available',
+                        'note'              => '฿' . $item['price'] . ' | ' . $item['volume_display'] . ' + ค่าส่ง ฿' . $item['transport_cost'],
+                        'date'              => now(),
                     ]
                 );
 
@@ -182,6 +189,7 @@ class StoreHouseNewBatchSeeder extends Seeder
                             'batch_id' => $batch->id,
                             'change_type' => 'in',  // change_type = in
                             'quantity' => $item['stock'],
+                            'quantity_unit' => $item['unit'],
                             'note' => 'สต็อกเริ่มต้น (seeder)',
                             'date' => now(),
                         ]);

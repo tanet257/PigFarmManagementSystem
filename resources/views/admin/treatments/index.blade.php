@@ -3,6 +3,12 @@
 @section('title', 'จัดการการรักษา')
 
 @section('content')
+    {{-- ========== DATA STORE DIVS ========== --}}
+    {{-- เก็บข้อมูล JSON ไว้ใน data attributes เพื่อให้ JS modules อ่านได้ --}}
+    <div id="treatmentsDataStore" data-treatments="{{ json_encode($treatments ?? []) }}" style="display:none;"></div>
+    <div id="batchesDataStore" data-batches="{{ json_encode($batches ?? []) }}" style="display:none;"></div>
+    <div id="medicinesDataStore" data-medicines="{{ json_encode($medicines ?? []) }}" style="display:none;"></div>
+
     <div class="container my-5">
         <!-- Header -->
         <div class="card-header">
@@ -147,7 +153,10 @@
                     </ul>
                 </div>
 
-                <div class="ms-auto">
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="btn btn-info btn-sm" id="exportCsvBtn" title="Export CSV">
+                        <i class="bi bi-file-earmark-csv"></i> Export CSV
+                    </button>
                     <button type="button" class="btn btn-success" id="openTreatmentFormBtn">
                         <i class="bi bi-plus-circle"></i> เพิ่มการรักษาใหม่
                     </button>
@@ -164,7 +173,7 @@
                 </script>
             @else
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="fas fa-check-circle me-2"></i>
+                    <i class="fa fa-check-circle me-2"></i>
                     {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
@@ -172,7 +181,7 @@
         @endif
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
+                <i class="fa fa-exclamation-circle me-2"></i>
                 {{ session('error') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
@@ -188,7 +197,7 @@
                                 <small class="text-muted d-block mb-1">การรักษาทั้งหมด</small>
                                 <h5 class="mb-0">{{ $treatments->count() ?? 0 }}</h5>
                             </div>
-                            <i class="fas fa-medkit fa-2x text-primary opacity-25"></i>
+                            <i class="fa fa-medkit fa-2x text-primary opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -203,7 +212,7 @@
                                     {{ $treatments->where('status', 'ongoing')->count() ?? 0 }}
                                 </h5>
                             </div>
-                            <i class="fas fa-heartbeat fa-2x text-warning opacity-25"></i>
+                            <i class="fa fa-heartbeat fa-2x text-warning opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -218,7 +227,7 @@
                                     {{ $treatments->where('status', 'completed')->count() ?? 0 }}
                                 </h5>
                             </div>
-                            <i class="fas fa-check-circle fa-2x text-success opacity-25"></i>
+                            <i class="fa fa-check-circle fa-2x text-success opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -233,7 +242,7 @@
                                     {{ $treatments->where('status', 'stopped')->count() ?? 0 }}
                                 </h5>
                             </div>
-                            <i class="fas fa-stop-circle fa-2x text-danger opacity-25"></i>
+                            <i class="fa fa-stop-circle fa-2x text-danger opacity-25"></i>
                         </div>
                     </div>
                 </div>
@@ -242,35 +251,61 @@
 
         <!-- Table Section -->
         <div class="table-responsive">
-            <table class="table table-hover table-primary align-middle text-center">
-                <thead>
+            <table class="table table-primary mb-0">
+                <thead class="table-header-custom">
                     <tr>
                         <th width="5%">#</th>
-                        <th width="12%">วันที่เริ่มรักษา</th>
-                        <th width="20%">โรค/อาการ</th>
-                        <th width="15%">เล้า/คอก</th>
-                        <th width="18%">ยา/วัคซีน</th>
-                        <th width="10%">ระยะเวลา</th>
+                        <th width="8%">รหัส</th>
+                        <th width="12%">วันที่วางแผน</th>
+                        <th width="18%">โรค/อาการ</th>
+                        <th width="14%">ยา/วัคซีน</th>
+                        <th width="8%">โดส</th>
+                        <th width="10%">ความถี่</th>
+                        <th width="8%">ระยะเวลา</th>
                         <th width="10%">สถานะ</th>
-                        <th width="10%">จัดการ</th>
+                        <th width="7%">จัดการ</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($treatments as $treatment)
-                        <tr class="treatment-row" data-treatment-id="{{ $treatment->id }}">
-                            <td>{{ $loop->iteration }}</td>
-                            <td>{{ \Carbon\Carbon::parse($treatment->start_date)->format('d/m/Y') }}</td>
-                            <td class="text-start">{{ Str::limit($treatment->disease_name, 50) }}</td>
-                            <td>
-                                เล้า {{ $treatment->barn_code }} -
-                                คอก {{ $treatment->pen_code }}
+                        <tr class="treatment-row cursor-pointer" data-treatment-id="{{ $treatment->id }}" style="cursor: pointer;">
+                            <td class="text-center">{{ $loop->iteration }}</td>
+                            <td class="text-center font-monospace small">{{ $treatment->batch ? $treatment->batch->batch_code : '-' }}</td>
+                            <td class="text-center">
+                                @if ($treatment->planned_start_date)
+                                    {{ \Carbon\Carbon::parse($treatment->planned_start_date)->format('d/m/Y') }}
+                                @else
+                                    -
+                                @endif
                             </td>
-                            <td class="text-start">{{ $treatment->medicine_name }}</td>
-                            <td>{{ $treatment->duration_days }} วัน</td>
-                            <td>
-                                @switch($treatment->status)
+                            <td class="text-start">
+                                <small>{{ Str::limit($treatment->disease_name ?? 'ไม่ระบุ', 40) }}</small>
+                            </td>
+                            <td class="text-start">
+                                <small>{{ Str::limit($treatment->medicine_name ?? 'ไม่ระบุ', 30) }}</small>
+                            </td>
+                            <td class="text-center">
+                                <small>{{ $treatment->dosage ?? '-' }}</small>
+                            </td>
+                            <td class="text-center">
+                                @php
+                                    $freqLabels = [
+                                        'once' => '1 ครั้ง',
+                                        'daily' => 'วันละ 1 ครั้ง',
+                                        'twice_daily' => 'วันละ 2 ครั้ง',
+                                        'every_other_day' => 'วันเว้นวัน',
+                                        'weekly' => 'สัปดาห์ละ 1 ครั้ง'
+                                    ];
+                                @endphp
+                                <small>{{ $freqLabels[$treatment->frequency] ?? $treatment->frequency ?? '-' }}</small>
+                            </td>
+                            <td class="text-center">
+                                <small>{{ $treatment->planned_duration ?? 0 }} วัน</small>
+                            </td>
+                            <td class="text-center">
+                                @switch($treatment->treatment_status)
                                     @case('pending')
-                                        <span class="badge bg-warning">รอดำเนินการ</span>
+                                        <span class="badge bg-warning text-dark">รอดำเนินการ</span>
                                     @break
 
                                     @case('ongoing')
@@ -289,28 +324,28 @@
                                         <span class="badge bg-secondary">ไม่ระบุ</span>
                                 @endswitch
                             </td>
-                            <td>
+                            <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
-                                    <button type="button" class="btn btn-info btn-sm view-treatment"
+                                    <button type="button" class="btn btn-info btn-xs view-treatment" style="padding: 2px 5px; font-size: 11px;"
                                         data-treatment-id="{{ $treatment->id }}" title="ดูรายละเอียด">
-                                        <i class="fas fa-eye"></i>
+                                        <i class="fa fa-eye"></i>
                                     </button>
-                                    <button type="button" class="btn btn-warning btn-sm edit-treatment"
+                                    <button type="button" class="btn btn-warning btn-xs edit-treatment" style="padding: 2px 5px; font-size: 11px;"
                                         data-treatment-id="{{ $treatment->id }}" title="แก้ไข">
-                                        <i class="fas fa-edit"></i>
+                                        <i class="fa fa-edit"></i>
                                     </button>
-                                    <button type="button" class="btn btn-danger btn-sm delete-treatment"
+                                    <button type="button" class="btn btn-danger btn-xs delete-treatment" style="padding: 2px 5px; font-size: 11px;"
                                         data-treatment-id="{{ $treatment->id }}" title="ลบ">
-                                        <i class="fas fa-trash"></i>
+                                        <i class="fa fa-trash"></i>
                                     </button>
                                 </div>
                             </td>
                         </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="10" class="text-center py-4">
                                     <div class="d-flex flex-column align-items-center justify-content-center">
-                                        <i class="fas fa-folder-open fa-2x mb-2 text-secondary"></i>
+                                        <i class="fa fa-folder-open fa-2x mb-2 text-secondary"></i>
                                         <h5 class="mb-0">ไม่พบข้อมูลการรักษา</h5>
                                     </div>
                                 </td>
@@ -457,7 +492,7 @@
                                 <div class="card-body">
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label for="treatmentDiseaseName" class="form-label">โรค/อาการ <span
+                                            <label for="treatmentDiseaseName" class="form-label">โรค/อาการ/สาเหตุที่ต้องใช้ยา <span
                                                     class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="treatmentDiseaseName"
                                                 name="disease_name" placeholder="เช่น ไข้หวัดสุกร" required>
@@ -492,6 +527,10 @@
                                                     step="0.01" min="0" required>
                                                 <span class="input-group-text">มล.</span>
                                             </div>
+                                            {{-- แสดงการคำนวณจำนวนหน่วยสินค้า --}}
+                                            <small id="dosageCalculationDisplay" class="d-block mt-2 text-muted" style="font-size: 0.85rem;">
+                                                เลือกยาก่อนเพื่อดูการคำนวณ
+                                            </small>
                                         </div>
                                         <div class="col-md-4 mb-3">
                                             <label for="frequency" class="form-label">ความถี่ในการให้ยา <span
@@ -513,9 +552,9 @@
                                             </div>
                                         </div>
                                         <div class="col-md-4 mb-3">
-                                            <label class="form-label">จำนวนครั้งทั้งสิ้น</label>
-                                            <input type="number" class="form-control" id="total_doses" readonly style="background-color: #f8f9fa;">
-                                            <small class="form-text text-muted">ขนาดยา × ความถี่ = จำนวนครั้ง</small>
+                                            <label class="form-label">ปริมาณยาทั้งสิ้น (มล.)</label>
+                                            <input type="number" class="form-control" id="total_doses" disabled style="background-color: #f8f9fa;" >
+                                            <small class="form-text text-muted">ขนาด/ตัว × จำนวนหมู × ความถี่ × วัน = ปริมาณรวม</small>
                                         </div>
                                     </div>
                                 </div>
@@ -605,11 +644,17 @@
                                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
                                         <small class="form-text text-muted">แนบใบสั่งสัตวแพทย์หรือเอกสารที่เกี่ยวข้อง (ขนาดไม่เกิน 5 MB)</small>
                                     </div>
+
+                                    {{-- ✅ Treatment Details Table Container (For viewing details) --}}
+                                    <div id="treatmentDetailsTableContainer" style="display: none;"></div>
                                 </div>
                             </div>
                         </form>
                     </div>
                     <div class="modal-footer">
+                        <button type="button" class="btn btn-info" id="viewPenDetailsBtn" style="display: none;">
+                            <i class="bi bi-file-earmark-text"></i> ดูรายละเอียดคอก
+                        </button>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
                         <button type="button" class="btn btn-primary" id="saveTreatmentBtn">บันทึก</button>
                     </div>
@@ -638,14 +683,242 @@
         </div>
 
         @push('scripts')
+            {{-- ✅ Import modular JavaScript for Treatments --}}
+            <script type="module">
+                import { initTreatmentsModule } from '/js/treatments/index.js';
+                // Module will auto-initialize on page load
+            </script>
+
             <script>
+                // ✅ HOIST FUNCTIONS TO GLOBAL SCOPE (before DOMContentLoaded)
+                // ✅ Wrapper functions that use the centralized labels from blade
+                // These call the same logic but keep compatibility with inline code
+                function getFrequencyLabel(freq) {
+                    const labels = {
+                        'once': 'ครั้งเดียว',
+                        'daily': 'วันละครั้ง',
+                        'twice_daily': 'วันละ 2 ครั้ง',
+                        'every_other_day': 'วันเว้นวัน',
+                        'weekly': 'สัปดาห์ละครั้ง'
+                    };
+                    return labels[freq] || '';
+                }
+
+                function getStatusLabel(status) {
+                    const labels = {
+                        'pending': 'รอดำเนินการ',
+                        'ongoing': 'กำลังดำเนินการ',
+                        'completed': 'เสร็จสิ้น',
+                        'stopped': 'หยุดการรักษา'
+                    };
+                    return labels[status] || '';
+                }
+
+                function showSnackbar(msg, type = 'error') {
+                    let box = document.getElementById('snackbarContainer');
+                    if (!box) {
+                        box = document.createElement('div');
+                        box.id = 'snackbarContainer';
+                        box.style = `position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;`;
+                        document.body.appendChild(box);
+                    }
+                    const div = document.createElement('div');
+                    div.style = `
+            padding:14px 20px;border-radius:6px;
+            background:${type === 'success' ? '#28a745' : '#dc3545'};
+            color:white;min-width:260px;font-weight:500;
+        `;
+                    div.textContent = msg;
+                    box.appendChild(div);
+                    setTimeout(() => div.remove(), 3500);
+                }
+
+                function createViewPanel() {
+                    const panel = document.createElement('div');
+                    panel.id = 'treatmentViewPanel';
+                    panel.innerHTML = `
+                        <div class="row g-0">
+                            <div class="col-md-6 border-end px-4 py-3">
+                                <h6 class="text-primary mb-3"><i class="bi bi-info-circle me-2"></i>ข้อมูลการรักษา</h6>
+                                <table class="table table-sm table-borderless table-secondary">
+                                    <tbody id="viewPanelInfo">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="col-md-6 px-4 py-3">
+                                <h6 class="text-info mb-3"><i class="bi bi-list-check me-2"></i>รายละเอียดคอก</h6>
+                                <div id="viewPanelDetails" style="max-height: 400px; overflow-y: auto;">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('treatmentFormInModal').parentNode.insertBefore(panel, document.getElementById('treatmentFormInModal'));
+                    return panel;
+                }
+
+                function renderTreatmentViewPanel(treatment, panel) {
+                    const infoTable = panel.querySelector('#viewPanelInfo');
+                    const freqLabel = getFrequencyLabel(treatment.frequency);
+                    const statusLabel = getStatusLabel(treatment.treatment_status);
+                    const statusClass = {
+                        'pending': 'bg-warning text-dark',
+                        'ongoing': 'bg-primary text-white',
+                        'completed': 'bg-success text-white',
+                        'stopped': 'bg-danger text-white'
+                    }[treatment.treatment_status] || 'bg-secondary text-white';
+
+                    infoTable.innerHTML = `
+                        <tr>
+                            <th style="width: 40%;">รหัส</th>
+                            <td class="font-monospace"><strong>${treatment.id}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>รุ่น</th>
+                            <td><strong>${treatment.batch ? treatment.batch.batch_code : '-'}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>ฟาร์ม</th>
+                            <td>${treatment.batch && treatment.batch.farm ? treatment.batch.farm.farm_name : '-'}</td>
+                        </tr>
+                        <tr>
+                            <th>โรค/อาการ</th>
+                            <td><strong>${treatment.disease_name || '-'}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>ยา/วัคซีน</th>
+                            <td><strong>${treatment.medicine_name || '-'}</strong></td>
+                        </tr>
+                        <tr>
+                            <th>โดส</th>
+                            <td>${treatment.dosage || '-'}</td>
+                        </tr>
+                        <tr>
+                            <th>ความถี่</th>
+                            <td>${freqLabel}</td>
+                        </tr>
+                        <tr>
+                            <th>ระยะเวลา</th>
+                            <td>${treatment.planned_duration || 0} วัน</td>
+                        </tr>
+                        <tr>
+                            <th>วันที่วางแผน</th>
+                            <td>${treatment.planned_start_date ? new Date(treatment.planned_start_date).toLocaleDateString('th-TH') : '-'}</td>
+                        </tr>
+                        <tr>
+                            <th>สถานะ</th>
+                            <td><span class="badge ${statusClass}">${statusLabel}</span></td>
+                        </tr>
+                        ${treatment.note ? `<tr>
+                            <th>หมายเหตุ</th>
+                            <td style="word-break: break-word;">${treatment.note}</td>
+                        </tr>` : ''}
+                    `;
+
+                    const detailsDiv = panel.querySelector('#viewPanelDetails');
+                    if (treatment.details && treatment.details.length > 0) {
+                        let detailsHTML = '<table class="table table-sm table-striped" style="font-size: 0.9rem;">';
+                        detailsHTML += '<thead class="table-light"><tr><th class="text-center" style="width: 25%;">เล้า</th><th class="text-center" style="width: 25%;">คอก</th><th class="text-end" style="width: 25%;">ปริมาณ (ml)</th><th class="text-center" style="width: 25%;">วันที่</th></tr></thead><tbody>';
+
+                        treatment.details.forEach(detail => {
+                            const barnCode = detail.barn ? detail.barn.barn_code : '-';
+                            const penCode = detail.pen ? detail.pen.pen_code : '-';
+                            const qty = parseFloat(detail.quantity_used || 0).toFixed(1);
+                            const date = detail.treatment_date ? new Date(detail.treatment_date).toLocaleDateString('th-TH') : '-';
+                            detailsHTML += `<tr><td class="text-center">${barnCode}</td><td class="text-center">${penCode}</td><td class="text-end fw-bold">${qty}</td><td class="text-center small">${date}</td></tr>`;
+                        });
+
+                        detailsHTML += '</tbody></table>';
+                        const totalQty = treatment.details.reduce((sum, d) => sum + parseFloat(d.quantity_used || 0), 0);
+                        detailsHTML += `<div class="alert alert-info p-2 mb-0 small"><strong>รวมปริมาณ:</strong> ${totalQty.toFixed(1)} ml</div>`;
+
+                        detailsDiv.innerHTML = detailsHTML;
+                    } else {
+                        detailsDiv.innerHTML = '<div class="alert alert-warning small mb-0">ไม่พบรายละเอียด</div>';
+                    }
+                }
+
+                function displayTreatmentDetails(treatment, mode = 'view') {
+                    console.log(`📺 [Treatments] Displaying treatment in ${mode} mode`, treatment);
+
+                    const form = document.getElementById('treatmentFormInModal');
+                    const viewPanel = document.getElementById('treatmentViewPanel') || createViewPanel();
+
+                    form.style.display = mode === 'edit' ? 'block' : 'none';
+                    viewPanel.style.display = mode === 'view' ? 'block' : 'none';
+
+                    if (mode === 'view') {
+                        renderTreatmentViewPanel(treatment, viewPanel);
+                    }
+
+                    document.getElementById('treatmentId').value = treatment.id;
+                    document.getElementById('treatmentFarmId').value = treatment.farm_id || '';
+                    document.getElementById('treatmentBatchId').value = treatment.batch_id || '';
+                    document.getElementById('treatmentDiseaseName').value = treatment.disease_name || '';
+                    document.querySelector('.treatment-medicine-name').value = treatment.medicine_name || '';
+                    document.querySelector('.treatment-medicine-code').value = treatment.medicine_code || '';
+                    document.getElementById('dosage').value = treatment.dosage || '';
+                    document.querySelector('.treatment-frequency').value = treatment.frequency || '';
+                    document.querySelector('.treatment-status').value = treatment.treatment_status || '';
+                    document.getElementById('planned_start_date').value = treatment.planned_start_date || '';
+                    document.getElementById('planned_duration').value = treatment.planned_duration || '';
+                    document.getElementById('treatmentNote').value = treatment.note || '';
+
+                    if (treatment.batch && treatment.batch.farm_id) {
+                        document.getElementById('treatmentFarmDropdownLabel').textContent = 'ฟาร์ม #' + treatment.batch.farm_id;
+                    }
+                    if (treatment.batch && treatment.batch.batch_code) {
+                        document.getElementById('treatmentBatchDropdownLabel').textContent = treatment.batch.batch_code;
+                    }
+                    document.querySelector('.treatment-medicine-dropdown-btn').textContent = treatment.medicine_name || 'เลือกยา/วัคซีน';
+                    document.querySelector('.treatment-frequency-btn').textContent = getFrequencyLabel(treatment.frequency) || 'เลือกความถี่';
+                    document.querySelector('.treatment-status-btn').textContent = getStatusLabel(treatment.treatment_status) || 'เลือกสถานะ';
+
+                    document.getElementById('pen_selection_container').style.display = mode === 'edit' ? 'block' : 'none';
+                    document.getElementById('select_all_treatment_items').disabled = mode === 'view';
+
+                    if (mode === 'view') {
+                        document.querySelectorAll('#treatmentFormInModal input, #treatmentFormInModal textarea, #treatmentFormInModal select').forEach(input => {
+                            input.disabled = true;
+                        });
+                        document.querySelectorAll('.dropdown-toggle').forEach(btn => btn.disabled = true);
+                        document.getElementById('viewPenDetailsBtn').style.display = 'inline-block';
+                    } else if (mode === 'edit') {
+                        document.querySelectorAll('#treatmentFormInModal input, #treatmentFormInModal textarea, #treatmentFormInModal select').forEach(input => {
+                            if (['planned_start_date', 'treatmentNote'].includes(input.id)) {
+                                input.disabled = false;
+                            } else {
+                                input.disabled = true;
+                            }
+                        });
+
+                        document.querySelectorAll('.dropdown-toggle').forEach(btn => {
+                            if (btn.classList.contains('treatment-status-btn')) {
+                                btn.disabled = false;
+                            } else {
+                                btn.disabled = true;
+                            }
+                        });
+
+                        document.getElementById('viewPenDetailsBtn').style.display = 'none';
+                    }
+
+                    const saveBtn = document.getElementById('saveTreatmentBtn');
+                    saveBtn.style.display = mode === 'view' ? 'none' : 'block';
+
+                    if (mode === 'edit' && treatment.details && treatment.details.length > 0) {
+                        const detailPenIds = treatment.details.map(d => d.pen_id);
+                        document.querySelectorAll('#treatmentPenTableBody input[data-pen-id]').forEach(checkbox => {
+                            if (detailPenIds.includes(parseInt(checkbox.dataset.penId))) {
+                                checkbox.checked = true;
+                            }
+                        });
+                    }
+
+                    window.currentTreatmentData = treatment;
+                    console.log(`✅ [Treatments] Treatment displayed in ${mode} mode`);
+                }
+
                 document.addEventListener('DOMContentLoaded', function() {
-
-                    /* -------------------- Tooltips -------------------- */
-                    const tooltipList = [...document.querySelectorAll('[data-bs-toggle="tooltip"]')]
-                        .map(el => new bootstrap.Tooltip(el));
-
-                    /* -------------------- Dropdown Farm → Batch Filter -------------------- */
 
                     document.querySelectorAll('.dropdown-item[data-farm-id]').forEach(item => {
                         item.addEventListener('click', async function(e) {
@@ -810,11 +1083,13 @@
                             console.log('✅ [Treatments Modal] Batches loaded:', data);
 
                             treatmentBatchDropdownMenu.innerHTML = '';
-                            data.forEach(batch => {
+                            // Handle both response formats (with data wrapper and direct array)
+                            const batchesArray = data.data || data;
+                            batchesArray.forEach(batch => {
                                 const li = document.createElement('li');
                                 li.innerHTML = `
                                     <a class="dropdown-item" href="#" data-batch-id="${batch.id}">
-                                        <i class="bi bi-diagram-3 me-2"></i>${batch.batch_code}
+                                        <i class="bi bi-diagram-3 me-2"></i>${batch.code}
                                     </a>
                                 `;
                                 treatmentBatchDropdownMenu.appendChild(li);
@@ -875,7 +1150,9 @@
                             const medicineDropdownMenu = document.querySelector('.treatment-medicine-dropdown-menu');
                             medicineDropdownMenu.innerHTML = '';
 
-                            if (!medicines || medicines.length === 0) {
+                            // Handle both response formats (with data wrapper and direct array)
+                            const medicinesArray = medicines.data || medicines;
+                            if (!medicinesArray || medicinesArray.length === 0) {
                                 console.log('⚠️ [Treatments Modal] No medicines found for farm ' + farmId);
                                 medicineDropdownMenu.innerHTML = `
                                     <li><a class="dropdown-item disabled text-muted" href="#">
@@ -885,15 +1162,15 @@
                                 return;
                             }
 
-                            medicines.forEach(medicine => {
+                            medicinesArray.forEach(medicine => {
                                 const li = document.createElement('li');
                                 const stockStatus = medicine.stock > 0 ?
                                     `<small class="text-success ms-2">(คงเหลือ: ${medicine.stock} ${medicine.unit})</small>` :
                                     `<small class="text-danger ms-2">(หมด)</small>`;
 
                                 li.innerHTML = `
-                                    <a class="dropdown-item" href="#" data-medicine-id="${medicine.id}" data-medicine-code="${medicine.item_code}" data-medicine-name="${medicine.item_name}">
-                                        <i class="bi bi-capsule me-2"></i>${medicine.item_name}${stockStatus}
+                                    <a class="dropdown-item" href="#" data-medicine-id="${medicine.id}" data-medicine-code="${medicine.code}" data-medicine-name="${medicine.name}">
+                                        <i class="bi bi-capsule me-2"></i>${medicine.name}${stockStatus}
                                     </a>
                                 `;
                                 medicineDropdownMenu.appendChild(li);
@@ -916,7 +1193,7 @@
                                 });
                             });
 
-                            console.log('✅ [Treatments Modal] Medicines dropdown populated with', medicines.length, 'items');
+                            console.log('✅ [Treatments Modal] Medicines dropdown populated with', medicinesArray.length, 'items');
 
                         } catch (error) {
                             console.error('❌ [Treatments Modal] Error loading medicines:', error);
@@ -1016,12 +1293,29 @@
                                     barnCheckbox.className = 'form-check-input form-check-input-sm';
                                     barnCheckbox.dataset.barnId = barnId;
 
+                                    // Store all pen IDs for this barn
+                                    const barnPenIds = barnPens.map(p => p.id);
+                                    barnCheckbox.dataset.penIds = JSON.stringify(barnPenIds);
+
+                                    // ✅ คำนวณจำนวนหมูรวมในเล้าและเก็บไว้
+                                    const barnTotalPigs = barnPens.reduce((sum, pen) => sum + parseInt(pen.current_pig_count), 0);
+                                    barnCheckbox.dataset.pigCount = barnTotalPigs;
+                                    // ✅ Also set as explicit attribute for CSS selector
+                                    barnCheckbox.setAttribute('data-pig-count', barnTotalPigs);
+
                                     // Add event listener to barn checkbox
                                     barnCheckbox.addEventListener('change', function() {
                                         // Toggle all pen checkboxes in this barn
-                                        document.querySelectorAll(`input[data-barn-id="${barnId}"][data-pen-id]`).forEach(cb => {
-                                            cb.checked = this.checked;
+                                        barnPens.forEach(pen => {
+                                            const penCheckbox = document.querySelector(`input[data-pen-id="${pen.id}"]`);
+                                            if (penCheckbox) {
+                                                penCheckbox.checked = this.checked;
+                                                // ✅ Trigger change event so other listeners know about it
+                                                penCheckbox.dispatchEvent(new Event('change', { bubbles: true }));
+                            }
                                         });
+                                        // ✅ Recalculate total doses when barn selection changes
+                                        calculateTotalDoses();
                                     });
 
                                     // TD 1: Checkbox
@@ -1051,7 +1345,21 @@
 
                                     tbody.appendChild(tr);
 
-                                    console.log('🏠 [Treatments Modal] Added barn:', barnPens[0].barn_code, '- total pigs:', totalPigs);
+                                    // ✅ CREATE HIDDEN CHECKBOX ROWS FOR EACH PEN IN THIS BARN
+                                    barnPens.forEach(pen => {
+                                        const penCheckbox = document.createElement('input');
+                                        penCheckbox.type = 'checkbox';
+                                        penCheckbox.className = 'pen-checkbox';
+                                        penCheckbox.name = 'selected_pens[]';
+                                        penCheckbox.value = pen.id;
+                                        penCheckbox.dataset.penId = pen.id;
+                                        penCheckbox.dataset.barnId = pen.barn_id;
+                                        penCheckbox.dataset.pigCount = pen.current_pig_count; // ✅ เก็บจำนวนหมู
+                                        penCheckbox.style.display = 'none'; // Hidden from view
+                                        tbody.appendChild(penCheckbox); // Add to table but hidden
+                                    });
+
+                                    console.log('🏠 [Treatments Modal] Added barn:', barnPens[0].barn_code, '- total pigs:', totalPigs, '- pens:', barnPenIds);
                                 });
 
                             } else if (level === 'pen') {
@@ -1071,6 +1379,7 @@
                                     checkbox.value = pen.id;
                                     checkbox.dataset.penId = pen.id;
                                     checkbox.dataset.barnId = pen.barn_id;
+                                    checkbox.dataset.pigCount = pen.current_pig_count; // ✅ เก็บจำนวนหมู
 
                                     const td1 = document.createElement('td');
                                     td1.className = 'text-center';
@@ -1181,6 +1490,34 @@
                     function calculateTotalDoses() {
                         const dosage = parseFloat(document.getElementById('dosage').value) || 0;
                         const frequency = document.querySelector('.treatment-frequency').value;
+                        const planned_duration = parseFloat(document.getElementById('planned_duration').value) || 1;
+
+                        // ✅ Get current treatment level (barn or pen)
+                        const level = document.querySelector('input[name="treatment_level"]:checked')?.value || 'pen';
+
+                        let totalPigs = 0;
+                        let selectedCheckboxes = [];
+
+                        if (level === 'barn') {
+                            // 🏠 BARN LEVEL: Count only barn checkboxes (not hidden pen checkboxes)
+                            // ✅ Selector: input[data-barn-id] without pen-checkbox class = barn checkbox only
+                            selectedCheckboxes = document.querySelectorAll('#treatmentPenTableBody input:checked[data-barn-id]:not(.pen-checkbox)');
+                            console.log('🏠 [Treatments Modal] BARN LEVEL - Found', selectedCheckboxes.length, 'selected barns');
+                        } else {
+                            // 🖼️ PEN LEVEL: Count only visible pen checkboxes with class pen-checkbox
+                            selectedCheckboxes = document.querySelectorAll('#treatmentPenTableBody input:checked.pen-checkbox');
+                            console.log('🖼️ [Treatments Modal] PEN LEVEL - Found', selectedCheckboxes.length, 'selected pens');
+                        }
+
+                        selectedCheckboxes.forEach(checkbox => {
+                            const pigCount = parseInt(checkbox.dataset.pigCount) || 0;
+                            totalPigs += pigCount;
+                            console.log('🐷 [Treatments Modal] Selected -',
+                                checkbox.dataset.penId ? `Pen: ${checkbox.dataset.penId}` : `Barn: ${checkbox.dataset.barnId}`,
+                                '- Pigs:', pigCount,
+                                '- checked:', checkbox.checked,
+                                '- data-pig-count:', checkbox.dataset.pigCount);
+                        });
 
                         let multiplier = 1;
                         if (frequency === 'daily') multiplier = 1;
@@ -1189,16 +1526,30 @@
                         else if (frequency === 'weekly') multiplier = 0.142857; // 1/7
                         // 'once' = 1 (default)
 
-                        const planned_duration = parseFloat(document.getElementById('planned_duration').value) || 1;
-                        const total = (dosage * multiplier * planned_duration).toFixed(2);
+                        // ✅ สูตร: dosage × จำนวนหมู × ความถี่ × ระยะเวลา
+                        const total = (dosage * totalPigs * multiplier * planned_duration).toFixed(2);
 
                         document.getElementById('total_doses').value = total;
-                        console.log('💊 [Treatments Modal] Total doses:', total, '(dosage:', dosage, '× frequency multiplier:', multiplier, '× duration:', planned_duration, ')');
+                        console.log('💊 [Treatments Modal] Total doses:', total,
+                            '(dosage:', dosage,
+                            '× total_pigs:', totalPigs,
+                            '× frequency multiplier:', multiplier,
+                            '× duration:', planned_duration, ')');
                     }
 
-                    // Update total_doses when dosage, frequency, or planned_duration changes
+                    // Update total_doses when dosage, frequency, planned_duration, or pen selection changes
                     document.getElementById('dosage').addEventListener('change', calculateTotalDoses);
                     document.getElementById('planned_duration').addEventListener('change', calculateTotalDoses);
+                    document.getElementById('select_all_treatment_items').addEventListener('change', calculateTotalDoses);
+
+                    // Listen to individual pen checkboxes AND barn checkboxes
+                    document.addEventListener('change', function(e) {
+                        // Check for pen-checkbox class OR barn checkbox with data-barn-id attribute
+                        if (e.target.classList.contains('pen-checkbox') || e.target.dataset.barnId || e.target.dataset.penId) {
+                            console.log('✅ [Treatments Modal] Selection changed - recalculating total doses');
+                            calculateTotalDoses();
+                        }
+                    });
 
                     /* ================== Quick Date Buttons ================== */
                     document.querySelectorAll('.quick-date').forEach(btn => {
@@ -1225,11 +1576,11 @@
                             const start = new Date(startDate);
                             start.setDate(start.getDate() + duration);
                             const endDate = start.toISOString().split('T')[0];
-                            
+
                             // Convert to Thai format d/m/y
                             const [year, month, day] = endDate.split('-');
                             const thaiDate = `${day}/${month}/${year}`;
-                            
+
                             document.getElementById('planned_end_date').textContent = thaiDate;
                             console.log('📅 [Treatments Modal] Planned end date:', thaiDate, '(', endDate, ')');
                         }
@@ -1259,10 +1610,30 @@
                         const url = id ? `/api/treatments/${id}` : '/api/treatments';
                         const method = id ? 'PUT' : 'POST';
 
-                        // Collect pen_ids from selected checkboxes
-                        const selectedPens = document.querySelectorAll('#treatmentPenTableBody input:checked');
-                        const penIds = Array.from(selectedPens).map(checkbox => checkbox.dataset.penId);
-                        console.log('🐷 [Treatments Modal] Selected pen_ids:', penIds);
+                        // ✅ Get current treatment level (barn or pen)
+                        const level = document.querySelector('input[name="treatment_level"]:checked')?.value || 'pen';
+
+                        // Collect pen_ids based on treatment level
+                        let penIds = [];
+                        if (level === 'barn') {
+                            // 🏠 BARN LEVEL: Get all hidden pen checkboxes that correspond to selected barns
+                            const selectedBarns = document.querySelectorAll('#treatmentPenTableBody input:checked[data-barn-id]');
+                            const selectedBarnIds = Array.from(selectedBarns).map(cb => cb.dataset.barnId);
+
+                            // Find all hidden pen checkboxes in selected barns
+                            const allPenCheckboxes = document.querySelectorAll('#treatmentPenTableBody input.pen-checkbox');
+                            allPenCheckboxes.forEach(checkbox => {
+                                if (selectedBarnIds.includes(checkbox.dataset.barnId)) {
+                                    penIds.push(checkbox.dataset.penId);
+                                }
+                            });
+                            console.log('🏠 [Treatments Modal] BARN LEVEL - Selected barns:', selectedBarnIds, '- Pen IDs:', penIds);
+                        } else {
+                            // 🖼️ PEN LEVEL: Get checked visible pen checkboxes
+                            const selectedPens = document.querySelectorAll('#treatmentPenTableBody input:checked.pen-checkbox');
+                            penIds = Array.from(selectedPens).map(checkbox => checkbox.dataset.penId).filter(id => id !== undefined);
+                            console.log('�️ [Treatments Modal] PEN LEVEL - Selected pen_ids:', penIds);
+                        }
 
                         // Add pen_ids to formData
                         penIds.forEach((penId, index) => {
@@ -1270,7 +1641,8 @@
                         });
 
                         // Auto-set actual_end_date when status is completed or stopped
-                        const treatmentStatus = document.querySelector('select[name="treatment_status"]').value;
+                        const treatmentStatusElement = document.querySelector('input[name="treatment_status"]');
+                        const treatmentStatus = treatmentStatusElement ? treatmentStatusElement.value : '';
                         console.log('💾 [Treatments Modal] Treatment status:', treatmentStatus);
 
                         if (treatmentStatus === 'completed' || treatmentStatus === 'stopped') {
@@ -1279,15 +1651,29 @@
                             console.log('📅 [Treatments Modal] Auto-setting actual_end_date to:', today);
                         }
 
-                        formData.append('effective_date', new Date().toISOString());
+                        // Convert to MySQL datetime format: YYYY-MM-DD HH:mm:ss
+                        const now = new Date();
+                        const mysqlDateTime = now.getFullYear() + '-' +
+                            String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                            String(now.getDate()).padStart(2, '0') + ' ' +
+                            String(now.getHours()).padStart(2, '0') + ':' +
+                            String(now.getMinutes()).padStart(2, '0') + ':' +
+                            String(now.getSeconds()).padStart(2, '0');
+                        formData.append('effective_date', mysqlDateTime);
 
                         try {
                             console.log('📤 [Treatments Modal] Sending request to:', url, 'method:', method);
+
+                            // Get CSRF token safely
+                            const csrfElement = document.querySelector('meta[name="csrf-token"]');
+                            if (!csrfElement) {
+                                throw new Error('CSRF token not found in page');
+                            }
+
                             const res = await fetch(url, {
                                 method,
                                 headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                        .content
+                                    'X-CSRF-TOKEN': csrfElement.content
                                 },
                                 body: formData
                             });
@@ -1296,6 +1682,25 @@
                             console.log('📥 [Treatments Modal] Response:', data);
 
                             if (!data.success) throw new Error(data.message);
+
+                            // ✅ Log to Laravel backend
+                            fetch('/api/log', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfElement.content
+                                },
+                                body: JSON.stringify({
+                                    action: 'treatment_save',
+                                    method: method,
+                                    treatment_id: id || data.data?.treatment?.id,
+                                    pen_count: penIds.length,
+                                    status: treatmentStatus,
+                                    message: `${method === 'POST' ? 'Created' : 'Updated'} treatment with ${penIds.length} pens`,
+                                    timestamp: new Date().toISOString()
+                                })
+                            }).catch(e => console.warn('⚠️ Log failed:', e));
+
                             showSnackbar('✅ บันทึกสำเร็จ', 'success');
                             treatmentModal.hide();
                             setTimeout(() => location.reload(), 1200);
@@ -1306,27 +1711,175 @@
                         }
                     });
 
-                    /* -------------------- Snackbar -------------------- */
-                    function showSnackbar(msg, type = 'error') {
-                        let box = document.getElementById('snackbarContainer');
-                        if (!box) {
-                            box = document.createElement('div');
-                            box.id = 'snackbarContainer';
-                            box.style =
-                                `position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;`;
-                            document.body.appendChild(box);
+                    /* ================== View Treatment ================== */
+                    document.querySelectorAll('.view-treatment').forEach(btn => {
+                        btn.addEventListener('click', async function(e) {
+                            e.preventDefault();
+                            const treatmentId = this.getAttribute('data-treatment-id');
+
+                            try {
+                                console.log('👁️ [Treatments] Viewing treatment ID:', treatmentId);
+
+                                const res = await fetch(`/api/treatments/${treatmentId}`);
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                                const response = await res.json();
+                                if (!response.success) throw new Error(response.message);
+
+                                const treatment = response.data;
+                                console.log('📋 [Treatments] Treatment data:', treatment);
+
+                                // ✅ Display in modal (read-only mode)
+                                displayTreatmentDetails(treatment, 'view');
+                                treatmentModal.show();
+
+                            } catch (error) {
+                                console.error('❌ [Treatments] Error loading treatment:', error);
+                                showSnackbar(`ไม่สามารถโหลดข้อมูลการรักษา: ${error.message}`, 'error');
+                            }
+                        });
+                    });
+
+                    /* ================== Edit Treatment ================== */
+                    document.querySelectorAll('.edit-treatment').forEach(btn => {
+                        btn.addEventListener('click', async function(e) {
+                            e.preventDefault();
+                            const treatmentId = this.getAttribute('data-treatment-id');
+
+                            try {
+                                console.log('✏️ [Treatments] Editing treatment ID:', treatmentId);
+
+                                const res = await fetch(`/api/treatments/${treatmentId}`);
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                                const response = await res.json();
+                                if (!response.success) throw new Error(response.message);
+
+                                const treatment = response.data;
+                                console.log('📋 [Treatments] Treatment data for edit:', treatment);
+
+                                // ✅ Display in modal (edit mode)
+                                displayTreatmentDetails(treatment, 'edit');
+                                treatmentModal.show();
+
+                            } catch (error) {
+                                console.error('❌ [Treatments] Error loading treatment for edit:', error);
+                                showSnackbar(`ไม่สามารถโหลดข้อมูลการรักษา: ${error.message}`, 'error');
+                            }
+                        });
+                    });
+
+                    /* ================== View Pen Details Modal ================== */
+                    document.getElementById('viewPenDetailsBtn').addEventListener('click', () => {
+                        const treatment = window.currentTreatmentData;
+                        if (!treatment || !treatment.details) {
+                            alert('ไม่พบข้อมูลรายละเอียด');
+                            return;
                         }
-                        const div = document.createElement('div');
-                        div.style = `
-            padding:14px 20px;border-radius:6px;
-            background:${type === 'success' ? '#28a745' : '#dc3545'};
-            color:white;min-width:260px;font-weight:500;
-        `;
-                        div.textContent = msg;
-                        box.appendChild(div);
-                        setTimeout(() => div.remove(), 3500);
-                    }
+
+                        let detailedHTML = '<table class="table table-sm table-bordered">';
+                        detailedHTML += '<thead class="table-primary"><tr>';
+                        detailedHTML += '<th>เล้า</th><th>คอก</th><th>จำนวนหมู</th><th>ปริมาณใช้ (ml)</th><th>วันที่</th><th>หมายเหตุ</th>';
+                        detailedHTML += '</tr></thead><tbody>';
+
+                        treatment.details.forEach(detail => {
+                            const barnCode = detail.barn ? detail.barn.barn_code : '-';
+                            const penCode = detail.pen ? detail.pen.pen_code : '-';
+                            const currentPigs = detail.current_quantity || 0;
+                            const quantityUsed = parseFloat(detail.quantity_used || 0).toFixed(2);
+                            const treatmentDate = detail.treatment_date ? new Date(detail.treatment_date).toLocaleDateString('th-TH') : '-';
+                            const note = detail.note || '-';
+
+                            console.log(`📊 [Pen Details] Pen: ${penCode}, Current Pigs: ${currentPigs}, Qty Used: ${quantityUsed}`);
+
+                            detailedHTML += `<tr>
+                                <td class="fw-bold">${barnCode}</td>
+                                <td>${penCode}</td>
+                                <td class="text-center"><strong>${currentPigs}</strong></td>
+                                <td class="text-end"><strong>${quantityUsed}</strong></td>
+                                <td>${treatmentDate}</td>
+                                <td>${note}</td>
+                            </tr>`;
+                        });
+
+                        detailedHTML += '</tbody></table>';
+
+                        // Create modal
+                        const modalDiv = document.createElement('div');
+                        modalDiv.innerHTML = `
+                            <div class="modal fade" id="penDetailsViewModal" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-info text-white">
+                                            <h5 class="modal-title">📋 รายละเอียดการรักษาต่อคอก</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            ${detailedHTML}
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+
+                        document.body.appendChild(modalDiv);
+                        const modal = new bootstrap.Modal(modalDiv.querySelector('.modal'));
+                        modal.show();
+
+                        modalDiv.querySelector('.modal').addEventListener('hidden.bs.modal', () => {
+                            modalDiv.remove();
+                        });
+                    });
                 });
+
+                    /* ================== CSV Export ================== */
+                    document.getElementById('exportCsvBtn').addEventListener('click', function() {
+                        console.log('📥 [Treatments] Exporting CSV');
+
+                        // Build query string from current filters
+                        const params = new URLSearchParams(window.location.search);
+                        const url = `{{ route('treatments.export.csv') }}?${params.toString()}`;
+
+                        // Trigger download
+                        window.location.href = url;
+                    });
+
+                    /* ================== Clickable Rows ================== */
+                    document.querySelectorAll('.treatment-row').forEach(row => {
+                        row.addEventListener('click', async function(e) {
+                            // Ignore clicks on buttons
+                            if (e.target.closest('button')) {
+                                return;
+                            }
+
+                            e.preventDefault();
+                            const treatmentId = this.getAttribute('data-treatment-id');
+
+                            try {
+                                console.log('👁️ [Treatments] Opening treatment from row click:', treatmentId);
+
+                                const res = await fetch(`/api/treatments/${treatmentId}`);
+                                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                                const response = await res.json();
+                                if (!response.success) throw new Error(response.message);
+
+                                const treatment = response.data;
+                                console.log('📋 [Treatments] Treatment data:', treatment);
+
+                                // Display in modal (read-only mode)
+                                displayTreatmentDetails(treatment, 'view');
+                                treatmentModal.show();
+
+                            } catch (error) {
+                                console.error('❌ [Treatments] Error loading treatment:', error);
+                                showSnackbar(`ไม่สามารถโหลดข้อมูลการรักษา: ${error.message}`, 'error');
+                            }
+                        });
+                    });
             </script>
         @endpush
 
