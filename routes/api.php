@@ -275,11 +275,20 @@ Route::post('/treatments', function (Request $request) {
         }
 
         // ==================== VALIDATE STOCK BEFORE CREATE ====================
-        if ($storehouse) {
-            $frequency = $request->input('frequency', 'once');
-            $duration = floatval($request->input('planned_duration', 1));
-            $dosage = floatval($request->input('dosage', 0));
+        $frequency = $request->input('frequency', 'once');
+        $duration = floatval($request->input('planned_duration', 1));
+        $dosage = floatval($request->input('dosage', 0));
 
+        \Illuminate\Support\Facades\Log::info('🔍 [API] STOCK VALIDATION DEBUG:', [
+            'storehouse_found' => $storehouse ? 'YES' : 'NO',
+            'storehouse_id' => $storehouse?->id,
+            'frequency' => $frequency,
+            'duration_days' => $duration,
+            'dosage_ml' => $dosage,
+            'pen_count' => count($penIds),
+        ]);
+
+        if ($storehouse) {
             // Calculate frequency per day
             $frequencyPerDay = [
                 'once' => 1,
@@ -303,9 +312,12 @@ Route::post('/treatments', function (Request $request) {
 
             \Illuminate\Support\Facades\Log::info('💰 [API] Stock validation:', [
                 'medicine' => $storehouse->item_name,
+                'medicine_code' => $storehouse->item_code,
                 'current_stock' => $storehouse->stock,
+                'estimated_total_qty_ml' => $estimatedTotalQty,
+                'conversion_rate' => $storehouse->conversion_rate,
                 'estimated_need' => $estimatedStockNeeded,
-                'calculation' => "({$dosage} ml/pig × " . count($penIds) . " pens × 38 pigs × {$frequencyPerDay} freq × {$duration} days) ÷ {$storehouse->conversion_rate} = {$estimatedStockNeeded} {$storehouse->unit}"
+                'calculation' => "({$dosage} ml × " . count($penIds) . " pens × 38 pigs × {$frequencyPerDay} freq × {$duration} days) ÷ {$storehouse->conversion_rate} = {$estimatedStockNeeded} {$storehouse->unit}"
             ]);
 
             // ✅ Check if stock is sufficient
@@ -331,6 +343,12 @@ Route::post('/treatments', function (Request $request) {
                     ]
                 ], 422);
             }
+        } else {
+            \Illuminate\Support\Facades\Log::warning('⚠️ [API] STOREHOUSE NOT FOUND - Skipping stock validation!', [
+                'medicine_name' => $medicineName,
+                'medicine_code' => $medicineCode,
+                'farm_id' => $farmId
+            ]);
         }
 
         // ==================== CREATE 1 TREATMENT RECORD ====================
