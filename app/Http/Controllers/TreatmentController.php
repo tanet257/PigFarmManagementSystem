@@ -257,6 +257,18 @@ class TreatmentController extends Controller
             $query->where('treatment_status', $request->status);
         }
 
+        // ✅ Filter by export-only date range (export_date_from and export_date_to)
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('planned_start_date', [
+                $request->export_date_from,
+                $request->export_date_to
+            ]);
+        } elseif ($request->filled('export_date_from')) {
+            $query->where('planned_start_date', '>=', $request->export_date_from);
+        } elseif ($request->filled('export_date_to')) {
+            $query->where('planned_start_date', '<=', $request->export_date_to);
+        }
+
         $treatments = $query->get();
 
         // Create CSV
@@ -272,7 +284,7 @@ class TreatmentController extends Controller
             // Add BOM for UTF-8
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
 
-            // CSV Headers
+            // CSV Headers with detail columns
             fputcsv($file, [
                 'รหัสการรักษา',
                 'รหัสรุ่น',
@@ -284,34 +296,67 @@ class TreatmentController extends Controller
                 'สถานะ',
                 'วันที่วางแผน',
                 'ระยะเวลา (วัน)',
-                'จำนวนคอก',
-                'ยาใช้ทั้งหมด (หน่วย)',
+                'เล้า',
+                'คอก',
+                'จำนวนหมู',
+                'ปริมาณใช้ (ml)',
+                'วันที่รักษา',
                 'หมายเหตุ',
                 'วันที่บันทึก',
             ]);
 
-            // Data rows
+            // Data rows - แสดง detail ของแต่ละ barn/pen
             foreach ($treatments as $treatment) {
-                $detailCount = $treatment->treatmentDetails ? count($treatment->treatmentDetails) : 0;
-                $totalQuantity = $treatment->inventoryMovements ?
-                    $treatment->inventoryMovements->sum('quantity') : 0;
+                // ถ้ามี details ให้แสดงแยกแต่ละแถว
+                if ($treatment->treatmentDetails && $treatment->treatmentDetails->count() > 0) {
+                    foreach ($treatment->treatmentDetails as $index => $detail) {
+                        $barnCode = $detail->barn ? $detail->barn->barn_code : '-';
+                        $penCode = $detail->pen ? $detail->pen->pen_code : '-';
+                        $currentQuantity = $detail->pen ? ($detail->pen->current_quantity ?? 0) : 0;
 
-                fputcsv($file, [
-                    $treatment->id,
-                    $treatment->batch ? $treatment->batch->batch_code : '-',
-                    $treatment->batch && $treatment->batch->farm ? $treatment->batch->farm->farm_name : '-',
-                    $treatment->disease_name ?? '-',
-                    $treatment->medicine_name ?? '-',
-                    $treatment->dosage ?? '-',
-                    $this->getFrequencyLabel($treatment->frequency),
-                    $this->getStatusLabel($treatment->treatment_status),
-                    $treatment->planned_start_date ? \Carbon\Carbon::parse($treatment->planned_start_date)->format('d/m/Y') : '-',
-                    $treatment->planned_duration ?? 0,
-                    $detailCount,
-                    $totalQuantity,
-                    $treatment->note ?? '-',
-                    $treatment->created_at ? \Carbon\Carbon::parse($treatment->created_at)->format('d/m/Y H:i') : '-',
-                ]);
+                        fputcsv($file, [
+                            $index === 0 ? $treatment->id : '',
+                            $index === 0 ? ($treatment->batch ? $treatment->batch->batch_code : '-') : '',
+                            $index === 0 ? ($treatment->batch && $treatment->batch->farm ? $treatment->batch->farm->farm_name : '-') : '',
+                            $index === 0 ? ($treatment->disease_name ?? '-') : '',
+                            $index === 0 ? ($treatment->medicine_name ?? '-') : '',
+                            $index === 0 ? ($treatment->dosage ?? '-') : '',
+                            $index === 0 ? $this->getFrequencyLabel($treatment->frequency) : '',
+                            $index === 0 ? $this->getStatusLabel($treatment->treatment_status) : '',
+                            $index === 0 ? ($treatment->planned_start_date ? \Carbon\Carbon::parse($treatment->planned_start_date)->format('d/m/Y') : '-') : '',
+                            $index === 0 ? ($treatment->planned_duration ?? 0) : '',
+                            // ===== Detail columns =====
+                            $barnCode,
+                            $penCode,
+                            $currentQuantity,
+                            $detail->quantity_used ?? 0,
+                            $detail->treatment_date ? \Carbon\Carbon::parse($detail->treatment_date)->format('d/m/Y') : '-',
+                            $detail->note ?? '-',
+                            $index === 0 ? ($treatment->created_at ? \Carbon\Carbon::parse($treatment->created_at)->format('d/m/Y H:i') : '-') : '',
+                        ]);
+                    }
+                } else {
+                    // ถ้าไม่มี details ให้แสดงแถวเดียว
+                    fputcsv($file, [
+                        $treatment->id,
+                        $treatment->batch ? $treatment->batch->batch_code : '-',
+                        $treatment->batch && $treatment->batch->farm ? $treatment->batch->farm->farm_name : '-',
+                        $treatment->disease_name ?? '-',
+                        $treatment->medicine_name ?? '-',
+                        $treatment->dosage ?? '-',
+                        $this->getFrequencyLabel($treatment->frequency),
+                        $this->getStatusLabel($treatment->treatment_status),
+                        $treatment->planned_start_date ? \Carbon\Carbon::parse($treatment->planned_start_date)->format('d/m/Y') : '-',
+                        $treatment->planned_duration ?? 0,
+                        '-',
+                        '-',
+                        '-',
+                        '-',
+                        '-',
+                        $treatment->note ?? '-',
+                        $treatment->created_at ? \Carbon\Carbon::parse($treatment->created_at)->format('d/m/Y H:i') : '-',
+                    ]);
+                }
             }
 
             fclose($file);

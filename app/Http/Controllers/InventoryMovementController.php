@@ -120,9 +120,16 @@ class InventoryMovementController extends Controller
     //--------------------------------------- EXPORT ------------------------------------------//
 
     // Export PDF
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $movements = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record'])->get();
+        $query = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record']);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('date', [$request->export_date_from, $request->export_date_to]);
+        }
+
+        $movements = $query->get();
 
         $pdf = Pdf::loadView('admin.inventory_movements.exports.pdf', compact('movements'))
             ->setPaper('a4', 'landscape')
@@ -137,9 +144,16 @@ class InventoryMovementController extends Controller
     }
 
     // Export CSV
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
-        $movements = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record'])->get();
+        $query = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record']);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('date', [$request->export_date_from, $request->export_date_to]);
+        }
+
+        $movements = $query->get();
         $filename = "ความเคลื่อนไหวของสต็อก_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($movements) {

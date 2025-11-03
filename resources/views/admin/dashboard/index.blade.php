@@ -268,12 +268,32 @@
 
         <!-- Profits Table -->
         <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header bg-primary text-white">
                 <h5 class="mb-0"><i class="bi bi-table"></i> รายละเอียดกำไรแต่ละรุ่น</h5>
-                <button class="btn btn-sm btn-success" onclick="exportTableToCSV('#profitsTable', 'ข้อมูลกำไร_' + new Date().toISOString().split('T')[0] + '.csv', [13])">
-                    <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
-                </button>
             </div>
+
+            {{-- Export Section --}}
+            <div class="card-custom-secondary mb-3" style="margin: 15px;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-download me-2 text-primary"></i>
+                        <strong>ส่วนการส่งออก</strong>
+                    </div>
+                    <!-- Custom Date Range Filter for Export -->
+                    <div class="ms-auto d-flex gap-2 align-items-center">
+                        <label class="text-nowrap small mb-0" style="min-width: 100px;">
+                            <i class="bi bi-calendar-range"></i> ช่วงวันที่:
+                        </label>
+                        <input type="date" id="exportDateFrom" class="form-control form-control-sm" style="width: 140px;">
+                        <span class="text-nowrap small">ถึง</span>
+                        <input type="date" id="exportDateTo" class="form-control form-control-sm" style="width: 140px;">
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
             <div class="card-body">
                 @if ($profits->isEmpty())
                     <div class="alert alert-info">
@@ -950,6 +970,21 @@
             tooltipTriggerList.map(function (tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
+
+            // Export CSV functionality
+            const exportBtn = document.getElementById('exportCsvBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function() {
+                    console.log('📥 [Dashboard] Exporting CSV');
+                    const params = new URLSearchParams(window.location.search);
+                    const dateFrom = document.getElementById('exportDateFrom').value;
+                    const dateTo = document.getElementById('exportDateTo').value;
+                    if (dateFrom) params.set('export_date_from', dateFrom);
+                    if (dateTo) params.set('export_date_to', dateTo);
+                    const url = `{{ route('dashboard.export.csv') }}?${params.toString()}`;
+                    window.location.href = url;
+                });
+            }
         });
     </script>
 @endpush

@@ -383,10 +383,96 @@ class PaymentApprovalController extends Controller
 
             return redirect()->back()->with('success', 'ปฏิเสธการชำระเงินสำเร็จ');
         } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('PaymentApprovalController - rejectPayment Error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
 
+    /**
+     * ✅ Export CSV for Payment Approvals
+     */
+    public function exportCsv(Request $request)
+    {
+        // Build query
+        $query = PigSale::query()
+            ->with(['farm', 'batch', 'createdBy', 'approvedBy']);
+
+        // Apply date range filter if provided
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('created_at', [
+                $request->export_date_from . ' 00:00:00',
+                $request->export_date_to . ' 23:59:59'
+            ]);
+        }
+
+        $pigSales = $query->get();
+
+        // Prepare CSV headers
+        $headers = [
+            'ลำดับที่',
+            'สถานะ',
+            'ประเภทการขาย',
+            'ฟาร์ม',
+            'รุ่น',
+            'จำนวน',
+            'ราคาต่อตัว',
+            'ราคารวม',
+            'ผู้บันทึก',
+            'วันที่บันทึก',
+            'ผู้อนุมัติ',
+            'วันที่อนุมัติ'
+        ];
+
+        // Prepare CSV data
+        $data = [];
+        foreach ($pigSales as $index => $pigSale) {
+            $data[] = [
+                $index + 1,
+                $pigSale->status ?? '-',
+                $pigSale->sell_type ?? '-',
+                $pigSale->farm->farm_name ?? '-',
+                $pigSale->batch->batch_code ?? '-',
+                $pigSale->quantity ?? '-',
+                number_format($pigSale->price_per_pig ?? 0, 2),
+                number_format($pigSale->net_total ?? 0, 2),
+                $pigSale->createdBy->name ?? '-',
+                $pigSale->created_at?->format('d/m/Y H:i') ?? '-',
+                $pigSale->approvedBy->name ?? '-',
+                $pigSale->approved_at?->format('d/m/Y H:i') ?? '-'
+            ];
+        }
+
+        // Generate CSV
+        $filename = 'การอนุมัติการขายหมู_' . date('Y-m-d') . '.csv';
+        return $this->generateCsvResponse($filename, $headers, $data);
+    }
+
+    /**
+     * Helper function to generate CSV response
+     */
+    private function generateCsvResponse($filename, $headers, $data)
+    {
+        $callback = function () use ($headers, $data) {
+            $file = fopen('php://output', 'w');
+
+            // Set UTF-8 BOM for Excel
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            // Write headers
+            fputcsv($file, $headers);
+
+            // Write data
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
+
 }
+

@@ -257,9 +257,16 @@ class BatchController extends Controller
     }
 
     //export batch to csv
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
-        $batches = Batch::all();
+        $query = Batch::query();
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('start_date', [$request->export_date_from, $request->export_date_to]);
+        }
+
+        $batches = $query->get();
 
         $filename = "ข้อมูลรุ่นหมู_" . date('Y-m-d') . ".csv";
 

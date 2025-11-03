@@ -461,4 +461,40 @@ class BatchEntryController extends Controller
             'farm' => $farm,
         ]);
     }
+
+    /**
+     * Export batches to CSV
+     */
+    public function exportCsv(Request $request)
+    {
+        $query = Batch::query();
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('start_date', [$request->export_date_from, $request->export_date_to]);
+        }
+
+        $batches = $query->get();
+
+        $filename = "ข้อมูลรุ่นหมู_" . date('Y-m-d') . ".csv";
+
+        return response()->streamDownload(function () use ($batches) {
+            $handle = fopen('php://output', 'w');
+            // Add UTF-8 BOM for Thai character support in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['รหัสรุ่น', 'ฟาร์ม', 'เล้า', 'ปากกา', 'สถานะ', 'วันที่เริ่ม', 'วันที่สิ้นสุด']);
+            foreach ($batches as $batch) {
+                fputcsv($handle, [
+                    $batch->batch_code,
+                    $batch->farm->farm_name ?? '-',
+                    $batch->barn->barn_code ?? '-',
+                    $batch->pen->pen_code ?? '-',
+                    $batch->status,
+                    $batch->start_date,
+                    $batch->end_date,
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv;charset=utf-8']);
+    }
 }

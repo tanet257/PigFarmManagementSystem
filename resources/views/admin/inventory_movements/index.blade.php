@@ -132,16 +132,34 @@
                         <i class="bi bi-eye"></i>
                     </label>
                 </div>
-
-                <div class="ms-auto d-flex gap-2">
-                    <a class="btn btn-success btn-sm" href="{{ route('inventory_movements.export.csv') }}">
-                        <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
-                    </a>
-                    <a class="btn btn-danger btn-sm" href="{{ route('inventory_movements.export.pdf') }}">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                    </a>
-                </div>
             </form>
+        </div>
+
+        {{-- Export Section --}}
+        <div class="card-custom-secondary mb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-download me-2 text-primary"></i>
+                    <strong>ส่วนการส่งออก</strong>
+                </div>
+                <!-- Custom Date Range Filter for Export -->
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <label class="text-nowrap small mb-0" style="min-width: 100px;">
+                        <i class="bi bi-calendar-range"></i> ช่วงวันที่:
+                    </label>
+                    <input type="date" id="exportDateFrom" class="form-control form-control-sm" style="width: 140px;">
+                    <span class="text-nowrap small">ถึง</span>
+                    <input type="date" id="exportDateTo" class="form-control form-control-sm" style="width: 140px;">
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="exportPdfBtn">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                    </button>
+                </div>
+            </div>
         </div>
 
         {{-- Table --}}
@@ -435,6 +453,30 @@
                         });
                     }
                 });
+            });
+
+            // Export CSV
+            document.getElementById('exportCsvBtn').addEventListener('click', function() {
+                console.log('📥 [Inventory Movements] Exporting CSV');
+                const params = new URLSearchParams(window.location.search);
+                const dateFrom = document.getElementById('exportDateFrom').value;
+                const dateTo = document.getElementById('exportDateTo').value;
+                if (dateFrom) params.set('export_date_from', dateFrom);
+                if (dateTo) params.set('export_date_to', dateTo);
+                const url = `{{ route('inventory_movements.export.csv') }}?${params.toString()}`;
+                window.location.href = url;
+            });
+
+            // Export PDF
+            document.getElementById('exportPdfBtn').addEventListener('click', function() {
+                console.log('📥 [Inventory Movements] Exporting PDF');
+                const params = new URLSearchParams(window.location.search);
+                const dateFrom = document.getElementById('exportDateFrom').value;
+                const dateTo = document.getElementById('exportDateTo').value;
+                if (dateFrom) params.set('export_date_from', dateFrom);
+                if (dateTo) params.set('export_date_to', dateTo);
+                const url = `{{ route('inventory_movements.export.pdf') }}?${params.toString()}`;
+                window.location.href = url;
             });
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>

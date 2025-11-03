@@ -1054,9 +1054,16 @@ class PigSaleController extends Controller
     //--------------------------------------- EXPORT ------------------------------------------//
 
     // Export PDF
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $pigSales = PigSale::with(['farm', 'batch', 'pigLoss'])->get();
+        $query = PigSale::with(['farm', 'batch', 'pigLoss']);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('date', [$request->export_date_from, $request->export_date_to]);
+        }
+
+        $pigSales = $query->get();
 
         $pdf = Pdf::loadView('admin.pig_sales.exports.pdf', compact('pigSales'))
             ->setPaper('a4', 'landscape')
@@ -1071,9 +1078,16 @@ class PigSaleController extends Controller
     }
 
     // Export CSV
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
-        $pigSales = PigSale::with(['farm', 'batch', 'pigLoss'])->get();
+        $query = PigSale::with(['farm', 'batch', 'pigLoss']);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('date', [$request->export_date_from, $request->export_date_to]);
+        }
+
+        $pigSales = $query->get();
         $filename = "บันทึกการขายหมู_" . date('Y-m-d') . ".csv";
 
         return response()->streamDownload(function () use ($pigSales) {

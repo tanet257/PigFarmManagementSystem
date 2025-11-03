@@ -52,6 +52,7 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
         Route::post('/{id}/update-status', [BatchEntryController::class, 'updateStatus'])->name('batch.update_status');
         Route::delete('/{id}', [BatchEntryController::class, 'destroy'])->name('batch.destroy');
         Route::patch('/{id}/restore', [BatchEntryController::class, 'restore'])->name('batch.restore');
+        Route::get('/export/csv', [BatchEntryController::class, 'exportCsv'])->name('batch.export.csv');
     });
 
     //------------------- route farm ------------------------------//
@@ -198,17 +199,6 @@ Route::middleware(['auth', 'prevent.cache'])->group(function () {
         Route::get('/export/pdf', [InventoryMovementController::class, 'exportPdf'])->name('inventory_movements.export.pdf');
     });
 
-    //------------------- route crud batch -----------------------//
-    Route::prefix('batches')->group(function () {
-        Route::get('/', [BatchController::class, 'indexBatch'])->name('batches.index');
-        Route::post('/create', [BatchController::class, 'createBatch'])->name('batches.create');
-        Route::get('/{id}/edit', [BatchController::class, 'editBatch'])->name('batches.edit');
-        Route::put('/{id}', [BatchController::class, 'updateBatch'])->name('batches.update');
-        Route::delete('/{id}', [BatchController::class, 'deleteBatch'])->name('batches.delete');
-        //------------------- route export batch ---------------------//
-        Route::get('/export/csv', [BatchController::class, 'exportCsv'])->name('batches.export.csv');
-        Route::get('/export/pdf', [BatchController::class, 'exportPdf'])->name('batches.export.pdf');
-    });
 
 }); // End of auth middleware group
 
@@ -298,6 +288,9 @@ Route::prefix('payment_approvals')->middleware(['auth', 'prevent.cache'])->group
     // Cancel sale approval
     Route::patch('/{pigSaleId}/approve-cancel-sale', [PaymentApprovalController::class, 'approveCancelSale'])->name('payment_approvals.approve_cancel_sale');
     Route::patch('/{pigSaleId}/reject-cancel-sale', [PaymentApprovalController::class, 'rejectCancelSale'])->name('payment_approvals.reject_cancel_sale');
+
+    // Export routes
+    Route::get('/export/csv', [PaymentApprovalController::class, 'exportCsv'])->name('payment_approvals.export.csv');
 });
 
 //------------------- route cost payment approvals -----------//
@@ -306,6 +299,9 @@ Route::prefix('cost_payment_approvals')->middleware(['auth', 'prevent.cache'])->
     Route::get('/{id}', [CostPaymentApprovalController::class, 'show'])->name('cost_payment_approvals.show');
     Route::post('/{id}/approve', [CostPaymentApprovalController::class, 'approve'])->name('cost_payment_approvals.approve');
     Route::post('/{id}/reject', [CostPaymentApprovalController::class, 'reject'])->name('cost_payment_approvals.reject');
+
+    // Export routes
+    Route::get('/export/csv', [CostPaymentApprovalController::class, 'exportCsv'])->name('cost_payment_approvals.export.csv');
 });
 
 //------------------- route dashboard -------------------------//
@@ -314,6 +310,7 @@ Route::prefix('dashboard')->middleware(['auth', 'prevent.cache'])->group(functio
     Route::get('/{id}', [ProfitController::class, 'show'])->name('dashboard.show');
     Route::post('/{batchId}/recalculate', [ProfitController::class, 'recalculateBatchProfit'])->name('dashboard.recalculate');
     Route::get('/export/pdf', [ProfitController::class, 'exportPdf'])->name('dashboard.export.pdf');
+    Route::get('/export/csv', [ProfitController::class, 'exportCsv'])->name('dashboard.export.csv');
 });
 
 // ✅ API endpoints สำหรับ AJAX chart refresh (outside prefix)

@@ -235,13 +235,13 @@ class DairyController extends Controller
 
             // ✅ NEW: ใช้ DairyRecordItem แทน (ข้อมูลล่าสุด)
             $items = $record->items ?? collect();
-            
+
             // Feed items
             $feedItems = $items->filter(fn($item) => $item->item_type === 'feed');
-            
+
             // Medicine items
             $medicineItems = $items->filter(fn($item) => $item->item_type === 'medicine');
-            
+
             // Death items
             $deathItems = $items->filter(fn($item) => $item->item_type === 'death');
 
@@ -257,12 +257,12 @@ class DairyController extends Controller
                 foreach ($feedItems as $item) {
                     $storehouse = $item->storehouse;
                     $barn = $item->barn;
-                    $detail = 'รหัส: ' . ($storehouse->item_code ?? '-') 
+                    $detail = 'รหัส: ' . ($storehouse->item_code ?? '-')
                             . ', หน่วย: ' . ($item->unit ?? $storehouse->unit ?? '-')
                             . ($item->note ? ', ' . $item->note : '')
                             . ' (' . $item->quantity . ')';
                     $detailsArray[] = $detail;
-                    
+
                     if ($barn && !in_array($barn->barn_code, $barnCodes)) {
                         $barnCodes[] = $barn->barn_code;
                     }
@@ -282,7 +282,7 @@ class DairyController extends Controller
                             . ($item->note ? ', ' . $item->note : '')
                             . ' (' . $item->quantity . ')';
                     $detailsArray[] = $detail;
-                    
+
                     // เก็บ barn/pen code
                     if ($barn) {
                         $barnCode = $barn->barn_code;
@@ -307,7 +307,7 @@ class DairyController extends Controller
                             . ($item->note ? ', ' . $item->note : '')
                             . ' (' . $item->quantity . ')';
                     $detailsArray[] = $detail;
-                    
+
                     if ($barn && $pen) {
                         $barnPenCode = $barn->barn_code . '/' . $pen->pen_code;
                         if (!in_array($barnPenCode, $barnCodes)) {
@@ -1152,16 +1152,23 @@ class DairyController extends Controller
 
     //--------------------------------------- EXPORT ------------------------------------------//
 
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
-        $dairyRecords = DairyRecord::with([
+        $query = DairyRecord::with([
             'batch.farm',
             'barn',
             'dairy_storehouse_uses.storehouse',
             'dairy_storehouse_uses.barn',
             'batch_treatments.pen',
             'pig_deaths.pen'
-        ])->orderBy('id', 'desc')->get();
+        ]);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
+        }
+
+        $dairyRecords = $query->orderBy('id', 'desc')->get();
 
         $pdf = Pdf::loadView('admin.dairy_records.pdf', [
             'dairyRecords' => $dairyRecords
@@ -1171,18 +1178,25 @@ class DairyController extends Controller
     }
 
 
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
         $filename = 'dairy_records_' . now()->format('Y-m-d_H-i-s') . '.csv';
 
-        $records = DairyRecord::with([
+        $query = DairyRecord::with([
             'batch.farm',
             'barn',
             'dairy_storehouse_uses.storehouse',
             'dairy_storehouse_uses.barn',
             'batch_treatments.pen',
             'pig_deaths.pen'
-        ])->orderBy('id', 'desc')->get();
+        ]);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
+        }
+
+        $records = $query->orderBy('id', 'desc')->get();
 
         return response()->streamDownload(function () use ($records) {
             $handle = fopen('php://output', 'w');

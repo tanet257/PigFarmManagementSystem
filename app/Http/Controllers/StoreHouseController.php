@@ -507,10 +507,17 @@ class StoreHouseController extends Controller
     //--------------------------------------- EXPORT ------------------------------------------//
 
     // Export storehouse to PDF
-    public function exportPdf()
+    public function exportPdf(Request $request)
     {
+        $query = StoreHouse::query();
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
+        }
+
         $farms = Farm::all();
-        $storehouses = StoreHouse::all();
+        $storehouses = $query->get();
 
         // ตั้งค่า dompdf options
         $options = new \Dompdf\Options();
@@ -535,9 +542,16 @@ class StoreHouseController extends Controller
     }
 
     //export storehouse to csv
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
-        $storehouses = StoreHouse::all();
+        $query = StoreHouse::query();
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
+        }
+
+        $storehouses = $query->get();
 
         $filename = "คลังสินค้า_" . date('Y-m-d') . ".csv";
 

@@ -440,4 +440,116 @@ class ProfitController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * ✅ Export CSV for Dashboard (Profits)
+     */
+    public function exportCsv(Request $request)
+    {
+        try {
+            $query = Profit::with(['farm', 'batch', 'profitDetails']);
+
+            // Exclude cancelled batches (soft delete)
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+
+            // Apply same filters as index
+            if ($request->has('farm_id') && $request->farm_id) {
+                $query->where('farm_id', $request->farm_id);
+            }
+
+            if ($request->has('batch_id') && $request->batch_id) {
+                $query->where('batch_id', $request->batch_id);
+            }
+
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+
+            // Apply date range filter if provided
+            if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+                $query->whereBetween('period_end', [
+                    $request->export_date_from . ' 00:00:00',
+                    $request->export_date_to . ' 23:59:59'
+                ]);
+            }
+
+            $profits = $query->get();
+
+            // Prepare CSV headers
+            $headers = [
+                'ลำดับที่',
+                'รหัสรุ่น',
+                'ฟาร์ม',
+                'รายได้',
+                'ต้นทุน',
+                'กำไร',
+                'อัตราส่วน%',
+                'กำไร/ตัว',
+                'ADG',
+                'FCR',
+                'FCG',
+                'จำนวนหมูขาย',
+                'จำนวนหมูตายที่ขาย',
+                'สถานะ'
+            ];
+
+            // Prepare CSV data
+            $data = [];
+            foreach ($profits as $index => $profit) {
+                $data[] = [
+                    $index + 1,
+                    $profit->batch?->batch_code ?? 'N/A',
+                    $profit->farm?->farm_name ?? 'N/A',
+                    number_format($profit->total_revenue ?? 0, 2),
+                    number_format($profit->total_cost ?? 0, 2),
+                    number_format($profit->gross_profit ?? 0, 2),
+                    number_format($profit->profit_margin ?? 0, 2),
+                    number_format(($profit->gross_profit ?? 0) / ($profit->pig_sold_count ?? 1), 2),
+                    number_format($profit->adg ?? 0, 2),
+                    number_format($profit->fcr ?? 0, 2),
+                    number_format($profit->fcg ?? 0, 2),
+                    $profit->pig_sold_count ?? 0,
+                    $profit->dead_pig_sold_count ?? 0,
+                    $profit->status ?? '-'
+                ];
+            }
+
+            // Generate CSV
+            $filename = 'รายงานกำไร_' . date('Y-m-d') . '.csv';
+            return $this->generateCsvResponse($filename, $headers, $data);
+        } catch (\Exception $e) {
+            Log::error('ProfitController - exportCsv Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถส่งออก CSV: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Helper function to generate CSV response
+     */
+    private function generateCsvResponse($filename, $headers, $data)
+    {
+        $callback = function () use ($headers, $data) {
+            $file = fopen('php://output', 'w');
+
+            // Set UTF-8 BOM for Excel
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
+            // Write headers
+            fputcsv($file, $headers);
+
+            // Write data
+            foreach ($data as $row) {
+                fputcsv($file, $row);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ]);
+    }
 }
