@@ -96,7 +96,7 @@ class BarnPenSelectionService
                 }
 
                 $pens[] = [
-                    'id' => $allocation->id,
+                    'id' => $allocation->pen->id,  // ✅ FIXED: Use pen->id not allocation->id
                     'barn_id' => $allocation->pen->barn_id,
                     'barn_code' => $allocation->pen->barn->barn_code ?? 'N/A',
                     'pen_id' => $allocation->pen->id,

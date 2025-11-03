@@ -976,7 +976,8 @@
 
                     /* -------------------- Treatment Modal -------------------- */
 
-                    const treatmentModal = new bootstrap.Modal('#treatmentFormModal');
+                    // ✅ GLOBAL scope so row click can access it
+                    window.treatmentModal = new bootstrap.Modal('#treatmentFormModal');
                     const form = document.getElementById('treatmentFormInModal');
 
                     // Farm Dropdown Elements
@@ -1168,28 +1169,39 @@
                                     `<small class="text-success ms-2">(คงเหลือ: ${medicine.stock} ${medicine.unit})</small>` :
                                     `<small class="text-danger ms-2">(หมด)</small>`;
 
+                                // ✅ Disable item if stock is 0 or less
+                                const isOutOfStock = medicine.stock <= 0;
+                                const disabledClass = isOutOfStock ? 'disabled text-muted' : '';
+                                const pointerClass = isOutOfStock ? 'pe-none' : '';
+
                                 li.innerHTML = `
-                                    <a class="dropdown-item" href="#" data-medicine-id="${medicine.id}" data-medicine-code="${medicine.code}" data-medicine-name="${medicine.name}">
-                                        <i class="bi bi-capsule me-2"></i>${medicine.name}${stockStatus}
+                                    <a class="dropdown-item ${disabledClass} ${pointerClass}" href="#"
+                                       data-medicine-id="${medicine.id}"
+                                       data-medicine-code="${medicine.code}"
+                                       data-medicine-name="${medicine.name}"
+                                       data-medicine-unit="${medicine.unit}"
+                                       ${isOutOfStock ? 'onclick="return false;"' : ''}>
+                                        <i class="bi bi-capsule me-2"></i>${medicine.name} ${isOutOfStock ? '❌' : '✓'} ${stockStatus}
                                     </a>
                                 `;
                                 medicineDropdownMenu.appendChild(li);
                             });
 
-                            // Add click handlers to medicine items
-                            medicineDropdownMenu.querySelectorAll('.dropdown-item').forEach(item => {
+                            // Add click handlers to medicine items (only for available ones)
+                            medicineDropdownMenu.querySelectorAll('.dropdown-item:not(.disabled)').forEach(item => {
                                 item.addEventListener('click', function(e) {
                                     e.preventDefault();
                                     const medicineId = this.getAttribute('data-medicine-id');
                                     const medicineCode = this.getAttribute('data-medicine-code');
                                     const medicineName = this.getAttribute('data-medicine-name');
+                                    const medicineUnit = this.getAttribute('data-medicine-unit');
 
-                                    console.log('💊 [Treatments Modal] Selected medicine:', { medicineId, medicineCode, medicineName });
+                                    console.log('💊 [Treatments Modal] Selected medicine:', { medicineId, medicineCode, medicineName, medicineUnit });
 
-                                    // Update hidden fields and dropdown label
+                                    // Update hidden fields and dropdown label with unit
                                     document.querySelector('.treatment-medicine-name').value = medicineName;
                                     document.querySelector('.treatment-medicine-code').value = medicineCode;
-                                    document.querySelector('.treatment-medicine-dropdown-btn span').textContent = medicineName;
+                                    document.querySelector('.treatment-medicine-dropdown-btn span').textContent = medicineName + ' (' + medicineUnit + ')';
                                 });
                             });
 
@@ -1639,6 +1651,23 @@
                         penIds.forEach((penId, index) => {
                             formData.append(`pen_ids[${index}]`, penId);
                         });
+                        console.log('📋 [Treatments Modal] Added pen_ids to formData:', penIds);
+
+                        // ✅ DEBUG: Log all formData entries
+                        console.log('📦 [Treatments Modal] FormData entries:');
+                        for (let [key, value] of formData.entries()) {
+                            console.log(`  ${key}: ${value}`);
+                        }
+
+                        // ✅ Check if medicine_name and medicine_code are in formData
+                        const medicineName = formData.get('medicine_name');
+                        const medicineCode = formData.get('medicine_code');
+                        console.log('💊 [Treatments Modal] Medicine Info:', {
+                            medicine_name: medicineName,
+                            medicine_code: medicineCode,
+                            farm_id: formData.get('farm_id'),
+                            batch_id: formData.get('batch_id')
+                        });
 
                         // Auto-set actual_end_date when status is completed or stopped
                         const treatmentStatusElement = document.querySelector('input[name="treatment_status"]');
@@ -1680,10 +1709,18 @@
 
                             const data = await res.json();
                             console.log('📥 [Treatments Modal] Response:', data);
+                            console.log('📊 [Treatments Modal] Response status:', res.status);
 
-                            if (!data.success) throw new Error(data.message);
+                            // ✅ Check both success flag AND response status
+                            if (!res.ok || !data.success) {
+                                const errorMsg = data.message || `Error: ${res.status} ${res.statusText}`;
+                                showSnackbar(`❌ ${errorMsg}`, 'error');
+                                console.error('❌ [Treatments Modal] Error:', errorMsg);
+                                return;  // ✅ CRITICAL: Stop execution here
+                            }
 
-                            // ✅ Log to Laravel backend
+                            // ✅ Only proceed if response is OK
+                            // Log to Laravel backend
                             fetch('/api/log', {
                                 method: 'POST',
                                 headers: {
@@ -1702,12 +1739,12 @@
                             }).catch(e => console.warn('⚠️ Log failed:', e));
 
                             showSnackbar('✅ บันทึกสำเร็จ', 'success');
-                            treatmentModal.hide();
+                            window.treatmentModal.hide();  // ✅ Use global reference
                             setTimeout(() => location.reload(), 1200);
 
                         } catch (e) {
-                            console.error('❌ [Treatments Modal] Error:', e);
-                            showSnackbar(`❌ ${e.message}`, 'error');
+                            console.error('❌ [Treatments Modal] Exception Error:', e);
+                            showSnackbar(`❌ ข้อผิดพลาด: ${e.message}`, 'error');
                         }
                     });
 
@@ -1872,7 +1909,7 @@
 
                                 // Display in modal (read-only mode)
                                 displayTreatmentDetails(treatment, 'view');
-                                treatmentModal.show();
+                                window.treatmentModal.show();  // ✅ Use global reference
 
                             } catch (error) {
                                 console.error('❌ [Treatments] Error loading treatment:', error);

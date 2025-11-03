@@ -195,7 +195,14 @@ Route::post('/treatments', function (Request $request) {
 
         // Get selected pens
         $penIds = $request->input('pen_ids', []);
+        \Illuminate\Support\Facades\Log::info('📝 [API] Received pen_ids:', ['pen_ids' => $penIds, 'count' => count($penIds)]);
+
+        // ✅ Cast pen_ids to integer (they come as strings from FormData)
+        $penIds = array_map('intval', $penIds);
+        \Illuminate\Support\Facades\Log::info('📝 [API] Cast pen_ids to integers:', ['pen_ids' => $penIds]);
+
         if (empty($penIds)) {
+            \Illuminate\Support\Facades\Log::warning('⚠️ [API] No pen_ids provided');
             return response()->json(['success' => false, 'message' => 'At least one pen must be selected'], 400);
         }
 
@@ -226,9 +233,32 @@ Route::post('/treatments', function (Request $request) {
         $medicineCode = $request->input('medicine_code');
         $farmId = $request->input('farm_id');
 
+        \Illuminate\Support\Facades\Log::info('🔍 [API] Looking for storehouse:', [
+            'medicine_name' => $medicineName,
+            'medicine_code' => $medicineCode,
+            'farm_id' => $farmId
+        ]);
+
         $storehouse = null;
-        if (!$medicineCode && $medicineName && $farmId) {
-            // Find storehouse by item_name and farm_id
+
+        // ✅ PRIMARY: Search by medicine_code (more accurate)
+        if ($medicineCode) {
+            $storehouse = \App\Models\StoreHouse::where('item_code', $medicineCode)
+                ->where('item_type', 'medicine')
+                ->where(function($q) use ($farmId) {
+                    $q->where('farm_id', $farmId)->orWhere('farm_id', 0);
+                })
+                ->first();
+
+            if ($storehouse) {
+                \Illuminate\Support\Facades\Log::info('✅ [API] Found storehouse by code: ' . $medicineCode);
+            } else {
+                \Illuminate\Support\Facades\Log::warning('⚠️ [API] Storehouse NOT found by code: ' . $medicineCode);
+            }
+        }
+
+        // ✅ FALLBACK: Search by medicine_name if code not found
+        if (!$storehouse && $medicineName) {
             $storehouse = \App\Models\StoreHouse::where('item_name', $medicineName)
                 ->where('item_type', 'medicine')
                 ->where(function($q) use ($farmId) {
@@ -238,7 +268,68 @@ Route::post('/treatments', function (Request $request) {
 
             if ($storehouse) {
                 $medicineCode = $storehouse->item_code;
-                \Illuminate\Support\Facades\Log::info('🔍 [API] Found storehouse: ' . $medicineCode);
+                \Illuminate\Support\Facades\Log::info('✅ [API] Found storehouse by name (fallback): ' . $medicineCode);
+            } else {
+                \Illuminate\Support\Facades\Log::warning('⚠️ [API] Storehouse NOT found by name: ' . $medicineName);
+            }
+        }
+
+        // ==================== VALIDATE STOCK BEFORE CREATE ====================
+        if ($storehouse) {
+            $frequency = $request->input('frequency', 'once');
+            $duration = floatval($request->input('planned_duration', 1));
+            $dosage = floatval($request->input('dosage', 0));
+
+            // Calculate frequency per day
+            $frequencyPerDay = [
+                'once' => 1,
+                'daily' => 1,
+                'twice_daily' => 2,
+                'every_other_day' => 0.5,
+                'weekly' => 0.14,
+                'custom' => 1,
+            ][$frequency] ?? 1;
+
+            // ✅ Calculate total quantity needed (estimated from dosage × pen count × frequency × duration)
+            // For estimation, assume average 37-38 pigs per pen
+            $estimatedTotalQty = $dosage * count($penIds) * 38 * $frequencyPerDay * $duration;
+
+            // ✅ Convert ml to stock unit using conversion_rate
+            if ($storehouse->conversion_rate && $storehouse->conversion_rate > 0) {
+                $estimatedStockNeeded = ceil($estimatedTotalQty / $storehouse->conversion_rate);
+            } else {
+                $estimatedStockNeeded = ceil($estimatedTotalQty);
+            }
+
+            \Illuminate\Support\Facades\Log::info('💰 [API] Stock validation:', [
+                'medicine' => $storehouse->item_name,
+                'current_stock' => $storehouse->stock,
+                'estimated_need' => $estimatedStockNeeded,
+                'calculation' => "({$dosage} ml/pig × " . count($penIds) . " pens × 38 pigs × {$frequencyPerDay} freq × {$duration} days) ÷ {$storehouse->conversion_rate} = {$estimatedStockNeeded} {$storehouse->unit}"
+            ]);
+
+            // ✅ Check if stock is sufficient
+            if ($storehouse->stock < $estimatedStockNeeded) {
+                $shortfall = $estimatedStockNeeded - $storehouse->stock;
+                \Illuminate\Support\Facades\Log::warning('❌ [API] INSUFFICIENT STOCK!', [
+                    'medicine' => $storehouse->item_name,
+                    'current_stock' => $storehouse->stock,
+                    'needed' => $estimatedStockNeeded,
+                    'shortfall' => $shortfall,
+                    'unit' => $storehouse->unit
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => "❌ สต็อก {$storehouse->item_name} ไม่พอ! ต้องการ {$estimatedStockNeeded} {$storehouse->unit} แต่มีเพียง {$storehouse->stock} {$storehouse->unit} (ขาด {$shortfall} {$storehouse->unit})",
+                    'details' => [
+                        'medicine_name' => $storehouse->item_name,
+                        'current_stock' => $storehouse->stock,
+                        'needed' => $estimatedStockNeeded,
+                        'shortfall' => $shortfall,
+                        'unit' => $storehouse->unit
+                    ]
+                ], 422);
             }
         }
 
@@ -266,6 +357,9 @@ Route::post('/treatments', function (Request $request) {
         // ==================== CREATE DETAILS FOR EACH PEN ====================
         $dosage = floatval($request->input('dosage', 0));
         $detailRecords = [];
+
+        \Illuminate\Support\Facades\Log::info('🔧 [API] Creating details for ' . count($penIds) . ' pens with dosage: ' . $dosage);
+
         foreach ($penIds as $penId) {
             $pen = \App\Models\Pen::find($penId);
             if ($pen) {
@@ -290,6 +384,8 @@ Route::post('/treatments', function (Request $request) {
                 ]);
                 $detailRecords[] = $detail;
                 \Illuminate\Support\Facades\Log::info('📝 [API] Created detail for pen: ' . $penId . ' (qty: ' . $currentQuantity . ') - quantity_used: ' . $quantityUsed);
+            } else {
+                \Illuminate\Support\Facades\Log::warning('⚠️ [API] Pen not found: ' . $penId);
             }
         }
 
@@ -297,6 +393,13 @@ Route::post('/treatments', function (Request $request) {
         if ($storehouse) {
             $frequency = $request->input('frequency', 'once');
             $duration = $request->input('planned_duration', 1);
+
+            \Illuminate\Support\Facades\Log::info('📊 [API] === INVENTORY CALCULATION START ===', [
+                'medicine' => $medicineName,
+                'storehouse_unit' => $storehouse->unit,
+                'conversion_rate' => $storehouse->conversion_rate,
+                'base_unit' => $storehouse->base_unit
+            ]);
 
             // คำนวณจำนวนวันการให้ยา
             $frequencyPerDay = [
@@ -308,30 +411,101 @@ Route::post('/treatments', function (Request $request) {
                 'custom' => 1,
             ][$frequency] ?? 1;
 
+            \Illuminate\Support\Facades\Log::info('📋 [API] Frequency calculation:', [
+                'frequency_input' => $frequency,
+                'times_per_day' => $frequencyPerDay,
+                'duration_days' => $duration
+            ]);
+
             // ✅ รวม quantity_used จากทุก detail record
             $totalQuantityPerTreatment = collect($detailRecords)->sum('quantity_used');
+
+            \Illuminate\Support\Facades\Log::info('🐷 [API] Detail records quantity:', [
+                'count_details' => count($detailRecords),
+                'total_quantity_used' => $totalQuantityPerTreatment,
+                'details_breakdown' => collect($detailRecords)->map(function($d) {
+                    return ['pen_id' => $d->pen_id, 'quantity_used' => $d->quantity_used];
+                })->toArray()
+            ]);
 
             // ✅ คำนวณปริมาณยาทั้งหมดที่ต้องใช้ = รวมของแต่ละคอก × frequency × duration
             $totalQuantity = $totalQuantityPerTreatment * $frequencyPerDay * $duration;
 
-            \Illuminate\Support\Facades\Log::info('💊 [API] Calculated total quantity: ' . $totalQuantity . ' ' . $storehouse->unit);
+            \Illuminate\Support\Facades\Log::info('💊 [API] Total quantity calculation:', [
+                'formula' => "({$totalQuantityPerTreatment} ml) × {$frequencyPerDay} (times/day) × {$duration} (days) = {$totalQuantity} ml",
+                'total_quantity_ml' => $totalQuantity,
+                'unit' => $storehouse->unit
+            ]);
 
-            // ลดสต็อก (ต้องเก็บ record ใน inventory_movements)
+            // ==================== UNIT CONVERSION CALCULATION ====================
+            if ($storehouse->conversion_rate && $storehouse->base_unit) {
+                // Convert ml to storehouse unit
+                $totalQuantityInStockUnit = $totalQuantity / $storehouse->conversion_rate;
+                $totalQuantityRoundedUp = ceil($totalQuantityInStockUnit);
+
+                \Illuminate\Support\Facades\Log::info('🔄 [API] Unit conversion:', [
+                    'quantity_ml' => $totalQuantity,
+                    'base_unit' => $storehouse->base_unit,
+                    'conversion_rate' => $storehouse->conversion_rate . " {$storehouse->base_unit} per {$storehouse->unit}",
+                    'formula' => "{$totalQuantity} ml ÷ {$storehouse->conversion_rate} = {$totalQuantityInStockUnit}",
+                    'exact_quantity_stock_unit' => $totalQuantityInStockUnit,
+                    'rounded_quantity_stock_unit' => $totalQuantityRoundedUp,
+                    'stock_unit' => $storehouse->unit
+                ]);
+
+                $stockDeductionAmount = $totalQuantityRoundedUp;
+            } else {
+                // No conversion rate, use quantity directly
+                $stockDeductionAmount = (int)$totalQuantity;
+                \Illuminate\Support\Facades\Log::warning('⚠️ [API] No conversion rate configured, using direct quantity', [
+                    'quantity' => $stockDeductionAmount,
+                    'unit' => $storehouse->unit
+                ]);
+            }
+
+            // ==================== CREATE INVENTORY MOVEMENT RECORD ====================
+            $currentStock = $storehouse->stock;
+            $newStock = $currentStock - $stockDeductionAmount;
+
             $inventoryMovement = \App\Models\InventoryMovement::create([
                 'storehouse_id' => $storehouse->id,
                 'batch_id' => $batchId,
                 'batch_treatment_id' => $treatment->id,
                 'change_type' => 'out',
                 'quantity' => $totalQuantity,
-                'quantity_unit' => $storehouse->unit,
+                'quantity_unit' => $storehouse->base_unit ?? 'ml',
                 'note' => 'ใช้ยา ' . $medicineName . ' สำหรับการรักษา ' . $request->input('disease_name') . ' (' . count($penIds) . ' คอก)',
                 'date' => now(),
             ]);
 
-            // ลดสต็อกใน storehouse
-            $storehouse->decrement('stock', (int)$totalQuantity);
+            \Illuminate\Support\Facades\Log::info('📦 [API] Inventory movement created:', [
+                'movement_id' => $inventoryMovement->id,
+                'storehouse_id' => $storehouse->id,
+                'quantity_recorded' => $totalQuantity,
+                'unit_recorded' => $storehouse->base_unit ?? 'ml',
+                'note' => $inventoryMovement->note
+            ]);
 
-            \Illuminate\Support\Facades\Log::info('📦 [API] Updated storehouse stock: -' . $totalQuantity);
+            // ==================== REDUCE STOREHOUSE STOCK ====================
+            $storehouse->decrement('stock', $stockDeductionAmount);
+            $updatedStorehouse = $storehouse->fresh();
+
+            \Illuminate\Support\Facades\Log::info('✅ [API] Storehouse stock reduced:', [
+                'medicine_code' => $storehouse->item_code,
+                'medicine_name' => $storehouse->item_name,
+                'current_stock_before' => $currentStock,
+                'deduction_amount' => $stockDeductionAmount,
+                'deduction_unit' => $storehouse->unit,
+                'current_stock_after' => $updatedStorehouse->stock,
+                'stock_remaining' => max(0, $updatedStorehouse->stock)
+            ]);
+
+            if ($updatedStorehouse->stock <= 0) {
+                \Illuminate\Support\Facades\Log::warning('⚠️ [API] STOCK DEPLETED!', [
+                    'medicine' => $storehouse->item_name,
+                    'current_stock' => $updatedStorehouse->stock
+                ]);
+            }
         }
 
         return response()->json([
@@ -410,6 +584,13 @@ Route::put('/treatments/{id}', function (Request $request, $id) {
 
         // ✅ Handle pen_ids if provided (UPDATE SELECTED PENS)
         $penIds = $request->input('pen_ids', []);
+
+        // ✅ Cast pen_ids to integer (they come as strings from FormData)
+        if (!empty($penIds)) {
+            $penIds = array_map('intval', $penIds);
+            \Illuminate\Support\Facades\Log::info('📝 [API] Cast pen_ids to integers for PUT:', ['pen_ids' => $penIds]);
+        }
+
         if (!empty($penIds)) {
             \Illuminate\Support\Facades\Log::info('🔄 [API] Updating pens for treatment ' . $id . ': ' . json_encode($penIds));
 
@@ -477,8 +658,23 @@ Route::put('/treatments/{id}', function (Request $request, $id) {
                     ->first();
 
                 if ($storehouse) {
+                    \Illuminate\Support\Facades\Log::info('📊 [API] === INVENTORY UPDATE CALCULATION START ===', [
+                        'medicine' => $treatment->medicine_name,
+                        'storehouse_unit' => $storehouse->unit,
+                        'conversion_rate' => $storehouse->conversion_rate,
+                        'base_unit' => $storehouse->base_unit
+                    ]);
+
                     // Calculate total quantity from details
                     $totalQuantityUsed = collect($detailRecords)->sum('quantity_used');
+
+                    \Illuminate\Support\Facades\Log::info('🐷 [API] Updated detail records quantity:', [
+                        'count_details' => count($detailRecords),
+                        'total_quantity_used' => $totalQuantityUsed,
+                        'details_breakdown' => collect($detailRecords)->map(function($d) {
+                            return ['pen_id' => $d->pen_id, 'quantity_used' => $d->quantity_used];
+                        })->toArray()
+                    ]);
 
                     // Calculate frequency multiplier
                     $frequencyPerDay = [
@@ -490,25 +686,90 @@ Route::put('/treatments/{id}', function (Request $request, $id) {
                         'custom' => 1,
                     ][$treatment->frequency] ?? 1;
 
+                    \Illuminate\Support\Facades\Log::info('📋 [API] Frequency calculation (update):', [
+                        'frequency' => $treatment->frequency,
+                        'times_per_day' => $frequencyPerDay
+                    ]);
+
                     $duration = $request->input('planned_duration', $treatment->planned_duration ?? 1);
                     $totalQuantity = $totalQuantityUsed * $frequencyPerDay * $duration;
 
+                    \Illuminate\Support\Facades\Log::info('💊 [API] Total quantity calculation (update):', [
+                        'formula' => "({$totalQuantityUsed} ml) × {$frequencyPerDay} (times/day) × {$duration} (days) = {$totalQuantity} ml",
+                        'total_quantity_ml' => $totalQuantity,
+                        'unit' => $storehouse->unit
+                    ]);
+
+                    // ==================== UNIT CONVERSION CALCULATION ====================
+                    if ($storehouse->conversion_rate && $storehouse->base_unit) {
+                        // Convert ml to storehouse unit
+                        $totalQuantityInStockUnit = $totalQuantity / $storehouse->conversion_rate;
+                        $totalQuantityRoundedUp = ceil($totalQuantityInStockUnit);
+
+                        \Illuminate\Support\Facades\Log::info('🔄 [API] Unit conversion (update):', [
+                            'quantity_ml' => $totalQuantity,
+                            'base_unit' => $storehouse->base_unit,
+                            'conversion_rate' => $storehouse->conversion_rate . " {$storehouse->base_unit} per {$storehouse->unit}",
+                            'formula' => "{$totalQuantity} ml ÷ {$storehouse->conversion_rate} = {$totalQuantityInStockUnit}",
+                            'exact_quantity_stock_unit' => $totalQuantityInStockUnit,
+                            'rounded_quantity_stock_unit' => $totalQuantityRoundedUp,
+                            'stock_unit' => $storehouse->unit
+                        ]);
+
+                        $stockDeductionAmount = $totalQuantityRoundedUp;
+                    } else {
+                        // No conversion rate, use quantity directly
+                        $stockDeductionAmount = (int)$totalQuantity;
+                        \Illuminate\Support\Facades\Log::warning('⚠️ [API] No conversion rate configured (update), using direct quantity', [
+                            'quantity' => $stockDeductionAmount,
+                            'unit' => $storehouse->unit
+                        ]);
+                    }
+
+                    // ==================== CREATE INVENTORY MOVEMENT RECORD ====================
+                    $currentStock = $storehouse->stock;
+                    $newStock = $currentStock - $stockDeductionAmount;
+
                     // Create inventory movement
-                    \App\Models\InventoryMovement::create([
+                    $movement = \App\Models\InventoryMovement::create([
                         'storehouse_id' => $storehouse->id,
                         'batch_id' => $treatment->batch_id,
                         'batch_treatment_id' => $id,
                         'change_type' => 'out',
                         'quantity' => $totalQuantity,
-                        'quantity_unit' => $storehouse->unit ?? 'ml',
+                        'quantity_unit' => $storehouse->base_unit ?? 'ml',
                         'note' => 'ใช้ยา ' . $treatment->medicine_name . ' สำหรับการรักษา ' . $treatment->disease_name,
                         'date' => now(),
                     ]);
 
-                    // Reduce storehouse stock
-                    $storehouse->decrement('stock', (int)$totalQuantity);
+                    \Illuminate\Support\Facades\Log::info('📦 [API] Inventory movement created (update):', [
+                        'movement_id' => $movement->id,
+                        'storehouse_id' => $storehouse->id,
+                        'quantity_recorded' => $totalQuantity,
+                        'unit_recorded' => $storehouse->base_unit ?? 'ml',
+                        'note' => $movement->note
+                    ]);
 
-                    \Illuminate\Support\Facades\Log::info('📦 [API] Stock reduced by: ' . $totalQuantity . ' ' . $storehouse->unit);
+                    // ==================== REDUCE STOREHOUSE STOCK ====================
+                    $storehouse->decrement('stock', $stockDeductionAmount);
+                    $updatedStorehouse = $storehouse->fresh();
+
+                    \Illuminate\Support\Facades\Log::info('✅ [API] Storehouse stock reduced (update):', [
+                        'medicine_code' => $storehouse->item_code,
+                        'medicine_name' => $storehouse->item_name,
+                        'current_stock_before' => $currentStock,
+                        'deduction_amount' => $stockDeductionAmount,
+                        'deduction_unit' => $storehouse->unit,
+                        'current_stock_after' => $updatedStorehouse->stock,
+                        'stock_remaining' => max(0, $updatedStorehouse->stock)
+                    ]);
+
+                    if ($updatedStorehouse->stock <= 0) {
+                        \Illuminate\Support\Facades\Log::warning('⚠️ [API] STOCK DEPLETED (update)!', [
+                            'medicine' => $storehouse->item_name,
+                            'current_stock' => $updatedStorehouse->stock
+                        ]);
+                    }
                 } else {
                     \Illuminate\Support\Facades\Log::warning('⚠️ [API] Storehouse not found for medicine: ' . $treatment->medicine_code);
                 }
