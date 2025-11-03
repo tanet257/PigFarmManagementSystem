@@ -154,7 +154,7 @@
                 </div>
 
                 <div class="ms-auto d-flex gap-2">
-                    <button type="button" class="btn btn-info btn-sm" id="exportCsvBtn" title="Export CSV">
+                    <button type="button" class="btn btn-info btn-sm" onclick="exportTreatmentsCSV()" title="Export CSV">
                         <i class="bi bi-file-earmark-csv"></i> Export CSV
                     </button>
                     <button type="button" class="btn btn-success" id="openTreatmentFormBtn">
@@ -922,17 +922,12 @@
 
                 document.addEventListener('DOMContentLoaded', function() {
 
-                    /* ================== CSV Export ================== */
-                    document.getElementById('exportCsvBtn').addEventListener('click', function() {
-                        console.log('📥 [Treatments] Exporting CSV');
-
-                        // Build query string from current filters
+                    /* ================== CSV Export with Filters ================== */
+                    window.exportTreatmentsCSV = function() {
                         const params = new URLSearchParams(window.location.search);
                         const url = `{{ route('treatments.export.csv') }}?${params.toString()}`;
-
-                        // Trigger download
                         window.location.href = url;
-                    });
+                    };
 
                     document.querySelectorAll('.dropdown-item[data-farm-id]').forEach(item => {
                         item.addEventListener('click', async function(e) {
