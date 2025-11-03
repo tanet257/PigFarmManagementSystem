@@ -880,7 +880,8 @@
                         document.querySelectorAll('#treatmentFormInModal input, #treatmentFormInModal textarea, #treatmentFormInModal select').forEach(input => {
                             input.disabled = true;
                         });
-                        document.querySelectorAll('.dropdown-toggle').forEach(btn => btn.disabled = true);
+                        // ✅ Only disable modal dropdowns, NOT filter dropdowns
+                        document.querySelectorAll('#treatmentFormInModal .dropdown-toggle').forEach(btn => btn.disabled = true);
                         document.getElementById('viewPenDetailsBtn').style.display = 'inline-block';
                     } else if (mode === 'edit') {
                         document.querySelectorAll('#treatmentFormInModal input, #treatmentFormInModal textarea, #treatmentFormInModal select').forEach(input => {
@@ -891,7 +892,8 @@
                             }
                         });
 
-                        document.querySelectorAll('.dropdown-toggle').forEach(btn => {
+                        // ✅ Only disable modal dropdowns, NOT filter dropdowns
+                        document.querySelectorAll('#treatmentFormInModal .dropdown-toggle').forEach(btn => {
                             if (btn.classList.contains('treatment-status-btn')) {
                                 btn.disabled = false;
                             } else {
