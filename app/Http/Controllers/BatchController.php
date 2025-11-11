@@ -204,6 +204,11 @@ class BatchController extends Controller
                 'allocated_pigs' => 0,
                 'current_quantity' => 0,
             ]);
+
+            // ✅ Update Profit status to 'completed' as well
+            \App\Models\Profit::where('batch_id', $batch->id)->update([
+                'status' => 'completed'
+            ]);
         }
 
         $batch->update($validated);

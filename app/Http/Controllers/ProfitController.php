@@ -106,6 +106,49 @@ class ProfitController extends Controller
         }
     }
 
+    /**
+     * ส่งออกรายงานกำไรเป็น PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        try {
+            $query = Profit::with(['farm', 'batch', 'profitDetails']);
+
+            // ✅ Exclude cancelled batches (soft delete)
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+
+            // Apply same filters as index
+            if ($request->has('farm_id') && $request->farm_id) {
+                $query->where('farm_id', $request->farm_id);
+            }
+
+            if ($request->has('batch_id') && $request->batch_id) {
+                $query->where('batch_id', $request->batch_id);
+            }
+
+            if ($request->has('status') && $request->status) {
+                $query->where('status', $request->status);
+            }
+
+            $profits = $query->get();
+
+            $totalRevenue = $profits->sum('total_revenue');
+            $totalCost = $profits->sum('total_cost');
+            $totalProfit = $profits->sum('gross_profit');
+
+            return view('admin.dashboard.pdf', [
+                'profits' => $profits,
+                'totalRevenue' => $totalRevenue,
+                'totalCost' => $totalCost,
+                'totalProfit' => $totalProfit,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('ProfitController - exportPdf Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'ไม่สามารถส่งออกรายงาน: ' . $e->getMessage());
+        }
+    }
 
     /**
      * ตรวจสอบและอัปเดทกำไรของ batch
