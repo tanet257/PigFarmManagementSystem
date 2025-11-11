@@ -155,9 +155,7 @@
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
-                    <button type="button" class="btn btn-danger btn-sm" id="exportPdfBtn">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                    </button>
+                    
                 </div>
             </div>
         </div>
@@ -196,7 +194,7 @@
                         <tr class="clickable-row" data-row-click="#viewModal{{ $movement->id }}">
                             <td class="text-center">{{ $movement->date }}</td>
                             <td class="text-center">{{ $movement->storehouse->farm->farm_name ?? '-' }}</td>
-                            <td class="text-center">{{ $movement->batch->batch_code ?? '-' }}</td>
+                            <td class="text-center">{{ $movement->batch?->batch_code ?? '-' }}</td>
                             <td class="text-center">{{ $movement->storehouse->item_type ?? '- ' }}</td>
                             <td class="text-center">{{ $movement->storehouse->item_code ?? '-' }}</td>
                             <td class="text-center">{{ $movement->storehouse->item_name ?? '-' }}</td>
@@ -300,7 +298,7 @@
                                     </tr>
                                     <tr>
                                         <td><strong>รุ่น:</strong></td>
-                                        <td>{{ $movement->batch->batch_code ?? '-' }}</td>
+                                        <td>{{ $movement->batch?->batch_code ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>ประเภทการเปลี่ยน:</strong></td>
@@ -467,17 +465,7 @@
                 window.location.href = url;
             });
 
-            // Export PDF
-            document.getElementById('exportPdfBtn').addEventListener('click', function() {
-                console.log('📥 [Inventory Movements] Exporting PDF');
-                const params = new URLSearchParams(window.location.search);
-                const dateFrom = document.getElementById('exportDateFrom').value;
-                const dateTo = document.getElementById('exportDateTo').value;
-                if (dateFrom) params.set('export_date_from', dateFrom);
-                if (dateTo) params.set('export_date_to', dateTo);
-                const url = `{{ route('inventory_movements.export.pdf') }}?${params.toString()}`;
-                window.location.href = url;
-            });
+            
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

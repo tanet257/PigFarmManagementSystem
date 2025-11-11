@@ -70,12 +70,12 @@
                                 </tr>
                                 <tr>
                                     <td><strong>น้ำหนักเกิน:</strong></td>
-                                    <td>{{ number_format($paymentData->batch->costs->sum('excess_weight_cost') ?? 0, 2) }} ฿
+                                    <td>{{ number_format($paymentData->batch?->costs->sum('excess_weight_cost') ?? 0, 2) }} ฿
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><strong>ค่าขนส่ง:</strong></td>
-                                    <td>{{ number_format($paymentData->batch->costs->sum('transport_cost') ?? 0, 2) }} ฿
+                                    <td>{{ number_format($paymentData->batch?->costs->sum('transport_cost') ?? 0, 2) }} ฿
                                     </td>
                                 </tr>
                                 <tr style="background-color: #e8f5e9;">

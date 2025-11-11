@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
+
 
 use App\Models\Farm;
 use App\Models\Batch;
@@ -227,34 +227,6 @@ class BatchController extends Controller
         }
     }
 
-    //--------------------------------------- EXPORT ------------------------------------------//
-
-    // Export batch to PDF
-    public function exportPdf()
-    {
-        $batches = Batch::all();
-
-        // ตั้งค่า dompdf options
-        $options = new \Dompdf\Options();
-        $options->set('isHtml5ParserEnabled', true); // รองรับ HTML5
-        $options->set('isRemoteEnabled', true);     // โหลดไฟล์ font จาก URL ได้
-        $options->set('defaultFont', 'Sarabun'); // ตั้ง default font
-
-        // สร้าง PDF
-        $pdf = Pdf::loadView('admin.batches.exports.pdf', compact('batches'))
-            ->setPaper('a4', 'landscape')
-            ->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'Sarabun',
-            ]);
-
-
-        // ตั้งชื่อไฟล์
-        $filename = "batches_export_" . date('Y-m-d_H-i-s') . ".pdf";
-
-        return $pdf->download($filename);
-    }
 
     //export batch to csv
     public function exportCsv(Request $request)

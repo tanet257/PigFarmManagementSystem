@@ -128,10 +128,7 @@
                         class="btn btn-sm btn-success">
                         <i class="bi bi-file-earmark-excel"></i> Export CSV
                     </a>
-                    <a href="{{ route('batch_pen_allocations.export.pdf', request()->all()) }}"
-                        class="btn btn-sm btn-danger">
-                        <i class="bi bi-file-earmark-pdf"></i> Export PDF
-                    </a>
+                    
                 </div>
             </form>
         </div>

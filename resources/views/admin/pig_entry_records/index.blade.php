@@ -143,9 +143,7 @@
                     <button class="btn btn-success btn-sm" onclick="exportToCSV(event)" title="ส่งออกเป็น CSV">
                         <i class="bi bi-file-earmark-excel me-1"></i> CSV
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="exportToPDF(event)" title="ส่งออกเป็น PDF">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
-                    </button>
+                    
 
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                         data-bs-target="#createModal">
@@ -221,7 +219,7 @@
                         <tr data-row-click="#viewModal{{ $record->id }}" class="clickable-row">
                             <td class="text-center">{{ $record->pig_entry_date }}</td>
                             <td class="text-center">{{ $record->farm->farm_name ?? '-' }}</td>
-                            <td class="text-center">{{ $record->batch->batch_code ?? '-' }}</td>
+                            <td class="text-center">{{ $record->batch?->batch_code ?? '-' }}</td>
                             <td class="text-center"><strong>{{ $record->total_pig_amount }}</strong></td>
                             <td class="text-center">
                                 <strong>{{ number_format($record->total_pig_weight, 2) }}</strong> กก.
@@ -1197,75 +1195,7 @@
                 exportTableToCSV('.table-responsive', 'บันทึกหมูเข้า', [7]);
             }
 
-            // Export to PDF with Thai font support
-            async function exportToPDF(event) {
-                event.preventDefault();
 
-                // Wait for libraries to be loaded
-                await window.librariesReady;
-
-                try {
-                    const table = document.querySelector('.table-responsive');
-                    if (!table) {
-                        alert('ไม่พบตารางข้อมูล');
-                        return;
-                    }
-
-                    console.log('Starting PDF export...');
-                    const canvas = await html2canvas(table, {
-                        scale: 2,
-                        useCORS: true,
-                        allowTaint: true,
-                        backgroundColor: '#fff',
-                        logging: true
-                    });
-                    console.log('Canvas created successfully');
-                    const imgData = canvas.toDataURL('image/png');
-                    const { jsPDF } = window.jspdf;
-                    if (!jsPDF) {
-                        throw new Error('jsPDF not loaded');
-                    }
-                    const pdf = new jsPDF('l', 'mm', 'a4');
-                    console.log('PDF created successfully');
-
-                    // Set Thai font support - use default (Thai text will render as images)
-                    // PDF will contain the table as image, so Thai text will display correctly
-
-                    const pageWidth = pdf.internal.pageSize.getWidth();
-                    const pageHeight = pdf.internal.pageSize.getHeight();
-                    const imgWidth = pageWidth - 20;
-                    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-                    let yPosition = 10;
-                    pdf.text('บันทึกหมูเข้า (Pig Entry Records)', 10, yPosition);
-                    yPosition += 10;
-
-                    if (imgHeight > pageHeight - 20) {
-                        let remainingHeight = imgHeight;
-                        let position = 0;
-
-                        while (remainingHeight > 0) {
-                            const pageCanvasHeight = (pageHeight - 20) * (canvas.width / imgWidth);
-
-                            if (position > 0) {
-                                pdf.addPage();
-                                yPosition = 10;
-                            }
-
-                            pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, Math.min(imgHeight - position * (pageHeight - 20), pageHeight - 20));
-                            remainingHeight -= pageHeight - 20;
-                            position++;
-                        }
-                    } else {
-                        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
-                    }
-
-                    pdf.save('บันทึกหมูเข้า_' + new Date().toISOString().split('T')[0] + '.pdf');
-                } catch (error) {
-                    console.error('PDF export error:', error);
-                    alert('เกิดข้อผิดพลาดในการส่งออก PDF');
-                }
-            }
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

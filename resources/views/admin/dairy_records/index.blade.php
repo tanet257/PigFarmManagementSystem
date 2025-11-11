@@ -204,9 +204,7 @@
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
-                    <button type="button" class="btn btn-danger btn-sm" id="exportPdfBtn">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                    </button>
+
                 </div>
             </div>
         </div>
@@ -239,7 +237,7 @@
                 </thead>
                 <tbody>
                     @forelse ($dairyRecords as $index => $record)
-                        @if ($record->batch->status !== 'cancelled' || request('show_cancelled'))
+                        @if ($record->batch && ($record->batch->status !== 'cancelled' || request('show_cancelled')))
                             <tr class="clickable-row" data-row-click="#viewModal{{ $record->id }}">
                                 <td class="text-center">{{ $dairyRecords->firstItem() + $index }}</td>
                                 <td class="text-center">{{ \Carbon\Carbon::parse($record->date)->format('d/m/Y') }}</td>
@@ -299,7 +297,7 @@
                 {{ $dairyRecords->total() ?? 0 }} แถว
             </div>
             <div>
-                {{ $dairyRecords->withQueryString()->links() }}
+                {{ $dairyRecords->withQueryString()->onEachSide(1)->links() }}
             </div>
         </div>
     </div>
@@ -576,16 +574,7 @@
                 window.location.href = url;
             });
 
-            document.getElementById('exportPdfBtn').addEventListener('click', function() {
-                console.log('📥 [Dairy Records] Exporting PDF');
-                const params = new URLSearchParams(window.location.search);
-                const dateFrom = document.getElementById('exportDateFrom').value;
-                const dateTo = document.getElementById('exportDateTo').value;
-                if (dateFrom) params.set('export_date_from', dateFrom);
-                if (dateTo) params.set('export_date_to', dateTo);
-                const url = `{{ route('dairy_records.export.pdf') }}?${params.toString()}`;
-                window.location.href = url;
-            });
+            
         </script>
 
 

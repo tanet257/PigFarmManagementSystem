@@ -119,7 +119,7 @@
                                         <td>
                                             <strong>บันทึกชำระเงิน</strong><br>
                                             เลขที่: {{ $payment->payment_number ?? 'N/A' }}<br>
-                                            <small>{{ $payment->pigSale->farm->farm_name ?? 'N/A' }} | {{ $payment->pigSale->batch->batch_code ?? 'N/A' }}</small><br>
+                                            <small>{{ $payment->pigSale->farm->farm_name ?? 'N/A' }} | {{ $payment->pigSale?->batch?->batch_code ?? 'N/A' }}</small><br>
                                             วิธีชำระ:
                                             @switch($payment->payment_method ?? '')
                                                 @case('cash') <span class="badge bg-success">สด</span> @break
@@ -166,7 +166,7 @@
                                         <td>
                                             <strong>บันทึกการขายหมู</strong><br>
                                             ฟาร์ม: {{ $pigSale->farm->farm_name ?? '-' }}<br>
-                                            รุ่น: {{ $pigSale->batch->batch_code ?? '-' }}<br>
+                                            รุ่น: {{ $pigSale->batch?->batch_code ?? '-' }}<br>
                                             ผู้ซื้อ: {{ $pigSale->buyer_name ?? '-' }}<br>
                                             <strong>จำนวน:</strong> {{ $pigSale->quantity }} ตัว | <strong>ราคาต่อตัว:</strong> ฿{{ number_format($pigSale->price_per_pig ?? 0, 2) }} | <strong>ราคารวม:</strong> ฿{{ number_format($pigSale->net_total, 2) }}
                                         </td>

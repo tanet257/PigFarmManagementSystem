@@ -106,49 +106,6 @@ class ProfitController extends Controller
         }
     }
 
-    /**
-     * ส่งออกรายงานกำไรเป็น PDF
-     */
-    public function exportPdf(Request $request)
-    {
-        try {
-            $query = Profit::with(['farm', 'batch', 'profitDetails']);
-
-            // ✅ Exclude cancelled batches (soft delete)
-            $query->whereHas('batch', function ($q) {
-                $q->where('status', '!=', 'cancelled');
-            });
-
-            // Apply same filters as index
-            if ($request->has('farm_id') && $request->farm_id) {
-                $query->where('farm_id', $request->farm_id);
-            }
-
-            if ($request->has('batch_id') && $request->batch_id) {
-                $query->where('batch_id', $request->batch_id);
-            }
-
-            if ($request->has('status') && $request->status) {
-                $query->where('status', $request->status);
-            }
-
-            $profits = $query->get();
-
-            $totalRevenue = $profits->sum('total_revenue');
-            $totalCost = $profits->sum('total_cost');
-            $totalProfit = $profits->sum('gross_profit');
-
-            return view('admin.dashboard.pdf', [
-                'profits' => $profits,
-                'totalRevenue' => $totalRevenue,
-                'totalCost' => $totalCost,
-                'totalProfit' => $totalProfit,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('ProfitController - exportPdf Error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'ไม่สามารถส่งออกรายงาน: ' . $e->getMessage());
-        }
-    }
 
     /**
      * ตรวจสอบและอัปเดทกำไรของ batch
@@ -551,5 +508,107 @@ class ProfitController extends Controller
             'Content-Type' => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ]);
+    }
+
+    /**
+     * ✅ Get Projected Profits for All Active Batches (API Endpoint)
+     */
+    public function getProjectedProfits(Request $request)
+    {
+        try {
+            $query = Profit::with(['farm', 'batch']);
+
+            // Exclude cancelled batches
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+
+            // Only incomplete/active batches
+            $query->where('status', '!=', 'completed');
+
+            $profits = $query->get();
+
+            $projectedData = [];
+            foreach ($profits as $profit) {
+                $projected = $profit->calculateProjectedProfit();
+                if ($projected) {
+                    $projectedData[] = [
+                        'batch_id' => $profit->batch_id,
+                        'batch_code' => $profit->batch?->batch_code ?? 'N/A',
+                        'farm_name' => $profit->farm?->farm_name ?? 'N/A',
+                        'current_status' => [
+                            'adg' => round($profit->adg, 2),
+                            'fcr' => round($profit->fcr, 2),
+                            'fcg' => round($profit->fcg, 2),
+                            'current_weight' => round($profit->ending_avg_weight, 2),
+                            'days_in_farm' => $profit->days_in_farm,
+                        ],
+                        'projected' => $projected,
+                        'comparison' => [
+                            'profit_difference' => round($projected['projected_profit'] - ($profit->gross_profit ?? 0), 2),
+                            'margin_difference' => round($projected['projected_margin'] - ($profit->profit_margin_percent ?? 0), 2),
+                        ]
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $projectedData,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('ProfitController - getProjectedProfits Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ Display Projected Profits Page
+     */
+    public function showProjectedProfits(Request $request)
+    {
+        try {
+            $query = Profit::with(['farm', 'batch']);
+
+            // Exclude cancelled batches
+            $query->whereHas('batch', function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            });
+
+            // Only incomplete/active batches
+            $query->where('status', '!=', 'completed');
+
+            $profits = $query->get();
+
+            $projectedProfits = [];
+            foreach ($profits as $profit) {
+                $projected = $profit->calculateProjectedProfit();
+                if ($projected) {
+                    $projectedProfits[] = [
+                        'profit' => $profit,
+                        'projected' => $projected,
+                        'comparison' => [
+                            'profit_difference' => round($projected['projected_profit'] - ($profit->gross_profit ?? 0), 2),
+                            'margin_difference' => round($projected['projected_margin'] - ($profit->profit_margin_percent ?? 0), 2),
+                        ]
+                    ];
+                }
+            }
+
+            $farms = Farm::all();
+            $batches = Batch::where('status', '!=', 'cancelled')->get();
+
+            return view('admin.dashboard.projected-profits', [
+                'projectedProfits' => $projectedProfits,
+                'farms' => $farms,
+                'batches' => $batches,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('ProfitController - showProjectedProfits Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 }

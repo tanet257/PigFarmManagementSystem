@@ -305,12 +305,14 @@ Route::prefix('cost_payment_approvals')->middleware(['auth', 'prevent.cache'])->
 });
 
 //------------------- route dashboard -------------------------//
+Route::get('/showProjectedProfitsDashboard', [ProfitController::class, 'showProjectedProfits'])->name('dashboard.projected.list');
 Route::prefix('dashboard')->middleware(['auth', 'prevent.cache'])->group(function () {
     Route::get('/', [ProfitController::class, 'index'])->name('dashboard.index');
     Route::get('/{id}', [ProfitController::class, 'show'])->name('dashboard.show');
     Route::post('/{batchId}/recalculate', [ProfitController::class, 'recalculateBatchProfit'])->name('dashboard.recalculate');
     Route::get('/export/pdf', [ProfitController::class, 'exportPdf'])->name('dashboard.export.pdf');
     Route::get('/export/csv', [ProfitController::class, 'exportCsv'])->name('dashboard.export.csv');
+
 });
 
 // ✅ API endpoints สำหรับ AJAX chart refresh (outside prefix)
@@ -318,5 +320,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/dashboard/chart-data', [ProfitController::class, 'getChartData'])->name('api.dashboard.chart_data');
     Route::get('/api/dashboard/monthly-cost-profit', [ProfitController::class, 'getMonthlyCostProfitData'])->name('api.dashboard.monthly_cost_profit');
     Route::get('/api/dashboard/fcg-performance', [ProfitController::class, 'getFcgPerformanceData'])->name('api.dashboard.fcg_performance');
+    Route::get('/api/dashboard/projected-profits', [ProfitController::class, 'getProjectedProfits'])->name('api.dashboard.projected_profits');
 });
 

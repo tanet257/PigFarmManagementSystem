@@ -224,9 +224,6 @@
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
-                    <button type="button" class="btn btn-danger btn-sm" id="exportPdfBtn">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                    </button>
                 </div>
             </div>
         </div>
@@ -685,17 +682,7 @@
                 window.location.href = url;
             });
 
-            // Export PDF
-            document.getElementById('exportPdfBtn').addEventListener('click', function() {
-                console.log('📥 [Storehouses] Exporting PDF');
-                const params = new URLSearchParams(window.location.search);
-                const dateFrom = document.getElementById('exportDateFrom').value;
-                const dateTo = document.getElementById('exportDateTo').value;
-                if (dateFrom) params.set('export_date_from', dateFrom);
-                if (dateTo) params.set('export_date_to', dateTo);
-                const url = `{{ route('storehouse_records.export.pdf') }}?${params.toString()}`;
-                window.location.href = url;
-            });
+
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

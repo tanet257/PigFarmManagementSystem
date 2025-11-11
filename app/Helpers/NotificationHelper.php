@@ -730,9 +730,9 @@ class NotificationHelper
     {
         $admins = self::getAdmins();
 
-        // Load cost relationship if not loaded
-        if (!$payment->relationLoaded('cost')) {
-            $payment->load('cost.batch');
+        // Load pigSale relationship (Payment is for pig sales, not costs)
+        if (!$payment->relationLoaded('pigSale')) {
+            $payment->load('pigSale.batch');
         }
 
         // ข้อมูลการชำระเงิน
@@ -745,8 +745,8 @@ class NotificationHelper
 
         // Get batch details if available
         $batchCode = '';
-        if ($payment->cost && $payment->cost->batch) {
-            $batchCode = "\nรุ่น: {$payment->cost->batch->batch_code}";
+        if ($payment->pigSale && $payment->pigSale->batch) {
+            $batchCode = "\nรุ่น: {$payment->pigSale->batch->batch_code}";
         }
 
         foreach ($admins as $admin) {
@@ -766,10 +766,10 @@ class NotificationHelper
                             "\nรอการตรวจสอบและอนุมัติ ✓",
                 'url' => route('notifications.index'),
                 'is_read' => false,
-                'related_model' => 'CostPayment',
+                'related_model' => 'Payment',
                 'related_model_id' => $payment->id,
                 'approval_status' => 'pending'
             ]);
-    }
+        }
     }
 }

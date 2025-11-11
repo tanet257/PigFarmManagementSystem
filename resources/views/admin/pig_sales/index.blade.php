@@ -166,9 +166,7 @@
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
-                    <button type="button" class="btn btn-danger btn-sm" id="exportPdfBtn">
-                        <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
-                    </button>
+                    
                 </div>
             </div>
         </div>
@@ -225,7 +223,7 @@
                 </thead>
                 <tbody>
                     @forelse ($pigSales as $sell)
-                        <tr data-row-click="#viewModal{{ $sell->id }}" class="clickable-row">
+                        <tr data-row-id="{{ $sell->id }}" data-row-click="#viewModal{{ $sell->id }}" class="clickable-row">
                             <td class="text-center">
                                 <strong>{{ $sell->sale_number ?? 'SELL-' . str_pad($sell->id, 3, '0', STR_PAD_LEFT) }}</strong>
                             </td>
@@ -236,7 +234,7 @@
                                 {{ $sell->customer->customer_name ?? ($sell->buyer_name ?? '-') }}
                             </td>
                             <td class="text-center">{{ $sell->farm->farm_name ?? '-' }}</td>
-                            <td class="text-center">{{ $sell->batch->batch_code ?? '-' }}</td>
+                            <td class="text-center">{{ $sell->batch?->batch_code ?? '-' }}</td>
                             <td class="text-center">
                                 <strong>{{ number_format($sell->quantity) }} ตัว</strong>
                             </td>
@@ -445,11 +443,11 @@
                                     </tr>
                                     <tr>
                                         <td><strong>ฟาร์ม:</strong></td>
-                                        <td>{{ $sell->farm->farm_name }}</td>
+                                        <td>{{ $sell->farm->farm_name ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>รุ่น:</strong></td>
-                                        <td>{{ $sell->batch->batch_code }}</td>
+                                        <td>{{ $sell->batch?->batch_code ?? '-' }}</td>
                                     </tr>
                                     <tr>
                                         <td><strong>เล้า-คอก:</strong></td>
@@ -1609,9 +1607,6 @@
                 });
             }
 
-            // เรียกใช้ common table click handler
-            setupClickableRows();
-
             // Export CSV
             document.getElementById('exportCsvBtn').addEventListener('click', function() {
                 console.log('📥 [Pig Sales] Exporting CSV');
@@ -1624,17 +1619,7 @@
                 window.location.href = url;
             });
 
-            // Export PDF
-            document.getElementById('exportPdfBtn').addEventListener('click', function() {
-                console.log('📥 [Pig Sales] Exporting PDF');
-                const params = new URLSearchParams(window.location.search);
-                const dateFrom = document.getElementById('exportDateFrom').value;
-                const dateTo = document.getElementById('exportDateTo').value;
-                if (dateFrom) params.set('export_date_from', dateFrom);
-                if (dateTo) params.set('export_date_to', dateTo);
-                const url = `{{ route('pig_sales.export.pdf') }}?${params.toString()}`;
-                window.location.href = url;
-            });
+
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

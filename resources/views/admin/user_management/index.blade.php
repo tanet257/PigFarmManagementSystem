@@ -157,7 +157,7 @@
                             <th class="text-center">Role</th>
                             <th class="text-center">สถานะ</th>
                             <th class="text-center">ลงทะเบียนเมื่อ</th>
-                            <th class="text-end">จัดการ</th>
+                            <th class="text-center">จัดการ</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -200,27 +200,29 @@
                                     {{ $user->created_at->format('d/m/Y H:i') }}
                                 </td>
                                 <td>
-                                    <div class="d-flex gap-1 flex-wrap justify-content-end">
+                                    <div class="d-flex gap-1 flex-wrap justify-content-start align-items-stretch">
+                                        
                                         @if ($user->status == 'pending')
                                             {{-- ปุ่มอนุมัติ --}}
-                                            <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal"
-                                                data-bs-target="#approveModal{{ $user->id }}">
+                                            <button type="button" class="btn btn-sm btn-success btn-equal"
+                                                data-bs-toggle="modal" data-bs-target="#approveModal{{ $user->id }}">
                                                 <i class="bi bi-check-circle"></i> อนุมัติ
                                             </button>
 
                                             {{-- ปุ่มปฏิเสธ --}}
-                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal"
-                                                data-bs-target="#rejectModal{{ $user->id }}">
+                                            <button type="button" class="btn btn-sm btn-danger btn-equal"
+                                                data-bs-toggle="modal" data-bs-target="#rejectModal{{ $user->id }}">
                                                 <i class="bi bi-x-circle"></i> ปฏิเสธ
                                             </button>
                                         @elseif ($user->status == 'approved')
                                             {{-- ปุ่มจัดการ Role --}}
-                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                            <button type="button" class="btn btn-sm btn-primary btn-equal"
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#updateRoleModal{{ $user->id }}">
                                                 <i class="bi bi-person-badge"></i> จัดการ Role
                                             </button>
 
-                                            {{-- ปุ่มยกเลิกลงทะเบียน (ถ้ากำลังมีคำขอยกเลิก) --}}
+                                            {{-- ปุ่มยกเลิกลงทะเบียน --}}
                                             @if ($user->hasCancellationRequest())
                                                 <div class="btn-group" role="group">
                                                     <form
@@ -228,7 +230,7 @@
                                                         method="POST" class="d-inline">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="btn btn-sm btn-warning"
+                                                        <button type="submit" class="btn btn-sm btn-warning btn-equal"
                                                             title="อนุมัติการยกเลิก">
                                                             <i class="bi bi-check"></i> อนุมัติยกเลิก
                                                         </button>
@@ -237,7 +239,7 @@
                                                         method="POST" class="d-inline">
                                                         @csrf
                                                         @method('PATCH')
-                                                        <button type="submit" class="btn btn-sm btn-secondary"
+                                                        <button type="submit" class="btn btn-sm btn-secondary btn-equal"
                                                             title="ปฏิเสธการยกเลิก">
                                                             <i class="bi bi-x"></i> ปฏิเสธยกเลิก
                                                         </button>
@@ -245,31 +247,32 @@
                                                 </div>
                                             @endif
                                         @elseif ($user->status == 'cancelled')
-                                            {{-- แสดง cancelled status badge --}}
-                                            <span class="badge bg-danger"><i class="bi bi-ban"></i> ปิดใช้งาน</span>
+                                            <span class="badge bg-danger align-self-center"><i class="bi bi-ban"></i>
+                                                ปิดใช้งาน</span>
                                         @endif
 
                                         {{-- ปุ่มดูรายละเอียด --}}
-                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                            data-bs-target="#viewModal{{ $user->id }}">
+                                        <button type="button" class="btn btn-sm btn-info btn-equal"
+                                            data-bs-toggle="modal" data-bs-target="#viewModal{{ $user->id }}">
                                             <i class="bi bi-eye"></i>
                                         </button>
 
-                                        {{-- ปุ่มลบ (ถ้าไม่ใช่ตัวเอง) --}}
+                                        {{-- ปุ่มลบ --}}
                                         @if ($user->id !== auth()->id())
                                             <form action="{{ route('user_management.destroy', $user->id) }}"
                                                 method="POST" class="d-inline"
                                                 onsubmit="return confirm('ต้องการลบผู้ใช้นี้หรือไม่?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                <button type="submit" class="btn btn-sm btn-danger btn-equal">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
                                         @endif
                                     </div>
                                 </td>
-                                </td>
+
+
                             </tr>
                         @empty
                             <tr>

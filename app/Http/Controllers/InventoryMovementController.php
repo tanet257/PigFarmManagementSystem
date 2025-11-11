@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Farm;
 use App\Models\Batch;
 use App\Models\StoreHouse;
@@ -118,30 +117,6 @@ class InventoryMovementController extends Controller
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//
-
-    // Export PDF
-    public function exportPdf(Request $request)
-    {
-        $query = InventoryMovement::with(['storehouse.farm', 'batch', 'barn', 'dairy_record']);
-
-        // Apply export-specific date range filter
-        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
-            $query->whereBetween('date', [$request->export_date_from, $request->export_date_to]);
-        }
-
-        $movements = $query->get();
-
-        $pdf = Pdf::loadView('admin.inventory_movements.exports.pdf', compact('movements'))
-            ->setPaper('a4', 'landscape')
-            ->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'Sarabun',
-            ]);
-
-        $filename = "inventory_movements_" . date('Y-m-d_H-i-s') . ".pdf";
-        return $pdf->download($filename);
-    }
 
     // Export CSV
     public function exportCsv(Request $request)

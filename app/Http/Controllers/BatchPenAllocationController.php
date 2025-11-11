@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Carbon\Carbon;
-use Barryvdh\DomPDF\Facade\Pdf;
+
 use App\Models\BatchPenAllocation;
 use App\Models\Farm;
 use App\Models\Batch;
@@ -130,53 +130,6 @@ class BatchPenAllocationController extends Controller
     }
 
     //--------------------------------------- EXPORT ------------------------------------------//
-    public function exportPdf()
-    {
-        $barns = Barn::with(['pens.batchPenAllocations.batch.farm'])->get();
-
-        $barnSummaries = $barns->map(function ($barn) {
-            $pensInfo = $barn->pens->map(function ($pen) {
-                $allocations = $pen->batchPenAllocations;
-                return [
-                    'pen_code'  => $pen->pen_code,
-                    'capacity'  => $pen->pig_capacity,
-                    'allocated' => $allocations->sum('allocated_pigs'),
-                    'batches'   => $allocations->map(fn($a) => optional($a->batch)->batch_code)->unique()->values()
-                ];
-            });
-
-            $totalAllocated = $pensInfo->sum('allocated');
-            $farmNames = $barn->pens->flatMap(
-                fn($pen) =>
-                $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name)
-            )->filter()->unique()->values();
-
-            $batchCodes = $barn->pens->flatMap(
-                fn($pen) =>
-                $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code)
-            )->filter()->unique()->values();
-
-            return [
-                'farm_name'      => $farmNames->join(', '),
-                'batch_code'     => $batchCodes->join(', '),
-                'barn_code'      => $barn->barn_code,
-                'capacity'       => $barn->pig_capacity,
-                'total_allocated' => $totalAllocated,
-                'pens'           => $pensInfo,
-            ];
-        });
-
-        $pdf = Pdf::loadView('admin.batch_pen_allocations.exports.pdf', compact('barnSummaries'))
-            ->setPaper('a4', 'landscape')
-            ->setOptions([
-                'isHtml5ParserEnabled' => true,
-                'isRemoteEnabled' => true,
-                'defaultFont' => 'Sarabun',
-            ]);
-
-        $filename = "batch_pen_allocations_" . date('Y-m-d_H-i-s') . ".pdf";
-        return $pdf->download($filename);
-    }
 
     public function exportCsv()
     {

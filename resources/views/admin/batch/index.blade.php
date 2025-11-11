@@ -192,7 +192,7 @@
                 </div>
 
                 <div class="ms-auto d-flex gap-2">
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                    <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                         data-bs-target="#createBatchModal">
                         <i class="bi bi-plus-circle me-2"></i>
                         สร้างรุ่นใหม่
@@ -465,7 +465,7 @@
                         <i class="bi bi-inbox fa-3x text-muted mb-3 d-block" style="font-size: 3rem;"></i>
                         <h5 class="text-muted">ยังไม่มีรุ่นหมู</h5>
                         <p class="text-muted mb-3">เริ่มต้นด้วยการสร้างรุ่นใหม่</p>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                        <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                             data-bs-target="#createBatchModal">
                             <i class="bi bi-plus-circle me-2"></i>
                             สร้างรุ่นใหม่

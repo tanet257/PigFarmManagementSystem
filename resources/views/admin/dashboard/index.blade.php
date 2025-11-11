@@ -7,7 +7,16 @@
     <div class="container-fluid py-4">
         <div class="row mb-4">
             <div class="col-md-12 card-header">
-                <h2 class="mb-4">Dashboard (สรุปผลกำไร)</h2>
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-4">Dashboard (สรุปผลกำไร)</h2>
+
+
+
+                    <a href="{{ route('dashboard.projected.list') }}" class="btn btn-info btn-sm ms-2"
+                        title="ดูคาดการณ์กำไรแต่ละรุ่น">
+                        <i class="bi bi-arrow-right"></i> คาดการณ์กำไร
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -85,39 +94,63 @@
             </form>
         </div>
 
-        <!-- Summary Cards -->
+        <!-- Summary Cards (Clickable) -->
         <div class="row mb-4">
+            <!-- Revenue Card -->
             <div class="col-md-3">
-                <div class="card border-primary">
+                <div class="card border-primary cursor-pointer" style="cursor: pointer; transition: all 0.3s;"
+                    onclick="showRevenueDetails()" onmouseover="this.style.boxShadow='0 4px 12px rgba(13, 110, 253, 0.25)'"
+                    onmouseout="this.style.boxShadow=''">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">รายได้รวม</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-cash-flow"></i> รายได้รวม
+                            <small class="float-end text-muted" style="font-size: 0.7rem;">คลิกดูรายละเอียด</small>
+                        </h5>
                         <h3 class="text-primary">฿{{ number_format($totalRevenue, 2) }}</h3>
                     </div>
                 </div>
             </div>
 
+            <!-- Cost Card (Breakdown by type) -->
             <div class="col-md-3">
-                <div class="card border-warning">
+                <div class="card border-warning cursor-pointer" style="cursor: pointer; transition: all 0.3s;"
+                    onclick="showCostDetails()" onmouseover="this.style.boxShadow='0 4px 12px rgba(255, 193, 7, 0.25)'"
+                    onmouseout="this.style.boxShadow=''">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">ต้นทุนรวม</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-bag"></i> ต้นทุนรวม
+                            <small class="float-end text-muted" style="font-size: 0.7rem;">คลิกดูรายละเอียด</small>
+                        </h5>
                         <h3 class="text-warning">฿{{ number_format($totalCost, 2) }}</h3>
                     </div>
                 </div>
             </div>
 
+            <!-- Profit Card -->
             <div class="col-md-3">
-                <div class="card border-success">
+                <div class="card border-success cursor-pointer" style="cursor: pointer; transition: all 0.3s;"
+                    onclick="showProfitDetails()" onmouseover="this.style.boxShadow='0 4px 12px rgba(25, 135, 84, 0.25)'"
+                    onmouseout="this.style.boxShadow=''">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">กำไรรวม</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-graph-up"></i> กำไรรวม
+                            <small class="float-end text-muted" style="font-size: 0.7rem;">คลิกดูรายละเอียด</small>
+                        </h5>
                         <h3 class="text-success">฿{{ number_format($totalProfit, 2) }}</h3>
                     </div>
                 </div>
             </div>
 
+            <!-- Margin Card -->
             <div class="col-md-3">
-                <div class="card border-info">
+                <div class="card border-info cursor-pointer" style="cursor: pointer; transition: all 0.3s;"
+                    onclick="showMarginDetails()" onmouseover="this.style.boxShadow='0 4px 12px rgba(13, 202, 240, 0.25)'"
+                    onmouseout="this.style.boxShadow=''">
                     <div class="card-body">
-                        <h5 class="card-title text-muted">อัตราส่วนกำไร</h5>
+                        <h5 class="card-title text-muted">
+                            <i class="bi bi-percent"></i> อัตราส่วนกำไร
+                            <small class="float-end text-muted" style="font-size: 0.7rem;">คลิกดูรายละเอียด</small>
+                        </h5>
                         <h3 class="text-info">{{ number_format($avgProfitMargin, 2) }}%</h3>
                     </div>
                 </div>
@@ -136,14 +169,22 @@
 
                 foreach ($profits as $profit) {
                     if ($profit->days_in_farm > 0) {
-                        $adg = (($profit->batch?->average_weight_per_pig ?? 0) - ($profit->starting_avg_weight ?? 0)) / $profit->days_in_farm;
+                        $adg =
+                            (($profit->batch?->average_weight_per_pig ?? 0) - ($profit->starting_avg_weight ?? 0)) /
+                            $profit->days_in_farm;
                         $avgAdg += $adg;
                     }
 
-                    $fcr = ($profit->total_weight_gained ?? 0) > 0 ? ($profit->total_feed_kg ?? 0) / $profit->total_weight_gained : 0;
+                    $fcr =
+                        ($profit->total_weight_gained ?? 0) > 0
+                            ? ($profit->total_feed_kg ?? 0) / $profit->total_weight_gained
+                            : 0;
                     $avgFcr += $fcr;
 
-                    $fcg = ($profit->total_weight_gained ?? 0) > 0 ? ($profit->feed_cost ?? 0) / $profit->total_weight_gained : 0;
+                    $fcg =
+                        ($profit->total_weight_gained ?? 0) > 0
+                            ? ($profit->feed_cost ?? 0) / $profit->total_weight_gained
+                            : 0;
                     $avgFcg += $fcg;
 
                     $totalFeedBags += $profit->total_feed_bags ?? 0;
@@ -157,7 +198,7 @@
             @endphp
             <div class="col-md-3">
                 <div class="card border-primary" data-bs-toggle="tooltip" data-bs-placement="top"
-                     title="น้ำหนักที่เพิ่มขึ้นเฉลี่ยต่อตัวต่อวัน (กิโลกรัม/ตัว/วัน) ยิ่งสูงยิ่งดี">
+                    title="น้ำหนักที่เพิ่มขึ้นเฉลี่ยต่อตัวต่อวัน (กิโลกรัม/ตัว/วัน) ยิ่งสูงยิ่งดี">
                     <div class="card-body">
                         <h5 class="card-title text-muted">
                             <i class="bi bi-graph-up"></i> ADG (kg/ตัว/วัน)
@@ -170,7 +211,7 @@
 
             <div class="col-md-3">
                 <div class="card border-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
-                     title="อัตราการแปลงอาหาร: น้ำหนักอาหารที่ใช้ต่อน้ำหนักที่เพิ่ม (kg/kg) ยิ่งต่ำยิ่งดี">
+                    title="อัตราการแปลงอาหาร: น้ำหนักอาหารที่ใช้ต่อน้ำหนักที่เพิ่ม (kg/kg) ยิ่งต่ำยิ่งดี">
                     <div class="card-body">
                         <h5 class="card-title text-muted">
                             <i class="bi bi-percent"></i> FCR (kg/kg)
@@ -183,7 +224,7 @@
 
             <div class="col-md-3">
                 <div class="card border-dark" data-bs-toggle="tooltip" data-bs-placement="top"
-                     title="ต้นทุนอาหารต่อน้ำหนักที่เพิ่ม (บาท/กิโลกรัม) ยิ่งต่ำยิ่งดี">
+                    title="ต้นทุนอาหารต่อน้ำหนักที่เพิ่ม (บาท/กิโลกรัม) ยิ่งต่ำยิ่งดี">
                     <div class="card-body">
                         <h5 class="card-title text-muted">
                             <i class="bi bi-cash-coin"></i> FCG (บาท/kg)
@@ -196,7 +237,7 @@
 
             <div class="col-md-3">
                 <div class="card border-secondary" data-bs-toggle="tooltip" data-bs-placement="top"
-                     title="จำนวนอาหารที่ใช้ทั้งหมดในการเลี้ยงหมู">
+                    title="จำนวนอาหารที่ใช้ทั้งหมดในการเลี้ยงหมู">
                     <div class="card-body">
                         <h5 class="card-title text-muted">
                             <i class="bi bi-bag"></i> อาหารรวม
@@ -278,15 +319,18 @@
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-download me-2 text-primary"></i>
                         <strong>ส่วนการส่งออก</strong>
+
                     </div>
                     <!-- Custom Date Range Filter for Export -->
                     <div class="ms-auto d-flex gap-2 align-items-center">
                         <label class="text-nowrap small mb-0" style="min-width: 100px;">
                             <i class="bi bi-calendar-range"></i> ช่วงวันที่:
                         </label>
-                        <input type="date" id="exportDateFrom" class="form-control form-control-sm" style="width: 140px;">
+                        <input type="date" id="exportDateFrom" class="form-control form-control-sm"
+                            style="width: 140px;">
                         <span class="text-nowrap small">ถึง</span>
-                        <input type="date" id="exportDateTo" class="form-control form-control-sm" style="width: 140px;">
+                        <input type="date" id="exportDateTo" class="form-control form-control-sm"
+                            style="width: 140px;">
                     </div>
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
@@ -341,30 +385,38 @@
                                         <td>
                                             @php
                                                 // ADG = (ending_weight - starting_weight) / days
-                                                $adg = $profit->days_in_farm > 0
-                                                    ? (($profit->batch?->average_weight_per_pig ?? 0) - ($profit->starting_avg_weight ?? 0)) / $profit->days_in_farm
-                                                    : 0;
+                                                $adg =
+                                                    $profit->days_in_farm > 0
+                                                        ? (($profit->batch?->average_weight_per_pig ?? 0) -
+                                                                ($profit->starting_avg_weight ?? 0)) /
+                                                            $profit->days_in_farm
+                                                        : 0;
                                                 $adg = max($adg, 0); // ไม่ให้เป็นลบ
                                             @endphp
-                                            <span class="badge bg-info">{{ $adg > 0 ? number_format($adg, 3) : '-' }}</span>
+                                            <span
+                                                class="badge bg-info">{{ $adg > 0 ? number_format($adg, 3) : '-' }}</span>
                                         </td>
                                         <td>
                                             @php
                                                 // FCR = total_feed_kg / total_weight_gained
-                                                $fcr = ($profit->total_weight_gained ?? 0) > 0
-                                                    ? ($profit->total_feed_kg ?? 0) / $profit->total_weight_gained
-                                                    : 0;
+                                                $fcr =
+                                                    ($profit->total_weight_gained ?? 0) > 0
+                                                        ? ($profit->total_feed_kg ?? 0) / $profit->total_weight_gained
+                                                        : 0;
                                             @endphp
-                                            <span class="badge bg-secondary">{{ $fcr > 0 ? number_format($fcr, 3) : '-' }}</span>
+                                            <span
+                                                class="badge bg-secondary">{{ $fcr > 0 ? number_format($fcr, 3) : '-' }}</span>
                                         </td>
                                         <td>
                                             @php
                                                 // FCG = feed_cost / total_weight_gained
-                                                $fcg = ($profit->total_weight_gained ?? 0) > 0
-                                                    ? ($profit->feed_cost ?? 0) / $profit->total_weight_gained
-                                                    : 0;
+                                                $fcg =
+                                                    ($profit->total_weight_gained ?? 0) > 0
+                                                        ? ($profit->feed_cost ?? 0) / $profit->total_weight_gained
+                                                        : 0;
                                             @endphp
-                                            <span class="badge bg-dark">{{ $fcg > 0 ? '฿' . number_format($fcg, 2) : '-' }}</span>
+                                            <span
+                                                class="badge bg-dark">{{ $fcg > 0 ? '฿' . number_format($fcg, 2) : '-' }}</span>
                                         </td>
                                         <td>{{ $profit->total_pig_sold }}</td>
                                         <td>
@@ -406,24 +458,27 @@
     @foreach ($profits as $profit)
         @php
             // คำนวณ KPI แบบ Dynamic สำหรับ Modal
-            $adg_modal = $profit->days_in_farm > 0
-                ? (($profit->batch?->average_weight_per_pig ?? 0) - ($profit->starting_avg_weight ?? 0)) / $profit->days_in_farm
-                : 0;
+            $adg_modal =
+                $profit->days_in_farm > 0
+                    ? (($profit->batch?->average_weight_per_pig ?? 0) - ($profit->starting_avg_weight ?? 0)) /
+                        $profit->days_in_farm
+                    : 0;
             $adg_modal = max($adg_modal, 0);
 
-            $fcr_modal = ($profit->total_weight_gained ?? 0) > 0
-                ? ($profit->total_feed_kg ?? 0) / $profit->total_weight_gained
-                : 0;
+            $fcr_modal =
+                ($profit->total_weight_gained ?? 0) > 0
+                    ? ($profit->total_feed_kg ?? 0) / $profit->total_weight_gained
+                    : 0;
 
-            $fcg_modal = ($profit->total_weight_gained ?? 0) > 0
-                ? ($profit->feed_cost ?? 0) / $profit->total_weight_gained
-                : 0;
+            $fcg_modal =
+                ($profit->total_weight_gained ?? 0) > 0 ? ($profit->feed_cost ?? 0) / $profit->total_weight_gained : 0;
         @endphp
         <div class="modal fade" id="profitDetailModal{{ $profit->id }}" tabindex="-1">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header bg-info text-white">
-                        <h5 class="modal-title"><i class="bi bi-graph-up"></i> รายละเอียดกำไร - {{ $profit->batch?->batch_code ?? 'N/A' }}</h5>
+                        <h5 class="modal-title"><i class="bi bi-graph-up"></i> รายละเอียดกำไร -
+                            {{ $profit->batch?->batch_code ?? 'N/A' }}</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -477,10 +532,12 @@
                                     </span>
                                 </p>
                                 <p>
-                                    <strong><i class="bi bi-speedometer"></i> น้ำหนักเริ่มต้น:</strong> {{ $profit->starting_avg_weight ?? '-' }} kg/ตัว
+                                    <strong><i class="bi bi-speedometer"></i> น้ำหนักเริ่มต้น:</strong>
+                                    {{ $profit->starting_avg_weight ?? '-' }} kg/ตัว
                                 </p>
                                 <p>
-                                    <strong><i class="bi bi-basket"></i> อาหารรวม:</strong> {{ $profit->total_feed_bags ?? 0 }} กระสอบ /
+                                    <strong><i class="bi bi-basket"></i> อาหารรวม:</strong>
+                                    {{ $profit->total_feed_bags ?? 0 }} กระสอบ /
                                     {{ number_format($profit->total_feed_kg ?? 0, 2) }} kg
                                 </p>
                             </div>
@@ -506,7 +563,8 @@
                                     </span>
                                 </p>
                                 <p>
-                                    <strong><i class="bi bi-scale"></i> น้ำหนักท้ายลง:</strong> {{ $profit->ending_avg_weight ?? '-' }} kg/ตัว
+                                    <strong><i class="bi bi-scale"></i> น้ำหนักท้ายลง:</strong>
+                                    {{ $profit->ending_avg_weight ?? '-' }} kg/ตัว
                                 </p>
                             </div>
                         </div>
@@ -612,7 +670,8 @@
             const totalCostBreakdown = costData.reduce((a, b) => a + b, 0);
 
             // คำนวณ percentages สำหรับ labels
-            const costPercentages = costData.map(val => totalCostBreakdown > 0 ? ((val / totalCostBreakdown) * 100).toFixed(1) : 0);
+            const costPercentages = costData.map(val => totalCostBreakdown > 0 ? ((val / totalCostBreakdown) * 100)
+                .toFixed(1) : 0);
             const costLabels = [
                 'ค่าอาหาร (' + costPercentages[0] + '%)',
                 'ค่ายา/วัคซีน (' + costPercentages[1] + '%)',
@@ -673,14 +732,15 @@
                             callbacks: {
                                 label: function(context) {
                                     const value = context.raw;
-                                    const percentage = totalCostBreakdown > 0 ? ((value / totalCostBreakdown) * 100).toFixed(1) : 0;
+                                    const percentage = totalCostBreakdown > 0 ? ((value /
+                                        totalCostBreakdown) * 100).toFixed(1) : 0;
                                     return `${percentage}% (฿${value.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
                                 }
                             }
                         }
                     }
                 }
-                });
+            });
 
             // Chart 2: Revenue - Cost - Profit (Right side - Bar Chart)
             const ctx2 = document.getElementById('revenueChart').getContext('2d');
@@ -688,7 +748,8 @@
             const totalAmount = totalRevenue + totalCost + totalProfit;
 
             // คำนวณ percentages สำหรับ bar chart
-            const revenuePercentages = revenueData.map(val => totalAmount > 0 ? ((val / totalAmount) * 100).toFixed(1) : 0);
+            const revenuePercentages = revenueData.map(val => totalAmount > 0 ? ((val / totalAmount) * 100).toFixed(
+                1) : 0);
             const barLabels = [
                 'รายได้ (' + revenuePercentages[0] + '%)',
                 'ต้นทุน (' + revenuePercentages[1] + '%)',
@@ -743,7 +804,8 @@
                             callbacks: {
                                 label: function(context) {
                                     const value = context.raw;
-                                    const percentage = totalAmount > 0 ? ((value / totalAmount) * 100).toFixed(1) : 0;
+                                    const percentage = totalAmount > 0 ? ((value / totalAmount) * 100)
+                                        .toFixed(1) : 0;
                                     return `${percentage}% (฿${value.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
                                 }
                             }
@@ -760,7 +822,7 @@
                         }
                     }
                 }
-                });
+            });
 
             // Chart 3: Monthly Cost-Profit (Line Chart)
             loadMonthlyCostProfitChart();
@@ -797,9 +859,9 @@
             // Helper function: Load Monthly Cost-Profit Chart
             function loadMonthlyCostProfitChart() {
                 const params = new URLSearchParams({
-                    farm_id: '{{ request("farm_id") }}',
-                    batch_id: '{{ request("batch_id") }}',
-                    status: '{{ request("status") }}'
+                    farm_id: '{{ request('farm_id') }}',
+                    batch_id: '{{ request('batch_id') }}',
+                    status: '{{ request('status') }}'
                 });
 
                 fetch(`/api/dashboard/monthly-cost-profit?${params}`)
@@ -811,8 +873,7 @@
                                 type: 'line',
                                 data: {
                                     labels: data.months,
-                                    datasets: [
-                                        {
+                                    datasets: [{
                                             label: 'ต้นทุน (฿)',
                                             data: data.cost,
                                             borderColor: '#ffc107',
@@ -843,7 +904,9 @@
                                         legend: {
                                             position: 'top',
                                             labels: {
-                                                font: { size: 12 },
+                                                font: {
+                                                    size: 12
+                                                },
                                                 padding: 15
                                             }
                                         },
@@ -853,7 +916,10 @@
                                             callbacks: {
                                                 label: function(context) {
                                                     const value = context.raw;
-                                                    return context.dataset.label + ': ฿' + value.toLocaleString('th-TH', { maximumFractionDigits: 2 });
+                                                    return context.dataset.label + ': ฿' + value
+                                                        .toLocaleString('th-TH', {
+                                                            maximumFractionDigits: 2
+                                                        });
                                                 }
                                             }
                                         }
@@ -863,7 +929,9 @@
                                             beginAtZero: true,
                                             ticks: {
                                                 callback: function(value) {
-                                                    return '฿' + value.toLocaleString('th-TH', { maximumFractionDigits: 0 });
+                                                    return '฿' + value.toLocaleString('th-TH', {
+                                                        maximumFractionDigits: 0
+                                                    });
                                                 }
                                             }
                                         }
@@ -878,9 +946,9 @@
             // Helper function: Load FCG Performance Chart
             function loadFcgPerformanceChart() {
                 const params = new URLSearchParams({
-                    farm_id: '{{ request("farm_id") }}',
-                    batch_id: '{{ request("batch_id") }}',
-                    status: '{{ request("status") }}'
+                    farm_id: '{{ request('farm_id') }}',
+                    batch_id: '{{ request('batch_id') }}',
+                    status: '{{ request('status') }}'
                 });
 
                 fetch(`/api/dashboard/fcg-performance?${params}`)
@@ -931,7 +999,9 @@
                                                     else if (value <= 15) status = ' (ดี)';
                                                     else if (value <= 20) status = ' (พอใจ)';
                                                     else status = ' (ต้องปรับปรุง)';
-                                                    return '฿' + value.toLocaleString('th-TH', { maximumFractionDigits: 2 }) + status;
+                                                    return '฿' + value.toLocaleString('th-TH', {
+                                                        maximumFractionDigits: 2
+                                                    }) + status;
                                                 }
                                             }
                                         }
@@ -967,7 +1037,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize Bootstrap tooltips
             const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
                 return new bootstrap.Tooltip(tooltipTriggerEl);
             });
 
@@ -987,4 +1057,295 @@
             }
         });
     </script>
-@endpush
+
+    <!-- Revenue Details Modal -->
+    <div class="modal fade" id="revenueModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-cash-flow"></i> รายละเอียดรายได้</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> รายได้รวม:
+                            <strong>฿{{ number_format($totalRevenue, 2) }}</strong></h6>
+                    </div>
+                    <h6>การขายจำแนกตามรุ่น:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>รุ่น</th>
+                                    <th>ฟาร์ม</th>
+                                    <th>จำนวนหมูขาย</th>
+                                    <th>รายได้</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($profits as $profit)
+                                    <tr>
+                                        <td><strong>{{ $profit->batch?->batch_code ?? '-' }}</strong></td>
+                                        <td>{{ $profit->farm?->farm_name ?? '-' }}</td>
+                                        <td>{{ $profit->pig_sold_count ?? 0 }} ตัว</td>
+                                        <td>฿{{ number_format($profit->total_revenue ?? 0, 2) }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">ไม่มีข้อมูลรายได้</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cost Details Modal -->
+    <div class="modal fade" id="costModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="bi bi-bag"></i> รายละเอียดต้นทุน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-info-circle"></i> ต้นทุนรวม:
+                            <strong>฿{{ number_format($totalCost, 2) }}</strong></h6>
+                    </div>
+                    <h6>จำแนกตามประเภท:</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-1"><i class="bi bi-bag-check"></i> อาหาร</h6>
+                                    <h4 class="text-success">฿{{ number_format($feedCost, 2) }}</h4>
+                                    <small
+                                        class="text-muted">{{ number_format($totalCost > 0 ? ($feedCost / $totalCost) * 100 : 0, 1) }}%
+                                        ของต้นทุนรวม</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-1"><i class="bi bi-hospital-box"></i> ยา</h6>
+                                    <h4 class="text-danger">฿{{ number_format($medicineCost, 2) }}</h4>
+                                    <small
+                                        class="text-muted">{{ number_format($totalCost > 0 ? ($medicineCost / $totalCost) * 100 : 0, 1) }}%
+                                        ของต้นทุนรวม</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-1"><i class="bi bi-truck"></i> ขนส่ง</h6>
+                                    <h4 class="text-info">฿{{ number_format($transportCost, 2) }}</h4>
+                                    <small
+                                        class="text-muted">{{ number_format($totalCost > 0 ? ($transportCost / $totalCost) * 100 : 0, 1) }}%
+                                        ของต้นทุนรวม</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-1"><i class="bi bi-person-check"></i> แรงงาน</h6>
+                                    <h4 class="text-warning">฿{{ number_format($laborCost, 2) }}</h4>
+                                    <small
+                                        class="text-muted">{{ number_format($totalCost > 0 ? ($laborCost / $totalCost) * 100 : 0, 1) }}%
+                                        ของต้นทุนรวม</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-1"><i class="bi bi-lightning"></i> สาธารณูปโภค</h6>
+                                    <h4 class="text-primary">฿{{ number_format($utilityCost, 2) }}</h4>
+                                    <small
+                                        class="text-muted">{{ number_format($totalCost > 0 ? ($utilityCost / $totalCost) * 100 : 0, 1) }}%
+                                        ของต้นทุนรวม</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-2">
+                                <div class="card-body py-2">
+                                    <h6 class="mb-1"><i class="bi bi-box"></i> อื่นๆ</h6>
+                                    <h4 class="text-secondary">฿{{ number_format($otherCost, 2) }}</h4>
+                                    <small
+                                        class="text-muted">{{ number_format($totalCost > 0 ? ($otherCost / $totalCost) * 100 : 0, 1) }}%
+                                        ของต้นทุนรวม</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profit Details Modal -->
+    <div class="modal fade" id="profitModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="bi bi-graph-up"></i> รายละเอียดกำไร</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-success">
+                        <h6><i class="bi bi-info-circle"></i> กำไรรวม:
+                            <strong>฿{{ number_format($totalProfit, 2) }}</strong></h6>
+                        <small>รายได้รวม - ต้นทุนรวม = กำไร</small>
+                    </div>
+                    <h6>กำไรจำแนกตามรุ่น:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>รุ่น</th>
+                                    <th>ฟาร์ม</th>
+                                    <th>รายได้</th>
+                                    <th>ต้นทุน</th>
+                                    <th>กำไร</th>
+                                    <th>สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($profits as $profit)
+                                    <tr>
+                                        <td><strong>{{ $profit->batch?->batch_code ?? '-' }}</strong></td>
+                                        <td>{{ $profit->farm?->farm_name ?? '-' }}</td>
+                                        <td>฿{{ number_format($profit->total_revenue ?? 0, 2) }}</td>
+                                        <td>฿{{ number_format($profit->total_cost ?? 0, 2) }}</td>
+                                        <td>
+                                            <strong
+                                                class="{{ ($profit->gross_profit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                                ฿{{ number_format($profit->gross_profit ?? 0, 2) }}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <span
+                                                class="badge bg-{{ $profit->status == 'completed' ? 'success' : 'warning' }}">
+                                                {{ $profit->status ?? '-' }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">ไม่มีข้อมูลกำไร</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Margin Details Modal -->
+    <div class="modal fade" id="marginModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="bi bi-percent"></i> รายละเอียดอัตราส่วนกำไร</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle"></i> อัตราส่วนกำไรเฉลี่ย:
+                            <strong>{{ number_format($avgProfitMargin, 2) }}%</strong></h6>
+                        <small>คำนวณจาก: (กำไรรวม / รายได้รวม) × 100</small>
+                    </div>
+                    <h6>อัตราส่วนกำไรจำแนกตามรุ่น:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>รุ่น</th>
+                                    <th>ฟาร์ม</th>
+                                    <th>รายได้</th>
+                                    <th>กำไร</th>
+                                    <th>อัตราส่วน</th>
+                                    <th>ประเมินผล</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($profits as $profit)
+                                    @php
+                                        $margin =
+                                            ($profit->total_revenue ?? 0) > 0
+                                                ? (($profit->gross_profit ?? 0) / ($profit->total_revenue ?? 1)) * 100
+                                                : 0;
+                                        $assessment = '';
+                                        if ($margin >= 30) {
+                                            $assessment = '🌟 ยอดเยี่ยม';
+                                        } elseif ($margin >= 20) {
+                                            $assessment = '✅ ดี';
+                                        } elseif ($margin >= 10) {
+                                            $assessment = '⚠️ พอใจ';
+                                        } else {
+                                            $assessment = '❌ ต้องปรับปรุง';
+                                        }
+                                    @endphp
+                                    <tr>
+                                        <td><strong>{{ $profit->batch?->batch_code ?? '-' }}</strong></td>
+                                        <td>{{ $profit->farm?->farm_name ?? '-' }}</td>
+                                        <td>฿{{ number_format($profit->total_revenue ?? 0, 2) }}</td>
+                                        <td
+                                            class="{{ ($profit->gross_profit ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">
+                                            ฿{{ number_format($profit->gross_profit ?? 0, 2) }}
+                                        </td>
+                                        <td>
+                                            <strong
+                                                class="{{ $margin >= 20 ? 'text-success' : ($margin >= 10 ? 'text-warning' : 'text-danger') }}">
+                                                {{ number_format($margin, 2) }}%
+                                            </strong>
+                                        </td>
+                                        <td>{{ $assessment }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted">ไม่มีข้อมูลอัตราส่วนกำไร</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Show Revenue Details
+        function showRevenueDetails() {
+            const modal = new bootstrap.Modal(document.getElementById('revenueModal'));
+            modal.show();
+        }
+
+        // Show Cost Details
+        function showCostDetails() {
+            const modal = new bootstrap.Modal(document.getElementById('costModal'));
+            modal.show();
+        }
+
+        // Show Profit Details
+        function showProfitDetails() {
+            const modal = new bootstrap.Modal(document.getElementById('profitModal'));
+            modal.show();
+        }
+
+        // Show Margin Details
+        function showMarginDetails() {
+            const modal = new bootstrap.Modal(document.getElementById('marginModal'));
+            modal.show();
+        }
+    </script>

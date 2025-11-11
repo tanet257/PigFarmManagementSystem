@@ -7,6 +7,8 @@ if (env('APP_ENV') === 'testing') {
     return;
 }
 
+// DISABLED FOR NOW - Being auto-executed and interfering with seeders
+/*
 $batch = Batch::withTrashed()->where('batch_code', 'DELETE-TEST-20251029082118')->first();
 
 if ($batch) {
@@ -27,3 +29,4 @@ if ($batch) {
 } else {
     echo "Batch not found\n";
 }
+*/

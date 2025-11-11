@@ -19,7 +19,6 @@ use App\Models\InventoryMovement;
 use App\Helpers\RevenueHelper;
 
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -1151,31 +1150,6 @@ class DairyController extends Controller
 
 
     //--------------------------------------- EXPORT ------------------------------------------//
-
-    public function exportPdf(Request $request)
-    {
-        $query = DairyRecord::with([
-            'batch.farm',
-            'barn',
-            'dairy_storehouse_uses.storehouse',
-            'dairy_storehouse_uses.barn',
-            'batch_treatments.pen',
-            'pig_deaths.pen'
-        ]);
-
-        // Apply export-specific date range filter
-        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
-            $query->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
-        }
-
-        $dairyRecords = $query->orderBy('id', 'desc')->get();
-
-        $pdf = Pdf::loadView('admin.dairy_records.pdf', [
-            'dairyRecords' => $dairyRecords
-        ])->setPaper('a4', 'landscape');
-
-        return $pdf->download('dairy_records_' . now()->format('Y-m-d_H-i-s') . '.pdf');
-    }
 
 
     public function exportCsv(Request $request)

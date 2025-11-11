@@ -153,8 +153,8 @@
                     </ul>
                 </div>
                 <div class="ms-auto d-flex gap-2">
-                    <button type="button" class="btn btn-success" id="openTreatmentFormBtn">
-                        <i class="bi bi-plus-circle me-1"></i> เพิ่มการรักษาใหม่
+                    <button type="button" class="btn btn-success btn-sm" id="openTreatmentFormBtn">
+                        <i class="bi bi-plus-circle me-1"></i> เพิ่มการรักษา
                     </button>
                 </div>
             </form>
@@ -209,67 +209,7 @@
             </div>
         @endif
 
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <small class="text-muted d-block mb-1">การรักษาทั้งหมด</small>
-                                <h5 class="mb-0">{{ $treatments->count() ?? 0 }}</h5>
-                            </div>
-                            <i class="fa fa-medkit fa-2x text-primary opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <small class="text-muted d-block mb-1">กำลังรักษา</small>
-                                <h5 class="mb-0 text-warning">
-                                    {{ $treatments->where('status', 'ongoing')->count() ?? 0 }}
-                                </h5>
-                            </div>
-                            <i class="fa fa-heartbeat fa-2x text-warning opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <small class="text-muted d-block mb-1">เสร็จสิ้น</small>
-                                <h5 class="mb-0 text-success">
-                                    {{ $treatments->where('status', 'completed')->count() ?? 0 }}
-                                </h5>
-                            </div>
-                            <i class="fa fa-check-circle fa-2x text-success opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div>
-                                <small class="text-muted d-block mb-1">หยุดการรักษา</small>
-                                <h5 class="mb-0 text-danger">
-                                    {{ $treatments->where('status', 'stopped')->count() ?? 0 }}
-                                </h5>
-                            </div>
-                            <i class="fa fa-stop-circle fa-2x text-danger opacity-25"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
 
         <!-- Table Section -->
         <div class="table-responsive">
@@ -667,15 +607,15 @@
                                                         <li><a class="dropdown-item" href="#" data-status="ongoing"
                                                                 data-label="กำลังดำเนินการ">กำลังดำเนินการ</a></li>
                                                         <li><a class="dropdown-item" href="#" data-status="completed"
-                                                                data-label="✅ เสร็จสิ้น">✅ เสร็จสิ้น</a></li>
+                                                                data-label=" เสร็จสิ้น"> เสร็จสิ้น</a></li>
                                                         <li><a class="dropdown-item" href="#" data-status="stopped"
-                                                                data-label="❌ หยุดการรักษา">❌ หยุดการรักษา</a></li>
+                                                                data-label=" หยุดการรักษา"> หยุดการรักษา</a></li>
                                                     </ul>
                                                     <input type="hidden" name="treatment_status" class="treatment-status"
                                                         value="" required>
                                                 </div>
                                                 <small class="text-muted d-block mt-2">
-                                                    ⚠️ เมื่อเปลี่ยนเป็น <strong>เสร็จสิ้น</strong> หรือ
+                                                     เมื่อเปลี่ยนเป็น <strong>เสร็จสิ้น</strong> หรือ
                                                     <strong>หยุดการรักษา</strong>
                                                     วันที่สิ้นสุดจะถูกบันทึกอัตโนมัติ
                                                 </small>
@@ -697,7 +637,7 @@
                                             (ขนาดไม่เกิน 5 MB)</small>
                                     </div>
 
-                                    {{-- ✅ Treatment Details Table Container (For viewing details) --}}
+                                    {{--  Treatment Details Table Container (For viewing details) --}}
                                     <div id="treatmentDetailsTableContainer" style="display: none;"></div>
                                 </div>
                             </div>
