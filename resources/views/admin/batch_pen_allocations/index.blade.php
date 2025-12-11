@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'การจัดสรรหมู')
+@section('title', 'ดูหมูในฟาร์ม')
 
 @section('content')
     <div class="container my-5" data-page="batch-pen-allocations">
         <div class="card-header">
-            <h1 class="text-center">การจัดสรรหมู (Batch Pen Allocations)</h1>
+            <h1 class="text-center">ดูหมูในฟาร์ม</h1>
         </div>
         <div class="py-2"></div>
 
@@ -123,12 +123,19 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
-                <div class="ms-auto d-flex gap-2">
-                    <a href="{{ route('batch_pen_allocations.export.csv', request()->all()) }}"
-                        class="btn btn-sm btn-success">
-                        <i class="bi bi-file-earmark-excel"></i> Export CSV
-                    </a>
-                    
+                {{-- Export Section --}}
+                <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+                    <div class="d-flex gap-2 align-items-center">
+                        <label class="text-nowrap small mb-0" style="min-width: 100px;">
+                            <i class="bi bi-calendar-range"></i> ช่วงวันที่:
+                        </label>
+                        <input type="date" id="exportDateFrom" class="form-control form-control-sm" style="width: 140px;">
+                        <span class="text-nowrap small">ถึง</span>
+                        <input type="date" id="exportDateTo" class="form-control form-control-sm" style="width: 140px;">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" id="exportCsvBtn">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
+                    </button>
                 </div>
             </form>
         </div>
@@ -297,6 +304,18 @@
 
                 // เรียกใช้ common table click handler
                 setupClickableRows();
+
+                // Export CSV with date filter
+                document.getElementById('exportCsvBtn').addEventListener('click', function() {
+                    console.log('📥 [Batch Pen Allocation] Exporting CSV');
+                    const params = new URLSearchParams(window.location.search);
+                    const dateFrom = document.getElementById('exportDateFrom').value;
+                    const dateTo = document.getElementById('exportDateTo').value;
+                    if (dateFrom) params.set('export_date_from', dateFrom);
+                    if (dateTo) params.set('export_date_to', dateTo);
+                    const url = `{{ route('batch_pen_allocations.export.csv') }}?${params.toString()}`;
+                    window.location.href = url;
+                });
             });
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>

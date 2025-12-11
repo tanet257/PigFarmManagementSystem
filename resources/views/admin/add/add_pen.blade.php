@@ -17,7 +17,7 @@
 
                 <div class="card shadow-lg border-0 rounded-3">
                     <div class="card-header bg-primary text-white">
-                        <h4 class="mb-0">เพิ่มคอก (Add Pen)</h4>
+                        <h4 class="text-center">เพิ่มคอก</h4>
                     </div>
                     <div class="card-body">
                         <link rel="stylesheet"

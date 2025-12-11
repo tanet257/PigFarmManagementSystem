@@ -131,9 +131,18 @@ class BatchPenAllocationController extends Controller
 
     //--------------------------------------- EXPORT ------------------------------------------//
 
-    public function exportCsv()
+    public function exportCsv(Request $request)
     {
-        $barns = Barn::with(['pens.batchPenAllocations.batch.farm'])->get();
+        $query = Barn::with(['pens.batchPenAllocations.batch.farm']);
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereHas('pens.batchPenAllocations.batch', function ($q) use ($request) {
+                $q->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
+            });
+        }
+
+        $barns = $query->get();
 
         $barnSummaries = $barns->map(function ($barn) {
             $pensInfo = $barn->pens->map(function ($pen) {
@@ -142,26 +151,26 @@ class BatchPenAllocationController extends Controller
                     'pen_code'  => $pen->pen_code,
                     'capacity'  => $pen->pig_capacity,
                     'allocated' => $allocations->sum('allocated_pigs'),
-                    'batches'   => $allocations->map(fn($a) => optional($a->batch)->batch_code)->unique()->values()
+                    'batches'   => $allocations->map(fn($a) => optional($a->batch)?->batch_code ?? '-')->unique()->values()
                 ];
             });
 
             $totalAllocated = $pensInfo->sum('allocated');
             $farmNames = $barn->pens->flatMap(
                 fn($pen) =>
-                $pen->batchPenAllocations->map(fn($a) => optional($a->batch->farm)->farm_name)
-            )->filter()->unique()->values();
+                $pen->batchPenAllocations->map(fn($a) => optional($a->batch)?->farm?->farm_name ?? '-')
+            )->filter(fn($v) => $v !== '-')->unique()->values();
 
             $batchCodes = $barn->pens->flatMap(
                 fn($pen) =>
-                $pen->batchPenAllocations->map(fn($a) => optional($a->batch)->batch_code)
-            )->filter()->unique()->values();
+                $pen->batchPenAllocations->map(fn($a) => optional($a->batch)?->batch_code ?? '-')
+            )->filter(fn($v) => $v !== '-')->unique()->values();
 
             return [
-                'farm_name'      => $farmNames->join(', '),
-                'batch_code'     => $batchCodes->join(', '),
-                'barn_code'      => $barn->barn_code,
-                'capacity'       => $barn->pig_capacity,
+                'farm_name'      => $farmNames->join(', ') ?: '-',
+                'batch_code'     => $batchCodes->join(', ') ?: '-',
+                'barn_code'      => $barn->barn_code ?? '-',
+                'capacity'       => $barn->pig_capacity ?? 0,
                 'total_allocated' => $totalAllocated,
             ];
         });

@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'บันทึกการขายหมู')
+@section('title', 'จัดการการขายหมู')
 
 @section('content')
     <div class="container my-5">
         <div class="card-header">
-            <h1 class="text-center">บันทึกการขายหมู (Pig Sales)</h1>
+            <h1 class="text-center">จัดการการขายหมู </h1>
         </div>
         <div class="py-2"></div>
 
@@ -166,7 +166,7 @@
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
-                    
+
                 </div>
             </div>
         </div>

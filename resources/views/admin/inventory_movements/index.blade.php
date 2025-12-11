@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'รายงานความเคลื่อนไหวของสต็อก')
+@section('title', 'ดูความเคลื่อนไหวของสต็อก')
 
 @section('content')
     <div class="container my-5">
         <div class="card-header">
-            <h1 class="text-center">รายงานความเคลื่อนไหวของสต็อก (Inventory Movement)</h1>
+            <h1 class="text-center">ดูความเคลื่อนไหวของสต็อก</h1>
         </div>
         <div class="py-2"></div>
 
@@ -155,7 +155,7 @@
                     <button type="button" class="btn btn-success btn-sm" id="exportCsvBtn">
                         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
-                    
+
                 </div>
             </div>
         </div>
@@ -465,7 +465,7 @@
                 window.location.href = url;
             });
 
-            
+
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

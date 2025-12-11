@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'จัดการผู้ใช้งาน')
+@section('title', 'จัดการผู้ใช้')
 
 @section('content')
     <div class="container my-5">
         <div class="card-header">
-            <h1 class="text-center">จัดการผู้ใช้งาน (User Management)</h1>
+            <h1 class="text-center">จัดการผู้ใช้</h1>
         </div>
         <div class="py-2"></div>
 
@@ -134,11 +134,19 @@
                 <!-- Per Page -->
                 @include('components.per-page-dropdown')
 
-                <!-- Export CSV Button -->
-                <div class="ms-auto d-flex gap-2">
-                    <button class="btn btn-sm btn-success"
-                        onclick="exportTableToCSV('.table-responsive', 'จัดการผู้ใช้งาน', [7])" title="ส่งออก CSV">
-                        <i class="bi bi-file-earmark-spreadsheet"></i> CSV
+                {{-- Export Section --}}
+                <div class="ms-auto d-flex gap-2 align-items-center flex-wrap">
+                    <div class="d-flex gap-2 align-items-center">
+                        <label class="text-nowrap small mb-0" style="min-width: 100px;">
+                            <i class="bi bi-calendar-range"></i> ช่วงวันที่:
+                        </label>
+                        <input type="date" id="exportDateFrom" class="form-control form-control-sm"
+                            style="width: 140px;">
+                        <span class="text-nowrap small">ถึง</span>
+                        <input type="date" id="exportDateTo" class="form-control form-control-sm" style="width: 140px;">
+                    </div>
+                    <button type="button" class="btn btn-sm btn-success" id="exportCsvBtn">
+                        <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
                     </button>
                 </div>
             </form>
@@ -201,7 +209,7 @@
                                 </td>
                                 <td>
                                     <div class="d-flex gap-1 flex-wrap justify-content-start align-items-stretch">
-                                        
+
                                         @if ($user->status == 'pending')
                                             {{-- ปุ่มอนุมัติ --}}
                                             <button type="button" class="btn btn-sm btn-success btn-equal"
@@ -545,31 +553,15 @@
             </div>
         </div>
     @endforeach
-@endsection
 
-<script>
-    function validateRoleSelection(button) {
-        // หาพ่อ form ของปุ่มนี้
-        const form = button.closest('form');
-        // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
-        const selectedRole = form.querySelector('input[name="selected_role"]:checked');
 
-        if (!selectedRole) {
-            alert('กรุณาเลือก Role ก่อนอนุมัติ');
-            return false;
-        }
-
-        // หา user id จาก modal
-        const modalId = form.closest('.modal').id;
-        const userId = modalId.replace('approveModal', '');
-
-        // Set hidden field value
-        const hiddenField = form.querySelector(`input[id="role_ids_${userId}"]`);
-        if (hiddenField) {
+    @push('scripts')
+        <script>
+            /**
+             * Validate role selection for approval
+             */
             function validateRoleSelection(button) {
-                // หาพ่อ form ของปุ่มนี้
                 const form = button.closest('form');
-                // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
                 const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
 
                 if (!selectedRole) {
@@ -580,10 +572,11 @@
                 return true;
             }
 
+            /**
+             * Validate role selection for update
+             */
             function validateUpdateRoleSelection(button) {
-                // หาพ่อ form ของปุ่มนี้
                 const form = button.closest('form');
-                // ตรวจสอบว่ามี radio button role ที่ถูกเลือก
                 const selectedRole = form.querySelector('input[name="role_ids[]"]:checked');
 
                 if (!selectedRole) {
@@ -601,17 +594,17 @@
                 const snackbar = document.createElement('div');
                 snackbar.className = `alert alert-${type} alert-dismissible fade show`;
                 snackbar.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-            min-width: 300px;
-            max-width: 500px;
-        `;
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    min-width: 300px;
+                    max-width: 500px;
+                `;
                 snackbar.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
 
                 document.body.appendChild(snackbar);
 
@@ -620,4 +613,32 @@
                     snackbar.remove();
                 }, 5000);
             }
-</script>
+
+            /**
+             * Export CSV with date filter
+             */
+            document.addEventListener('DOMContentLoaded', function() {
+                const exportBtn = document.getElementById('exportCsvBtn');
+                if (exportBtn) {
+                    exportBtn.addEventListener('click', function() {
+                        console.log('📥 [User Management] Exporting CSV');
+                        const dateFrom = document.getElementById('exportDateFrom').value;
+                        const dateTo = document.getElementById('exportDateTo').value;
+
+                        let url = `{{ route('user_management.export.csv') }}`;
+                        const params = new URLSearchParams();
+
+                        if (dateFrom) params.set('export_date_from', dateFrom);
+                        if (dateTo) params.set('export_date_to', dateTo);
+
+                        if (params.toString()) {
+                            url += '?' + params.toString();
+                        }
+
+                        window.location.href = url;
+                    });
+                }
+            });
+        </script>
+    @endpush
+@endsection

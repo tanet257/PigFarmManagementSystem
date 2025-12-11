@@ -421,4 +421,40 @@ class UserManagementController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * ✅ Export Users to CSV
+     */
+    public function exportCsv(Request $request)
+    {
+        $query = User::query();
+
+        // Apply export-specific date range filter
+        if ($request->filled('export_date_from') && $request->filled('export_date_to')) {
+            $query->whereBetween('created_at', [$request->export_date_from . ' 00:00:00', $request->export_date_to . ' 23:59:59']);
+        }
+
+        $users = $query->get();
+
+        $filename = "จัดการผู้ใช้งาน_" . date('Y-m-d') . ".csv";
+
+        return response()->streamDownload(function () use ($users) {
+            $handle = fopen('php://output', 'w');
+            // Add UTF-8 BOM for Thai character support in Excel
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($handle, ['ID', 'ชื่อ', 'อีเมล', 'เบอร์โทร', 'ประเภท', 'สถานะ', 'ลงทะเบียนเมื่อ']);
+            foreach ($users as $user) {
+                fputcsv($handle, [
+                    $user->id,
+                    $user->name,
+                    $user->email,
+                    $user->phone ?? '-',
+                    $user->usertype ?? '-',
+                    $user->status ?? '-',
+                    $user->created_at ? $user->created_at->format('Y-m-d H:i:s') : '-',
+                ]);
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv;charset=utf-8']);
+    }
 }

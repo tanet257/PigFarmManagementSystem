@@ -260,6 +260,9 @@ Route::prefix('notifications')->middleware(['auth', 'prevent.cache'])->group(fun
 Route::prefix('user_management')->middleware(['auth', 'prevent.cache', 'permission:manage_users'])->group(function () {
     Route::get('/', [UserManagementController::class, 'index'])->name('user_management.index');
     Route::get('/pending', [UserManagementController::class, 'pending'])->name('user_management.pending');
+    Route::get('/export/csv', [UserManagementController::class, 'exportCsv'])->name('user_management.export.csv');
+    Route::get('/api/user_type_options', [UserManagementController::class, 'getUserTypeOptions'])->name('user_management.user_type_options');
+    Route::get('/api/user_roles/{id}', [UserManagementController::class, 'getUserRoles'])->name('user_management.user_roles');
     Route::post('/{id}/approve', [UserManagementController::class, 'approve'])->name('user_management.approve');
     Route::post('/{id}/reject', [UserManagementController::class, 'reject'])->name('user_management.reject');
     Route::post('/{id}/assign_role', [UserManagementController::class, 'assignRole'])->name('user_management.assign_role');
@@ -268,8 +271,6 @@ Route::prefix('user_management')->middleware(['auth', 'prevent.cache', 'permissi
     Route::post('/{id}/request_cancel', [UserManagementController::class, 'requestCancelRegistration'])->name('user_management.request_cancel');
     Route::patch('/{id}/approve_cancel', [UserManagementController::class, 'approveCancelRegistration'])->name('user_management.approve_cancel');
     Route::patch('/{id}/reject_cancel', [UserManagementController::class, 'rejectCancelRegistration'])->name('user_management.reject_cancel');
-    Route::get('/api/user_type_options', [UserManagementController::class, 'getUserTypeOptions'])->name('user_management.user_type_options');
-    Route::get('/api/user_roles/{id}', [UserManagementController::class, 'getUserRoles'])->name('user_management.user_roles');
 });
 
 //------------------- route payment approvals ----------------//

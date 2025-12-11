@@ -140,10 +140,9 @@
 
                 <div class="ms-auto d-flex gap-2">
                     {{-- Export Buttons (No Dropdown) --}}
-                    <button class="btn btn-success btn-sm" onclick="exportToCSV(event)" title="ส่งออกเป็น CSV">
-                        <i class="bi bi-file-earmark-excel me-1"></i> CSV
+                    <button class="btn btn-success btn-sm" onclick="exportToCSV(event)" title=exportToPDF(event)" title="ส่งออกเป็น PDF">
+                        <i class="bi bi-file-earmark-pdf me-1"></i> PDF
                     </button>
-                    
 
                     <button type="button" class="btn btn-success btn-sm" data-bs-toggle="modal"
                         data-bs-target="#createModal">
@@ -1166,36 +1165,35 @@
                     // Reload page after 2 seconds if success
                     if (result.ok) {
                         setTimeout(() => {
-                            location.reload();
-                        }, 2000);
+tion);
+                    yPosition += 10;
+
+                    if (imgHeight > pageHeight - 20) {
+                        let remainingHeight = imgHeight;
+                        let position = 0;
+
+                        while (remainingHeight > 0) {
+                            const pageCanvasHeight = (pageHeight - 20) * (canvas.width / imgWidth);
+
+                            if (position > 0) {
+                                pdf.addPage();
+                                yPosition = 10;
+                            }
+
+                            pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, Math.min(imgHeight - position * (pageHeight - 20), pageHeight - 20));
+                            remainingHeight -= pageHeight - 20;
+                            position++;
+                        }
+                    } else {
+                        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    const sb = document.getElementById('snackbar');
-                    const sbMsg = document.getElementById('snackbarMessage');
-                    sbMsg.innerText = 'เกิดข้อผิดพลาด: ' + (error.message || 'Unknown error');
-                    sb.style.backgroundColor = '#dc3545'; // สีแดง
-                    sb.style.display = 'flex';
-                    sb.classList.add('show');
-                    setTimeout(() => {
-                        sb.classList.remove('show');
-                        sb.style.display = 'none';
-                    }, 5000);
-                });
+
+                    pdf.save('บันทึกหมูเข้า_' + new Date().toISOString().split('T')[0] + '.pdf');
+                } catch (error) {
+                    console.error('PDF export error:', error);
+                    alert('เกิดข้อผิดพลาดในการส่งออก PDF');
+                }
             }
-        </script>
-
-        {{-- Export Functions --}}
-        <script>
-            // Export to CSV with Thai font support
-            function exportToCSV(event) {
-                event.preventDefault();
-                // Exclude "จัดการ" column (last column)
-                exportTableToCSV('.table-responsive', 'บันทึกหมูเข้า', [7]);
-            }
-
-
         </script>
         <script src="{{ asset('admin/js/common-table-click.js') }}"></script>
     @endpush

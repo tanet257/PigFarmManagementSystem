@@ -5,7 +5,7 @@
 @section('content')
     <div class="container my-5">
         <div class="card-header">
-            <h1 class="text-center">จัดการคลังสินค้า (Storehouses)</h1>
+            <h1 class="text-center">จัดการคลังสินค้า</h1>
         </div>
         <div class="py-2"></div>
 

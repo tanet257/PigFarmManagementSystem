@@ -1,11 +1,11 @@
 @extends('layouts.admin')
 
-@section('title', 'อนุมัติการชำระเงินค่าใช้จ่าย')
+@section('title', 'จัดการอนุมัติค่าใช้จ่าย')
 
 @section('content')
     <div class="container my-5">
         <div class="card-header">
-            <h1 class="text-center">อนุมัติการชำระเงินค่าใช้จ่าย (Cost Payment Approvals)</h1>
+            <h1 class="text-center">จัดการอนุมัติค่าใช้จ่าย</h1>
         </div>
         <div class="py-2"></div>
 

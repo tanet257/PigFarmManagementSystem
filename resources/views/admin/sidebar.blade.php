@@ -54,14 +54,14 @@
                  <ul id="storehouseDropdown" class="collapse list-unstyled ">
 
                      <li><a href="{{ route('storehouse_records.index') }}">จัดการคลังสินค้า</a></li>
-                     <li><a href="{{ route('inventory_movements.index') }}">ดูการเคลื่อนไหวของสินค้า</a></li>
+                     <li><a href="{{ route('inventory_movements.index') }}">ดูความเคลื่อนไหวของสต็อก</a></li>
                  </ul>
              </li>
 
              <li><a href="#pigsaleMenuDropdown" aria-expanded="false" data-toggle="collapse"> <i
                          class="bi bi-cash-stack"></i>การขายหมู </a>
                  <ul id="pigsaleMenuDropdown" class="collapse list-unstyled ">
-                     <li><a href="{{ route('pig_sales.index') }}">จัดการ การขายหมู</a></li>
+                     <li><a href="{{ route('pig_sales.index') }}">จัดการการขายหมู</a></li>
                  </ul>
              </li>
              <li><a href="#RequestsApprovalDropdown" aria-expanded="false" data-toggle="collapse"> <i
